@@ -1,0 +1,122 @@
+"use client";
+
+import React, { useEffect, useState } from 'react';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import Image from 'next/image';
+import { useParams } from 'next/navigation';
+
+function MediaDetailPage() {
+  const params = useParams();
+  const filename = params?.id;
+  const [image, setImage] = useState<any | null>(null);
+  const [viewCount, setViewCount] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (filename) {
+      const fetchImageDetails = async () => {
+        try {
+          const response = await fetch(`/api/images/${filename}`);
+          if (!response.ok) {
+            throw new Error(`Image not found: ${response.statusText}`);
+          }
+          const data = await response.json();
+          setImage(data);
+          setViewCount(data.viewCount || 0);
+        } catch (error) {
+          console.error('Error fetching image details:', error);
+          setErrorMessage('ไม่พบข้อมูลรูปภาพ หรือเกิดข้อผิดพลาดในการดึงข้อมูล');
+        }
+      };
+
+      // เพิ่ม viewCount เมื่อโหลดหน้าเสร็จสิ้น
+      const incrementViewCount = async () => {
+        try {
+          await fetch(`/api/images/${filename}`, { method: 'POST' });
+        } catch (error) {
+          console.error('Error incrementing view count:', error);
+        }
+      };
+
+      fetchImageDetails();
+      incrementViewCount();
+    } else {
+      console.error('Filename is undefined');
+      setErrorMessage('ไม่สามารถระบุชื่อไฟล์ได้');
+    }
+  }, [filename]);
+  
+
+  if (errorMessage) {
+    return (
+      <div className='flex items-center justify-center min-h-screen'>
+        <p className="text-red-600">{errorMessage}</p>
+      </div>
+    );
+  }
+
+  if (!filename) {
+    return (
+      <div className='flex items-center justify-center min-h-screen'>
+        <p>Invalid Image ID</p>
+      </div>
+    );
+  }
+
+  if (!image) {
+    return (
+      <div className='flex items-center justify-center min-h-screen'>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Navbar />
+      <div className="flex flex-col items-center justify-center py-16 min-h-screen bg-pink-100">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-4xl">
+          <Image
+            src={`/uploads/${image.filename}`}
+            alt={image.title}
+            width={600}
+            height={800}
+            className="rounded-lg mb-6"
+          />
+          <div className="mb-4">
+            <p className="text-gray-600 text-sm">
+              วันที่เพิ่ม:{' '}
+              {image.addedDate
+                ? new Date(image.addedDate).toLocaleDateString('th-TH', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })
+                : 'วันที่ไม่ถูกต้อง'}
+            </p>
+            <h3 className="text-2xl font-bold mt-2 mb-2">{image.title}</h3>
+            <p className="text-blue-600 mb-4">กองโครงการการประกอบอาชีพและสิ่งแวดล้อม</p>
+            <p className="text-gray-800">จำนวนครั้งที่ดู: {viewCount}</p>
+          </div>
+          {image.filename && (
+            <button
+              onClick={() => {
+                const link = document.createElement('a');
+                link.href = `/uploads/${image.filename}`;
+                link.download = image.title;
+                link.click();
+              }}
+              className="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition"
+            >
+              ดาวน์โหลดรูป
+            </button>
+          )}
+        </div>
+      </div>
+      <Footer />
+    </>
+  );
+}
+
+export default MediaDetailPage;

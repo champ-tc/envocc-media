@@ -1,0 +1,34 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL") // URL เชื่อมต่อ MySQL ที่คุณกำหนดใน .env
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  username   String   @unique
+  password   String
+  title      String?
+  firstName  String?
+  lastName   String?
+  tel        String?
+  email      String   @unique
+  department String?
+  position   String?
+  role       String   @default("user")
+  createdAt  DateTime @default(now())
+}
+
+
+
+
+model Image {
+  id        Int      @id @default(autoincrement())
+  title     String
+  filename  String   @unique // ตรวจสอบให้แน่ใจว่ามี @unique
+  addedDate DateTime @default(now())
+  viewCount Int      @default(0)
+}
