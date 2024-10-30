@@ -1,9 +1,9 @@
 import React from 'react';
 import Link from 'next/link';
 
-const Sidebar: React.FC = () => {
+function Sidebar() {
   return (
-    <div className="h-screen w-64 bg-gray-800 text-white">
+    <div className="h-screen w-64 bg-gray-800 text-white fixed">
       <div className="p-4">
         <h2 className="text-xl font-bold">My Sidebar</h2>
       </div>
@@ -19,7 +19,7 @@ const Sidebar: React.FC = () => {
         </li>
       </ul>
     </div>
-  );
-};
+  )
+}
 
 export default Sidebar;

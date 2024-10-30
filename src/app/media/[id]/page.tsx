@@ -96,7 +96,6 @@ function MediaDetailPage() {
                 : 'วันที่ไม่ถูกต้อง'}
             </p>
             <h3 className="text-2xl font-bold mt-2 mb-2">{image.title}</h3>
-            <p className="text-blue-600 mb-4">กองโครงการการประกอบอาชีพและสิ่งแวดล้อม</p>
             <p className="text-gray-800">จำนวนครั้งที่ดู: {viewCount}</p>
           </div>
           {image.filename && (

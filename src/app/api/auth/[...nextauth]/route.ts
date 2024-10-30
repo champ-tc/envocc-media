@@ -1,3 +1,5 @@
+// pages/api/auth/[...nextauth].ts
+
 import NextAuth from "next-auth/next";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient } from '@prisma/client';
@@ -10,34 +12,36 @@ const authOptions = {
     CredentialsProvider({
       name: 'credentials',
       credentials: {
-        email: { label: "Email", type: "email", placeholder: "user@gmail.com" },
+        username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        const { email, password } = credentials;
+        const { username, password } = credentials;
+
+        if (!username || !password) {
+          return null;
+        }
 
         try {
+          // ค้นหาผู้ใช้ในฐานข้อมูล
           const user = await prisma.user.findUnique({
-            where: { email },
+            where: { username },
           });
 
-          if (!user) {
-            return null;
-          }
+          if (!user) return null;
 
+          // ตรวจสอบการเปรียบเทียบรหัสผ่าน
           const passwordMatch = await bcrypt.compare(password, user.password);
-          if (!passwordMatch) {
-            return null;
-          }
+          if (!passwordMatch) return null;
 
+          // คืนค่าผู้ใช้หากผ่านการยืนยัน
           return {
             id: user.id,
-            email: user.email,
             role: user.role,
-            name: user.name || user.email,
+            name: user.name || user.username,
           };
         } catch (error) {
-          console.log("Error: ", error);
+          console.error("Authorization Error:", error);
           return null;
         }
       },
@@ -45,8 +49,8 @@ const authOptions = {
   ],
   session: {
     strategy: "jwt",
-    maxAge: 60 * 60, // 1 hour in seconds
-    updateAge: 60 * 60, // Optional: update session every hour
+    maxAge: 60 * 60, // 1 ชั่วโมง
+    updateAge: 60 * 60, // อัพเดตทุก 1 ชั่วโมง
   },
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
@@ -63,9 +67,11 @@ const authOptions = {
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.id;
-        session.user.role = token.role;
-        session.user.name = token.name || session.user.name;
+        session.user = {
+          id: token.id,
+          role: token.role,
+          name: token.name,
+        };
       }
       return session;
     },

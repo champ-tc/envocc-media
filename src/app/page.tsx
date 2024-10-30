@@ -45,7 +45,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex items-center justify-center w-full px-4 m-10">
+        <div className="flex items-center justify-center w-full px-10 m-10">
           {images.map((image) => (
             <div key={image.id} className="mx-4">
               <Image
@@ -53,8 +53,9 @@ export default function Home() {
                 alt={image.title}
                 width={400}
                 height={600}
-                className="rounded-lg shadow-md"
+                className="rounded-lg shadow-md w-auto h-[400px] object-cover"
               />
+
             </div>
           ))}
         </div>

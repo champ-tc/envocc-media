@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -16,15 +16,26 @@ function RegisterPage() {
   const [email, setEmail] = useState("");
   const [department, setDepartment] = useState("");
   const [position, setPosition] = useState("");
-  const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [csrfToken, setCsrfToken] = useState<string | null>(null);
 
-  const saveToDatabase = async (userData) => {
+  useEffect(() => {
+    const fetchCsrfToken = async () => {
+      const response = await fetch('/api/csrf-token');
+      const data = await response.json();
+      setCsrfToken(data.csrfToken);
+    };
+    fetchCsrfToken();
+  }, []);
+
+  const saveToDatabase = async (userData: any) => {
     try {
       const response = await fetch("/api/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken || "",
         },
         body: JSON.stringify(userData),
       });
@@ -39,64 +50,77 @@ function RegisterPage() {
       setTimeout(() => {
         router.push("/login");
       }, 1000);
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
       setError(error.message || "มีข้อผิดพลาดในการบันทึกข้อมูล");
-      setTimeout(() => setError(null), 5000); // แสดงข้อผิดพลาด 5 วิ แล้วลบ
+      setTimeout(() => setError(null), 5000);
     }
   };
 
-  const handleSubmit = async (e) => {
+  const resetForm = () => {
+    setUsername("");
+    setPassword("");
+    setTitle("");
+    setFirstName("");
+    setLastName("");
+    setPhoneNumber("");
+    setEmail("");
+    setDepartment("");
+    setPosition("");
+    setError(null);
+    setSuccessMessage(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccessMessage(null);
-  
-    // ตรวจสอบข้อมูลพื้นฐาน
+
     if (!username || !password || !title || !firstName || !lastName || !phoneNumber || !email || !department || !position) {
       setError("กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน");
       return;
     }
-  
-    // ตรวจสอบรูปแบบอีเมล
+
+    if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+      setError("รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัว และประกอบด้วยตัวอักษรใหญ่ เล็ก และตัวเลข");
+      return;
+    }
+
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailPattern.test(email)) {
       setError("รูปแบบอีเมลไม่ถูกต้อง");
       setEmail("");
       return;
     }
-  
-    // ตรวจสอบเบอร์โทรให้เป็นตัวเลขและมีความยาว 10 หลัก
+
     if (!/^\d{10}$/.test(phoneNumber)) {
       setError("เบอร์โทรต้องเป็นตัวเลข 10 หลัก");
       setPhoneNumber("");
       return;
     }
-  
-    // ตรวจสอบความยาวของชื่อและนามสกุล
+
     if (firstName.length > 20 || lastName.length > 20) {
       setError("ชื่อและนามสกุลต้องไม่เกิน 20 ตัวอักษร");
       setFirstName("");
       setLastName("");
       return;
     }
-  
-    // ตรวจสอบความยาวของตำแหน่ง/อาชีพ
+
     if (position.length > 30) {
       setError("ตำแหน่ง/อาชีพต้องไม่เกิน 30 ตัวอักษร");
       setPosition("");
       return;
     }
-  
-    // ตรวจสอบความซ้ำของ username และ email ในระบบ
+
     try {
       const checkResponse = await fetch("/api/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken || "",
         },
         body: JSON.stringify({ username, email, checkOnly: true }),
       });
-  
+
       const checkResult = await checkResponse.json();
       if (!checkResponse.ok) {
         setError(checkResult.error);
@@ -108,8 +132,7 @@ function RegisterPage() {
       setError("มีข้อผิดพลาดในการตรวจสอบข้อมูล");
       return;
     }
-  
-    // เตรียมข้อมูลเพื่อบันทึกลงฐานข้อมูล
+
     const userData = {
       username,
       password,
@@ -121,8 +144,7 @@ function RegisterPage() {
       department,
       position,
     };
-  
-    // เรียกใช้ฟังก์ชันบันทึกข้อมูล
+
     await saveToDatabase(userData);
   };
 
@@ -132,21 +154,21 @@ function RegisterPage() {
       <div className="flex items-center justify-center min-h-screen bg-pink-100 my-2 px-4">
         <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-3xl shadow-lg w-full max-w-2xl">
           <h2 className="text-orange-600 text-3xl font-bold text-center mb-4">ลงทะเบียน</h2>
-          
-          {successMessage && (
-            <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
-              <p>{successMessage}</p>
-            </div>
-          )}
-          
-          {error && (
-            <div className="bg-red-100 border-l-4 border-red-500 text-red-500 p-4 mb-4" role="alert">
-              <p>{error}</p>
-            </div>
-          )}
-          
 
-          
+          {successMessage && (
+            <div className="bg-green-50 text-green-500 p-6 mb-10 text-sm rounded-2xl" role="alert">
+              <span>&#10004; </span>
+              <span>{successMessage}</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-50 text-red-500 p-6 mb-10 text-sm rounded-2xl" role="alert">
+              <span>&#10006; </span>
+              <span>{error}</span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 gap-4 mt-2 sm:grid-cols-2">
               <div className="w-full">
@@ -156,6 +178,7 @@ function RegisterPage() {
               <div className="w-full">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
                 <input type="password" maxLength={20} id="password" name="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500" required />
+                <p className="text-xs text-gray-500 mt-1">ต้องมีความยาวอย่างน้อย 8 ตัว A-Z, a-z และตัวเลข</p>
               </div>
             </div>
 
@@ -207,7 +230,7 @@ function RegisterPage() {
 
             <div className="flex justify-center mt-6 gap-2">
               <button type="submit" className="bg-orange-500 text-white px-4 py-2 rounded-xl hover:bg-orange-600 transition">ยืนยัน</button>
-              <button type="button" className="bg-orange-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-orange-300 transition">ยกเลิก</button>
+              <button type="button" onClick={resetForm} className="bg-orange-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-orange-300 transition">ยกเลิก</button>
             </div>
           </form>
         </div>

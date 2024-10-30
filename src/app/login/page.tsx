@@ -1,3 +1,5 @@
+// LoginPage Component (LoginPage.tsx)
+
 "use client";
 
 import { useState } from 'react';
@@ -6,10 +8,10 @@ import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Image from 'next/image';
 
-
 function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { data: session } = useSession();
@@ -20,12 +22,13 @@ function LoginPage() {
 
     const res = await signIn('credentials', {
       redirect: false,
-      email,
+      username,
       password,
     });
 
+
     if (res?.error) {
-      setError(res.error);
+      setError("การเข้าสู่ระบบล้มเหลว กรุณาลองใหม่อีกครั้ง");
     } else if (res?.ok) {
       const userRole = session?.user?.role;
       if (userRole === 'admin') {
@@ -33,6 +36,8 @@ function LoginPage() {
       } else {
         router.push('/users/dashboard');
       }
+
+      
     }
   };
 
@@ -49,16 +54,29 @@ function LoginPage() {
               height={150}
             />
           </div>
-          <h2 className="text-blue-700 text-xl font-bold text-center mb-6">LOGIN</h2>
-          {error && <div className="text-red-500 text-center mb-4">{error}</div>}
+
+          {successMessage && (
+            <div className="bg-green-50 text-green-500 p-6 mb-10 text-sm rounded-2xl" role="alert">
+              <span>&#10004; </span>
+              <span>{successMessage}</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-50 text-red-500 p-6 mb-10 text-sm rounded-2xl" role="alert">
+              <span>&#10006; </span>
+              <span>{error}</span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="w-full px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Username"
+                className="w-full px-4 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
@@ -67,19 +85,19 @@ function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                className="w-full px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Password"
+                className="w-full px-4 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
             <div className="flex justify-center mb-4">
-              <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition">
-                LOGIN
+              <button type="submit" className="bg-orange-500 text-white px-4 py-2 rounded-xl hover:bg-orange-600 transition">
+                เข้าสู่ระบบ
               </button>
             </div>
           </form>
-          <div className="flex justify-between text-blue-600">
-            <a href="#" className="hover:underline">ลงทะเบียน</a>
+          <div className="flex justify-between text-orange-600">
+            <a href="/register" className="hover:underline">ลงทะเบียน</a>
             <a href="#" className="hover:underline">ลืมรหัสผ่าน</a>
           </div>
         </div>
@@ -88,4 +106,4 @@ function LoginPage() {
   );
 }
 
-export default LoginPage
+export default LoginPage;
