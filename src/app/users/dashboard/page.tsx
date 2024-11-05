@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import Sidebar from "@/components/Sidebar";
+import Sidebar from "@/components/Sidebar_User";
 import TopBar from "@/components/TopBar";
 
 function UserDashboard() {
@@ -23,31 +23,32 @@ function UserDashboard() {
   }
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
+    <div className="min-h-screen flex bg-gray-50">
       {/* Sidebar */}
       <Sidebar />
 
       {/* Main Content Container */}
       <div className="flex-1 flex flex-col">
-        {/* TopBar */}
         <TopBar />
 
         {/* Main content */}
-        <div className="flex-1 flex flex-col items-center justify-center p-8">
-          <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
-            <h1 className="text-2xl font-bold mb-4">
-              ยินดีต้อนรับ User {session?.user?.name || "ผู้ใช้"}!
-            </h1>
-            <p className="text-gray-700 mb-6">
-              คุณได้เข้าสู่ระบบ User เรียบร้อยแล้ว
+        <div className="flex-1 flex items-start justify-center p-6">
+          <div className="bg-white rounded-lg shadow-lg max-w-3xl w-full p-8 mt-4">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Welcome to your Dashboard</h2>
+            <p className="text-gray-600 mb-6">
+              This is your main dashboard area. Here, you can access all the information you need.
             </p>
-            
-            <button
-              className="bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600"
-              onClick={() => signOut({ callbackUrl: "/login" })}
-            >
-              Logout
-            </button>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="bg-gray-100 p-4 rounded-lg shadow-sm text-center">
+                <h3 className="text-lg font-medium text-gray-700">Section 1</h3>
+                <p className="text-sm text-gray-500">Brief description or content for section 1.</p>
+              </div>
+              <div className="bg-gray-100 p-4 rounded-lg shadow-sm text-center">
+                <h3 className="text-lg font-medium text-gray-700">Section 2</h3>
+                <p className="text-sm text-gray-500">Brief description or content for section 2.</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

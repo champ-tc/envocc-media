@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import Sidebar from '@/components/Sidebar';
+import Sidebar from '@/components/Sidebar_User';
 
 const MemberPage: React.FC = () => {
     return (

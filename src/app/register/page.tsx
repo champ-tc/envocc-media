@@ -151,7 +151,7 @@ function RegisterPage() {
   return (
     <>
       <Navbar />
-      <div className="flex items-center justify-center min-h-screen bg-pink-100 my-2 px-4">
+      <div className="flex items-center justify-center min-h-screen bg-pink-200 my-2 px-4">
         <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-3xl shadow-lg w-full max-w-2xl">
           <h2 className="text-orange-600 text-3xl font-bold text-center mb-4">ลงทะเบียน</h2>
 

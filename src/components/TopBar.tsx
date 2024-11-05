@@ -5,15 +5,14 @@ function TopBar() {
     const { data: session } = useSession();
 
     return (
-        <div className="w-full bg-white text-black py-4 px-8 flex justify-between items-center">
-            <h2 className="text-lg font-semibold">My Dashboard</h2>
+        <div className="w-full bg-gray-50 text-dark py-4 px-8 flex justify-end items-center">
             <div className="flex items-center space-x-4">
-                <span className="text-sm">{session?.user?.name || "User"}</span>
+                <span className="text-sm">ชื่อผู้ใช้งาน : {session?.user?.name || "User"}</span>
                 <button
                     className="bg-red-500 text-white py-1 px-3 rounded-md hover:bg-red-600"
                     onClick={() => signOut({ callbackUrl: "/login" })}
                 >
-                    Logout
+                    ออกจากระบบ
                 </button>
             </div>
         </div>
