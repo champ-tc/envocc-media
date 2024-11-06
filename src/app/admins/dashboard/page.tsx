@@ -72,7 +72,7 @@ function AdminsDashboard() {
       <div className="flex-1 flex flex-col">
         <TopBar />
         <div className="flex-1 flex items-start justify-center p-2">
-          <div className="max-w-6xl w-full p-8 mt-4">
+        <div className="rounded-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 w-full mb-6 max-w-full">
               {cardData.map((card, index) => (
                 <div key={index} className="bg-white rounded-lg shadow p-4 text-center">

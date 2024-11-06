@@ -128,12 +128,15 @@ function AdminsUserManagement() {
     if (error) return <p>{error}</p>;
 
     return (
-        <div className="min-h-screen flex bg-gray-50">
+        <div className="flex min-h-screen bg-gray-50">
+            {/* Sidebar is fixed on the left */}
             <Sidebar />
+
+            {/* Content Area (TopBar + Main Content) */}
             <div className="flex-1 flex flex-col">
                 <TopBar />
-                <div className="flex-1 flex items-start justify-center p-2">
-                    <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4">
+                <div className="flex-1 flex items-start justify-center p-4">
+                    <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
                         <h1 className="text-2xl font-bold mb-4">จัดการผู้ใช้งาน</h1>
 
                         {/* Role Filter Buttons */}
@@ -173,17 +176,17 @@ function AdminsUserManagement() {
                                 )}
 
                                 <div className="overflow-x-auto w-full">
-                                    <table className="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden text-sm">
+                                    <table className="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden text-sm w-full">
                                         <thead>
                                             <tr className="bg-gray-200 text-gray-600 text-left text-sm uppercase font-semibold tracking-wider">
-                                                <th className="py-2 px-4" style={{ width: "80px" }}>ID</th>
-                                                <th className="py-2 px-4" style={{ width: "120px" }}>Username</th>
-                                                <th className="py-2 px-4" style={{ width: "200px" }}>Full Name</th>
-                                                <th className="py-2 px-4" style={{ width: "200px" }}>Email</th>
-                                                <th className="py-2 px-4" style={{ width: "120px" }}>Phone</th>
-                                                <th className="py-2 px-4" style={{ width: "160px" }}>Department</th>
-                                                <th className="py-2 px-4" style={{ width: "200px" }}>Position</th>
-                                                <th className="py-2 px-4" style={{ width: "200px" }}>Actions</th>
+                                                <th className="py-2 px-4 whitespace-nowrap" style={{ width: "5%" }}>ID</th>
+                                                <th className="py-2 px-4 whitespace-nowrap" style={{ width: "15%" }}>Username</th>
+                                                <th className="py-2 px-4 overflow-hidden text-ellipsis" style={{ width: "15%" }}>Full Name</th>
+                                                <th className="py-2 px-4 overflow-hidden text-ellipsis" style={{ width: "15%" }}>Email</th>
+                                                <th className="py-2 px-4 whitespace-nowrap" style={{ width: "10%" }}>Phone</th>
+                                                <th className="py-2 px-4 overflow-hidden text-ellipsis" style={{ width: "10%" }}>Department</th>
+                                                <th className="py-2 px-4 overflow-hidden text-ellipsis" style={{ width: "10%" }}>Position</th>
+                                                <th className="py-2 px-4 whitespace-nowrap" style={{ width: "20%" }}>Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody className="text-gray-700 text-sm">
@@ -191,11 +194,11 @@ function AdminsUserManagement() {
                                                 <tr key={user.id} className="border-t border-gray-200">
                                                     <td className="py-2 px-4">{user.id}</td>
                                                     <td className="py-2 px-4">{user.username}</td>
-                                                    <td className="py-2 px-4">{`${user.title}${user.firstName} ${user.lastName}`}</td>
-                                                    <td className="py-2 px-4">{user.email}</td>
+                                                    <td className="py-2 px-4 overflow-hidden text-ellipsis min-w-0">{`${user.title}${user.firstName} ${user.lastName}`}</td>
+                                                    <td className="py-2 px-4 overflow-hidden text-ellipsis min-w-0">{user.email}</td>
                                                     <td className="py-2 px-4">{user.tel}</td>
-                                                    <td className="py-2 px-4">{departmentNames[user.department] || "N/A"}</td>
-                                                    <td className="py-2 px-4">{user.position}</td>
+                                                    <td className="py-2 px-4 overflow-hidden text-ellipsis min-w-0">{departmentNames[user.department] || "N/A"}</td>
+                                                    <td className="py-2 px-4 overflow-hidden text-ellipsis min-w-0">{user.position}</td>
                                                     <td className="py-2 px-4">
                                                         <button className="mb-4 bg-yellow-500 text-white py-2 px-2 mr-2 rounded-md hover:bg-yellow-600 transition" onClick={() => router.push(`/admins/edit-user/${user.id}`)}>Edit</button>
                                                         <button className="mb-4 bg-red-500 text-white py-2 px-2 rounded-md hover:bg-red-600 transition" onClick={() => handleDelete(user.id)}>Delete</button>
@@ -205,6 +208,8 @@ function AdminsUserManagement() {
                                         </tbody>
                                     </table>
                                 </div>
+
+
 
                                 {/* Pagination Controls */}
                                 <div className="flex items-center justify-between mt-6">

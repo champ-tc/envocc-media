@@ -18,16 +18,17 @@ export async function GET(req, { params: { id } }) {
 
 export async function PUT(req, { params: { id } }) {
     try {
-        const { name, email, role } = await req.json();
-        const updatedUser = await prisma.user.update({
-            where: { id: Number(id) },
-            data: { name, email, role },
-        });
-        return NextResponse.json(updatedUser);
+      const { username, title, firstName, lastName, tel, email, department, position, role } = await req.json();
+      const updatedUser = await prisma.user.update({
+        where: { id: Number(id) },
+        data: { username, title, firstName, lastName, tel, email, department, position, role },
+      });
+      return NextResponse.json(updatedUser);
     } catch (error) {
-        return handleError(error, "Error updating user");
+      return handleError(error, "อัปเดทไม่สำเร็จ");
     }
-}
+  }
+  
 
 export async function DELETE(req, { params: { id } }) {
     try {

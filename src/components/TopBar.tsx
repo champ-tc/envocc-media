@@ -5,7 +5,7 @@ function TopBar() {
     const { data: session } = useSession();
 
     return (
-        <div className="w-full bg-gray-50 text-dark py-4 px-8 flex justify-end items-center">
+        <div className="w-full bg-gray-50 text-dark py-4 px-8 shadow-md flex justify-end items-center">
             <div className="flex items-center space-x-4">
                 <span className="text-sm">ชื่อผู้ใช้งาน : {session?.user?.name || "User"}</span>
                 <button

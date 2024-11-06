@@ -8,7 +8,7 @@ import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 
 
-function AdminsReports() {
+function AdminsBorrow_management() {
     useAuth('admin');
 
     const { data: session, status } = useSession();
@@ -49,4 +49,4 @@ function AdminsReports() {
     );
 }
 
-export default AdminsReports;
+export default AdminsBorrow_management;
