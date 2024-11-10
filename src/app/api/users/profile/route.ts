@@ -1,18 +1,39 @@
-// src/app/api/users/profile/route.ts
+import { getServerSession } from "next-auth";
+import { getToken } from "next-auth/jwt"; // เปลี่ยนการนำเข้า
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth"; // Use getServerSession for server routes
-import { prisma } from "@/lib/prisma"; 
-import { authOptions } from "@/lib/auth"; // Ensure to import your authOptions
+import { prisma } from "@/lib/prisma";
+import { authOptions } from "@/lib/auth";
 import bcrypt from "bcryptjs";
+import { z } from "zod";
 
-export async function GET(req) {
-    const session = await getServerSession(authOptions); // Correctly retrieve the session
 
-    if (!session) {
+// ฟังก์ชันตรวจสอบสิทธิ์
+async function checkAdminSession(request: Request): Promise<boolean> {
+    const token = await getToken({ req: request as any });
+    return !!(token && token.role === 'admin');
+}
+
+// Schema สำหรับตรวจสอบข้อมูล
+const profileUpdateSchema = z.object({
+    username: z.string().min(1, "Username is required"),
+    title: z.string().min(1, "Title is required"),
+    firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
+    tel: z.string().min(1, "Telephone number is required"),
+    email: z.string().email("Invalid email format"),
+    department: z.string().min(1, "Department is required"),
+    position: z.string().min(1, "Position is required"),
+    password: z.string().optional(), // Password เป็น optional
+});
+
+// ฟังก์ชัน GET สำหรับดึงข้อมูลผู้ใช้
+export async function GET(req: Request) {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !(await checkAdminSession(req))) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch user data from the database using Prisma
     const user = await prisma.user.findUnique({
         where: { id: session.user.id },
     });
@@ -21,7 +42,6 @@ export async function GET(req) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Prepare the user data to return
     const userData = {
         username: user.username,
         title: user.title,
@@ -36,38 +56,49 @@ export async function GET(req) {
     return NextResponse.json(userData);
 }
 
-export async function PUT(req) {
+// ฟังก์ชัน PUT สำหรับอัปเดตข้อมูลผู้ใช้
+export async function PUT(req: Request) {
     const session = await getServerSession(authOptions);
 
-    if (!session) {
+    if (!session || !(await checkAdminSession(req))) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await req.json();
-    const { username, title, firstName, lastName, tel, email, department, position, password } = body;
 
-    const updatedData: any = {
-        username,
-        title,
-        firstName,
-        lastName,
-        tel,
-        email,
-        department,
-        position,
-    };
+    try {
+        // ตรวจสอบความถูกต้องของข้อมูลที่ได้รับ
+        const data = profileUpdateSchema.parse(body);
 
-    // Hash the password if it is provided
-    if (password) {
-        const hashedPassword = await bcrypt.hash(password, 12);
-        updatedData.password = hashedPassword;
+        const updatedData: any = {
+            username: data.username,
+            title: data.title,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            tel: data.tel,
+            email: data.email,
+            department: data.department,
+            position: data.position,
+        };
+
+        // Hash the password if it is provided
+        if (data.password) {
+            const hashedPassword = await bcrypt.hash(data.password, 12);
+            updatedData.password = hashedPassword;
+        }
+
+        // Update the user data in the database
+        const updatedUser = await prisma.user.update({
+            where: { id: session.user.id },
+            data: updatedData,
+        });
+
+        return NextResponse.json({ message: 'User updated successfully', user: updatedUser });
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return NextResponse.json({ error: 'Invalid input data', details: error.errors }, { status: 400 });
+        }
+        console.error('Error in PUT /api/users/profile:', error);
+        return NextResponse.json({ error: 'Error updating user profile' }, { status: 500 });
     }
-
-    // Update the user data in the database
-    const updatedUser = await prisma.user.update({
-        where: { id: session.user.id },
-        data: updatedData,
-    });
-
-    return NextResponse.json({ message: 'User updated successfully', user: updatedUser });
 }

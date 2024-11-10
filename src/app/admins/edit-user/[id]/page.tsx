@@ -141,7 +141,7 @@ function EditUser({ params }: EditUserProps) {
 
         <div className="flex-1 flex items-start justify-center p-4">
           <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
-            <h1 className="text-2xl font-bold mb-4">Edit User</h1>
+            <h1 className="text-2xl font-bold mb-4">แก้ไขข้อมูลผู้ใช้งาน</h1>
 
             {successMessage && (
               <div className="bg-green-50 text-green-500 p-6 mb-10 text-sm rounded-2xl" role="alert">
@@ -186,9 +186,9 @@ function EditUser({ params }: EditUserProps) {
                     required
                   >
                     <option value="">คำนำหน้า</option>
-                    <option value="Mr">นาย</option>
-                    <option value="Ms">นางสาว</option>
-                    <option value="Mrs">นาง</option>
+                    <option value="นาย">นาย</option>
+                    <option value="นาง">นาง</option>
+                    <option value="นางสาว">นางสาว</option>
                   </select>
                 </div>
                 <div className="w-full col-span-5 md:col-span-2">

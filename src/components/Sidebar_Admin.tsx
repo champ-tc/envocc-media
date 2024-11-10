@@ -51,7 +51,8 @@ const Sidebar = () => {
                                     className={`p-2 rounded-lg transition-colors duration-300 flex items-center cursor-pointer ${
                                         activePath.includes('/admins/type_management') ||
                                         activePath.includes('/admins/media_management') ||
-                                        activePath.includes('/admins/borrow_management') ? 'bg-orange-400' : 'hover:bg-orange-400'
+                                        activePath.includes('/admins/borrow_management') ||
+                                        activePath.includes('/admins/imagse') ? 'bg-orange-400' : 'hover:bg-orange-400'
                                     }`}
                                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                 >
@@ -79,6 +80,13 @@ const Sidebar = () => {
                                         }`}>
                                             <Link href="/admins/borrow_management" className="flex items-center text-white w-full">
                                                 <span>จัดการยืม/คืน</span>
+                                            </Link>
+                                        </li>
+                                        <li className={`p-2 rounded-lg transition-colors duration-300 flex items-center ${
+                                            activePath === '/admins/image' ? 'bg-orange-400' : 'hover:bg-orange-400'
+                                        }`}>
+                                            <Link href="/admins/image" className="flex items-center text-white w-full">
+                                                <span>จัดการสื่อดาวน์โหลด</span>
                                             </Link>
                                         </li>
                                     </ul>

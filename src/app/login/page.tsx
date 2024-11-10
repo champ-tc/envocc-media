@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
@@ -14,7 +14,7 @@ function LoginPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,20 +26,21 @@ function LoginPage() {
       password,
     });
 
-
     if (res?.error) {
       setError("การเข้าสู่ระบบล้มเหลว กรุณาลองใหม่อีกครั้ง");
-    } else if (res?.ok) {
+    }
+  };
+
+  useEffect(() => {
+    if (status === "authenticated") {
       const userRole = session?.user?.role;
       if (userRole === 'admin') {
         router.push('/admins/dashboard');
       } else {
         router.push('/users/dashboard');
       }
-
-      
     }
-  };
+  }, [status, session, router]);
 
   return (
     <>

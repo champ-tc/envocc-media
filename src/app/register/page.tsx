@@ -187,9 +187,9 @@ function RegisterPage() {
               <div className="w-full col-span-5 md:col-span-1">
                 <select id="title" name="title" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500" required>
                   <option value="">คำนำหน้า</option>
-                  <option value="Mr">นาย</option>
-                  <option value="Ms">นางสาว</option>
-                  <option value="Mrs">นาง</option>
+                  <option value="นาย">นาย</option>
+                  <option value="นาง">นาง</option>
+                  <option value="นางสาว">นางสาว</option>
                 </select>
               </div>
               <div className="w-full col-span-5 md:col-span-2">

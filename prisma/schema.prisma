@@ -20,15 +20,98 @@ model User {
   position   String?
   role       String   @default("user")
   createdAt  DateTime @default(now())
+
+  requisitions RequisitionLog[]
+  borrowLogs   BorrowLog[]
+  approvedRequisitions RequisitionLog[] @relation("AdminRequisitionApproval")
+  approvedBorrows      BorrowLog[]      @relation("AdminBorrowApproval")
 }
 
+model Type {
+  id                Int      @id @default(autoincrement())
+  name              String
+  description       String?
+  createdAt         DateTime @default(now())
 
+  requisitions      Requisition[]
+  borrows           Borrow[]
 
+  @@map("types")
+}
+
+model Requisition {
+  id                Int      @id @default(autoincrement())
+  requisition_name  String 
+  unit              String
+  type_id           Int
+  quantity          Int
+  reserved_quantity Int?
+  is_borro_restricted Boolean
+  description       String?
+  createdAt         DateTime @default(now())
+
+  type              Type     @relation(fields: [type_id], references: [id])
+  logs              RequisitionLog[]
+
+  @@map("requisition")
+}
+
+model Borrow {
+  id                Int      @id @default(autoincrement())
+  borrow_name       String
+  unit              String
+  type_id           Int
+  quantity          Int
+  is_borro_restricted Boolean
+  description       String?
+  createdAt         DateTime @default(now())
+
+  type              Type     @relation(fields: [type_id], references: [id])
+  logs              BorrowLog[]
+
+  @@map("borrow")
+}
+
+model RequisitionLog {
+  id                     Int      @id @default(autoincrement())
+  requisition_id         Int
+  user_id                Int
+  requested_quantity     Int
+  approved_quantity      Int?
+  stock_after_requisition Int
+  requisition_date       DateTime @default(now())
+  approved_by_admin_id   Int?
+  createdAt              DateTime @default(now())
+
+  requisition            Requisition @relation(fields: [requisition_id], references: [id])
+  user                   User        @relation(fields: [user_id], references: [id])
+  approvedByAdmin        User?       @relation("AdminRequisitionApproval", fields: [approved_by_admin_id], references: [id])
+
+  @@map("requisition_log")
+}
+
+model BorrowLog {
+  id                     Int      @id @default(autoincrement())
+  borrow_id              Int
+  user_id                Int
+  quantity               Int
+  returned_quantity      Int?
+  borrow_date            DateTime @default(now())
+  return_due_date        DateTime
+  approved_by_admin_id   Int?
+  createdAt              DateTime @default(now())
+
+  borrow                 Borrow    @relation(fields: [borrow_id], references: [id])
+  user                   User      @relation(fields: [user_id], references: [id])
+  approvedByAdmin        User?     @relation("AdminBorrowApproval", fields: [approved_by_admin_id], references: [id])
+
+  @@map("borrow_log")
+}
 
 model Image {
   id        Int      @id @default(autoincrement())
   title     String
-  filename  String   @unique // ตรวจสอบให้แน่ใจว่ามี @unique
+  filename  String   @unique
   addedDate DateTime @default(now())
   viewCount Int      @default(0)
 }

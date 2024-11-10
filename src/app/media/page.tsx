@@ -6,17 +6,25 @@ import Footer from '@/components/Footer';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
+type ImageData = {
+  id: string;
+  filename: string;
+  addedDate: string;
+  title: string;
+};
+
 function MediaPage() {
-  const [images, setImages] = useState([]);
   const router = useRouter();
+  const [images, setImages] = useState<ImageData[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
 
   useEffect(() => {
     const fetchImages = async () => {
       try {
         const response = await fetch('/api/images');
-        const data = await response.json();
-        console.log("Fetched images:", data); // ตรวจสอบข้อมูลที่ดึงจาก API
-        const sortedData = data.sort((a, b) => new Date(b.addedDate) - new Date(a.addedDate));
+        const data: ImageData[] = await response.json();
+        const sortedData = data.sort((a, b) => new Date(b.addedDate).getTime() - new Date(a.addedDate).getTime());
         setImages(sortedData);
       } catch (error) {
         console.error('Error fetching images:', error);
@@ -25,33 +33,75 @@ function MediaPage() {
     fetchImages();
   }, []);
 
-  const handleImageClick = (imageId) => {
+  const handleImageClick = (imageId: string) => {
     router.push(`/media/${imageId}`);
+  };
+
+  // Calculate the current images to display based on the current page
+  const indexOfLastImage = currentPage * itemsPerPage;
+  const indexOfFirstImage = indexOfLastImage - itemsPerPage;
+  const currentImages = images.slice(indexOfFirstImage, indexOfLastImage);
+
+  // Change page
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
   };
 
   return (
     <>
       <Navbar />
-      <div className="flex items-center justify-center bg-pink-100 p-10">
-        <div className="flex flex-col items-center justify-center">
-          <div className="w-full max-w-7xl px-32 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {images.map((image) => (
-              <div key={image.id} className="bg-white rounded-lg shadow-lg p-4 cursor-pointer" onClick={() => handleImageClick(image.filename)}>
+      <div className="flex flex-col items-center bg-gray-100 p-10 min-h-screen">
+        <h1 className="text-4xl font-bold mb-8 text-gray-700">Media Gallery</h1>
+        <div className="w-full max-w-7xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-4 justify-center">
+          {currentImages.map((image) => (
+            <div
+              key={image.id}
+              className="relative bg-white rounded-lg shadow-lg overflow-hidden cursor-pointer border border-pink-200 transform transition duration-300 hover:scale-105 mx-auto"
+              onClick={() => handleImageClick(image.filename)}
+              style={{ width: '280px' }}
+            >
+              {/* Image Full Size with Auto Height */}
+              <div className="relative w-full h-auto">
                 <Image
                   src={`/uploads/${image.filename}`}
                   alt={image.title}
-                  width={300}
-                  height={500}
-                  className="rounded-lg"
-                  unoptimized // เพิ่ม unoptimized เพื่อทดสอบว่ารูปแสดงหรือไม่
+                  width={280}
+                  height={400}
+                  layout="responsive"
+                  objectFit="cover"
+                  className="rounded-t-lg"
                 />
-                <div className="mt-4">
-                  <p className="text-gray-600 text-sm">{new Date(image.addedDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                  <h3 className="text-lg font-bold mt-2">{image.title}</h3>
-                </div>
               </div>
-            ))}
-          </div>
+              {/* Date and Title */}
+              <div className="p-4">
+                <p className="text-gray-600 text-sm mb-2">
+                  {new Date(image.addedDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
+                <h3 className="text-md font-semibold text-black leading-tight text-left">
+                  {image.title}
+                </h3>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Pagination */}
+        <div className="flex items-center justify-center mt-8 space-x-4">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className={`px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            Previous
+          </button>
+          <span className="text-gray-700 font-medium">Page {currentPage}</span>
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={indexOfLastImage >= images.length}
+            className={`px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition ${indexOfLastImage >= images.length ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            Next
+          </button>
         </div>
       </div>
       <Footer />

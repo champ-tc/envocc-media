@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Image from 'next/image';
@@ -12,41 +12,46 @@ function MediaDetailPage() {
   const [image, setImage] = useState<any | null>(null);
   const [viewCount, setViewCount] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const hasIncremented = useRef(false); // ใช้ useRef เพื่อตรวจสอบว่าทำการเพิ่ม viewCount แล้วหรือยัง
 
   useEffect(() => {
     if (filename) {
-      const fetchImageDetails = async () => {
-        try {
-          const response = await fetch(`/api/images/${filename}`);
-          if (!response.ok) {
-            throw new Error(`Image not found: ${response.statusText}`);
-          }
-          const data = await response.json();
-          setImage(data);
-          setViewCount(data.viewCount || 0);
-        } catch (error) {
-          console.error('Error fetching image details:', error);
-          setErrorMessage('ไม่พบข้อมูลรูปภาพ หรือเกิดข้อผิดพลาดในการดึงข้อมูล');
-        }
-      };
-
-      // เพิ่ม viewCount เมื่อโหลดหน้าเสร็จสิ้น
-      const incrementViewCount = async () => {
-        try {
-          await fetch(`/api/images/${filename}`, { method: 'POST' });
-        } catch (error) {
-          console.error('Error incrementing view count:', error);
-        }
-      };
-
       fetchImageDetails();
-      incrementViewCount();
-    } else {
-      console.error('Filename is undefined');
-      setErrorMessage('ไม่สามารถระบุชื่อไฟล์ได้');
     }
   }, [filename]);
-  
+
+  const fetchImageDetails = async () => {
+    try {
+      const response = await fetch(`/api/images/${filename}`);
+      if (!response.ok) {
+        throw new Error(`Image not found: ${response.statusText}`);
+      }
+      const data = await response.json();
+      setImage(data);
+      setViewCount(data.viewCount || 0);
+
+      // ตรวจสอบและเพิ่ม viewCount ถ้ายังไม่ได้เพิ่ม
+      if (!hasIncremented.current) {
+        incrementViewCount();
+        hasIncremented.current = true; // ตั้งค่าว่าเพิ่มแล้ว
+      }
+    } catch (error) {
+      console.error('Error fetching image details:', error);
+      setErrorMessage('ไม่พบข้อมูลรูปภาพ หรือเกิดข้อผิดพลาดในการดึงข้อมูล');
+    }
+  };
+
+  const incrementViewCount = async () => {
+    try {
+      const response = await fetch(`/api/images/${filename}`, { method: 'POST' });
+      if (!response.ok) {
+        throw new Error(`Failed to increment view count: ${response.statusText}`);
+      }
+      console.log('View count incremented successfully');
+    } catch (error) {
+      console.error('Error incrementing view count:', error);
+    }
+  };
 
   if (errorMessage) {
     return (

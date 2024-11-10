@@ -1,56 +1,58 @@
-import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { getToken } from 'next-auth/jwt';
 
 // ฟังก์ชันตรวจสอบสิทธิ์
 async function checkAdminSession(request: Request): Promise<boolean> {
-    const session = await getServerSession(request, authOptions);
-    return !!(session && session.user.role === 'admin');
+    const token = await getToken({ req: request });
+    return !!(token && token.role === 'admin');
 }
 
 // API สำหรับลบข้อมูล
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
     if (!(await checkAdminSession(request))) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403 });
     }
 
     const id = parseInt(params.id);
     if (isNaN(id)) {
-        return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 });
+        return new Response(JSON.stringify({ error: 'Invalid ID format' }), { status: 400 });
     }
 
     try {
+        // ค้นหาข้อมูลไฟล์ในฐานข้อมูล
         const image = await prisma.image.findUnique({ where: { id } });
         if (!image) {
-            return NextResponse.json({ error: 'Image not found' }, { status: 404 });
+            return new Response(JSON.stringify({ error: 'Image not found' }), { status: 404 });
         }
 
+        // ลบไฟล์จริงในโฟลเดอร์ /public/uploads
         const filePath = path.join(process.cwd(), 'public', 'uploads', image.filename);
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
         }
 
+        // ลบข้อมูลในฐานข้อมูล
         await prisma.image.delete({ where: { id } });
-        return NextResponse.json({ message: 'Image and file deleted successfully' });
+
+        return new Response(JSON.stringify({ message: 'Image and file deleted successfully' }), { status: 200 });
     } catch (error) {
         console.error('Error deleting image:', error);
-        return NextResponse.json({ error: 'Error deleting image or file' }, { status: 500 });
+        return new Response(JSON.stringify({ error: 'Error deleting image or file' }), { status: 500 });
     }
 }
 
 // API สำหรับแก้ไขข้อมูลภาพ
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
     if (!(await checkAdminSession(request))) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403 });
     }
 
     const id = parseInt(params.id);
     if (isNaN(id)) {
-        return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 });
+        return new Response(JSON.stringify({ error: 'Invalid ID format' }), { status: 400 });
     }
 
     try {
@@ -60,7 +62,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
         const existingImage = await prisma.image.findUnique({ where: { id } });
         if (!existingImage) {
-            return NextResponse.json({ error: 'Image not found' }, { status: 404 });
+            return new Response(JSON.stringify({ error: 'Image not found' }), { status: 404 });
         }
 
         let filename = existingImage.filename;
@@ -86,30 +88,31 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             },
         });
 
-        return NextResponse.json({ message: 'Image updated successfully', image: updatedImage });
+        return new Response(JSON.stringify({ message: 'Image updated successfully', image: updatedImage }), { status: 200 });
     } catch (error) {
         console.error('Error updating image:', error);
-        return NextResponse.json({ error: 'Error updating image' }, { status: 500 });
+        return new Response(JSON.stringify({ error: 'Error updating image' }), { status: 500 });
     }
 }
+
 
 // API สำหรับ GET ข้อมูลภาพ
 export async function GET(request: Request, { params }: { params: { id: string } }) {
     const filename = params.id;
     if (!filename) {
-        return NextResponse.json({ error: "Filename is required" }, { status: 400 });
+        return new Response(JSON.stringify({ error: "Filename is required" }), { status: 400 });
     }
 
     try {
         const image = await prisma.image.findFirst({ where: { filename } });
         if (!image) {
-            return NextResponse.json({ error: "Image not found" }, { status: 404 });
+            return new Response(JSON.stringify({ error: "Image not found" }), { status: 404 });
         }
 
-        return NextResponse.json(image);
+        return new Response(JSON.stringify(image), { status: 200 });
     } catch (error) {
         console.error('Error fetching image:', error);
-        return NextResponse.json({ error: "Error fetching image" }, { status: 500 });
+        return new Response(JSON.stringify({ error: "Error fetching image" }), { status: 500 });
     }
 }
 
@@ -117,25 +120,29 @@ export async function GET(request: Request, { params }: { params: { id: string }
 export async function POST(request: Request, { params }: { params: { id: string } }) {
     const filename = params.id;
     if (!filename) {
-        return NextResponse.json({ error: "Filename is required" }, { status: 400 });
+        return new Response(JSON.stringify({ error: "Filename is required" }), { status: 400 });
     }
 
     try {
+        // ตรวจสอบว่ารูปภาพมีอยู่จริง
         const image = await prisma.image.findFirst({ where: { filename } });
         if (!image) {
-            return NextResponse.json({ error: "Image not found" }, { status: 404 });
+            return new Response(JSON.stringify({ error: "Image not found" }), { status: 404 });
         }
 
+        // อัปเดต viewCount ในฐานข้อมูลโดยใช้คำสั่ง increment
         const updatedImage = await prisma.image.update({
             where: { id: image.id },
             data: {
-                viewCount: (image.viewCount || 0) + 1,
+                viewCount: {
+                    increment: 1, // ใช้ increment เพื่อเพิ่มค่า viewCount อย่างปลอดภัย
+                },
             },
         });
 
-        return NextResponse.json(updatedImage);
+        return new Response(JSON.stringify(updatedImage), { status: 200 });
     } catch (error) {
         console.error('Error updating view count:', error);
-        return NextResponse.json({ error: "Error updating view count" }, { status: 500 });
+        return new Response(JSON.stringify({ error: "Error updating view count" }), { status: 500 });
     }
 }

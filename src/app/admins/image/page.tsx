@@ -6,39 +6,39 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
-import axios from 'axios';
 
-interface Type {
+interface Image {
     id: number;
-    name: string;
-    description: string;
-    createdAt: string;
+    title: string;
+    filename: string;
+    addedDate: string;
 }
 
-function AdminsType_management() {
-    useAuth('admin'); // ตรวจสอบสิทธิ์ของผู้ใช้เพื่อเข้าใช้งานหน้า admin
+
+function Adminsimage() {
+    useAuth('admin');
 
     const { data: session, status } = useSession();
     const router = useRouter();
 
-    const [name, setName] = useState('');
-    const [description, setDescription] = useState('');
+    const [images, setImages] = useState<Image[]>([]);
     const [showModal, setShowModal] = useState(false);
-    const [editModalVisible, setEditModalVisible] = useState(false);
-    const [editDescription, setEditDescription] = useState('');
-    const [editId, setEditId] = useState<number | null>(null);
-    const [editName, setEditName] = useState('');
-
-    const [types, setTypes] = useState<Type[]>([]);
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
-    const totalPages = Math.ceil(types.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentTypes = types.slice(startIndex, endIndex);
-
+    const [title, setTitle] = useState('');
+    const [file, setFile] = useState<File | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [editModalVisible, setEditModalVisible] = useState(false);
+    const [editTitle, setEditTitle] = useState('');
+    const [editImageId, setEditImageId] = useState<number | null>(null);
+
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+    const totalPages = Math.ceil(images.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentImages = images.slice(startIndex, endIndex);
 
     useEffect(() => {
         if (status === "unauthenticated") {
@@ -49,121 +49,22 @@ function AdminsType_management() {
     }, [status, session]);
 
     useEffect(() => {
-        fetchType();
+        fetchImages();
     }, []);
 
-    const fetchType = async () => {
-        const response = await fetch('/api/type');
+    const fetchImages = async () => {
+        const response = await fetch('/api/images');
         if (response.ok) {
             const data = await response.json();
-            setTypes(Array.isArray(data) ? data : []);
+            setImages(Array.isArray(data) ? data : []);
         } else {
-            console.error('Failed to fetch type:');
+            console.error('Failed to fetch images:', response.statusText);
         }
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault(); // ป้องกันการรีเฟรชหน้าจอเมื่อส่งฟอร์ม
-
-        const formData = new FormData();
-        formData.append('name', name);
-        formData.append('description', description);
-
-        try {
-            const response = await axios.post('/api/type', formData);
-            if (response.status === 200) {
-                const newType = response.data;
-                setTypes((prevTypes) => [...prevTypes, newType.type]);
-                setSuccessMessage('เพิ่มประเภทสำเร็จ!');
-                setShowModal(false);
-                fetchType();
-                setName('');
-                setDescription('');
-                setTimeout(() => setSuccessMessage(null), 5000);
-            } else {
-                setError('ไม่สามารถเพิ่มข้อมูลได้');
-                setTimeout(() => setError(null), 5000);
-            }
-        } catch (error) {
-            console.error('Error uploading type:', error);
-            setError('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
-            setTimeout(() => setError(null), 5000);
-        }
-    };
-
-    const handleDelete = async (id: number) => {
-        if (!window.confirm('คุณต้องการลบข้อมูลนี้หรือไม่?')) {
-            return; // ถ้าผู้ใช้กดยกเลิก จะไม่ทำการลบข้อมูล
-        }
-
-        try {
-            const response = await axios.delete(`/api/type/${id}`);
-            if (response.status === 200) {
-                setSuccessMessage('ลบประเภทสำเร็จ!');
-                setTypes((prevTypes) => prevTypes.filter((type) => type.id !== id));
-                setTimeout(() => setSuccessMessage(null), 5000);
-            } else {
-                setError('ไม่สามารถลบข้อมูลได้');
-                setTimeout(() => setError(null), 5000);
-            }
-        } catch (error) {
-            console.error('Error deleting type:', error);
-            setError('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
-            setTimeout(() => setError(null), 5000);
-        }
-    };
-
-    const handleEditSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!window.confirm('คุณต้องการแก้ไขข้อมูลนี้หรือไม่?')) {
-            return; // ถ้าผู้ใช้กดยกเลิก จะไม่ทำการแก้ไขข้อมูล
-        }
-
-        if (editId === null) {
-            setError('ไม่พบข้อมูลสำหรับแก้ไข');
-            setTimeout(() => setError(null), 5000);
-            return;
-        }
-
-        try {
-            const formData = new FormData();
-            formData.append('name', editName);
-            formData.append('description', editDescription);
-            const response = await axios.put(`/api/type/${editId}`, formData);
-            if (response.status === 200) {
-                const updatedType = response.data.type;
-                setTypes((prevTypes) =>
-                    prevTypes.map((type) =>
-                        type.id === updatedType.id ? updatedType : type
-                    )
-                );
-                setSuccessMessage('แก้ไขประเภทสำเร็จ!');
-                setEditModalVisible(false);
-                setTimeout(() => setSuccessMessage(null), 5000);
-            } else {
-                setError('ไม่สามารถแก้ไขข้อมูลได้');
-                setTimeout(() => setError(null), 5000);
-            }
-        } catch (error) {
-            console.error('Error updating type:', error);
-            setError('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
-            setTimeout(() => setError(null), 5000);
-        }
-    };
-
-
-    const openEditModal = (type: { id: number; name: string; description: string }) => {
-        setEditId(type.id);
-        setEditName(type.name);
-        setEditDescription(type.description);
-        setEditModalVisible(true);
     };
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
     };
-
     const goToPreviousPage = () => {
         if (currentPage > 1) setCurrentPage(currentPage - 1);
     };
@@ -172,17 +73,125 @@ function AdminsType_management() {
         if (currentPage < totalPages) setCurrentPage(currentPage + 1);
     };
 
-    return (
-        <div className="flex min-h-screen bg-gray-50">
-            {/* Sidebar is fixed on the left */}
-            <Sidebar />
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
 
-            {/* Content Area (TopBar + Main Content) */}
+        if (!file) {
+            setError('กรุณาเลือกไฟล์รูปภาพ');
+            setTimeout(() => setError(null), 5000);
+            return;
+        }
+
+        const maxSize = 10 * 1024 * 1024; // ขนาดไฟล์สูงสุด 10MB
+        if (file.size > maxSize) {
+            setError('ไฟล์มีขนาดเกิน 10MB');
+            setTimeout(() => setError(null), 5000);
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('/api/images', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (response.ok) {
+                setSuccessMessage('เพิ่มรูปภาพสำเร็จ!');
+                setShowModal(false);
+                fetchImages(); // โหลดข้อมูลใหม่หลังจากเพิ่มรูปภาพสำเร็จ
+                setTimeout(() => setSuccessMessage(null), 5000);
+            } else {
+                const errorData = await response.json();
+                setError(`เกิดข้อผิดพลาดในการเพิ่มรูปภาพ: ${errorData.error}`);
+                setTimeout(() => setError(null), 5000);
+            }
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            setError('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
+            setTimeout(() => setError(null), 5000);
+        }
+    };
+
+    const openEditModal = (image: { id: number; title: string; filename: string }) => {
+        setEditTitle(image.title);
+        setEditImageId(image.id);
+        setEditModalVisible(true);
+    };
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const formData = new FormData();
+        formData.append('id', editImageId!.toString()); // ใช้ `!` เพื่อระบุว่า editImageId ไม่เป็น null
+        formData.append('title', editTitle);
+        if (file) {
+            formData.append('newFile', file);
+        }
+
+        try {
+            const response = await fetch(`/api/images/${editImageId}`, {
+                method: 'PUT',
+                body: formData,
+            });
+
+            if (response.ok) {
+                setSuccessMessage('อัปเดตข้อมูลสำเร็จ!');
+                fetchImages();
+                setEditModalVisible(false);
+                setEditTitle('');
+                setEditImageId(null);
+                setFile(null);
+                setTimeout(() => setSuccessMessage(''), 5000);
+            } else {
+                const errorData = await response.json();
+                setError(`เกิดข้อผิดพลาดในการอัปเดตข้อมูล: ${errorData.error}`);
+                setTimeout(() => setError(''), 5000);
+            }
+        } catch (error) {
+            setError('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
+            setTimeout(() => setError(''), 5000);
+        }
+    };
+
+    const handleDelete = async (id: number) => {
+        if (window.confirm("คุณต้องการลบรูปภาพนี้ใช่หรือไม่?")) {
+            try {
+                const response = await fetch(`/api/images/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ id }),
+                });
+
+                if (response.ok) {
+                    fetchImages();
+                    setSuccessMessage('ลบข้อมูลและไฟล์สำเร็จ!');
+                    setTimeout(() => setSuccessMessage(''), 5000);
+                } else {
+                    const errorData = await response.json();
+                    setError(`เกิดข้อผิดพลาด: ${errorData.error}`);
+                    setTimeout(() => setError(''), 5000);
+                }
+            } catch (error) {
+                setError('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
+                setTimeout(() => setError(''), 5000);
+            }
+        }
+    };
+
+
+    return (
+        <div className="min-h-screen flex bg-gray-50">
+            <Sidebar />
             <div className="flex-1 flex flex-col">
                 <TopBar />
-                <div className="flex-1 flex items-start justify-center p-4">
-                    <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
-                        <h2 className="text-2xl font-semibold text-gray-800 mb-4">ประเภทสื่อ</h2>
+                <div className="flex-1 flex items-start justify-center p-2">
+                    <div className="bg-white rounded-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
+                        <h2 className="text-2xl font-semibold text-gray-800 mb-4">จัดการสื่อดาวน์โหลด</h2>
 
                         {successMessage && (
                             <div className="bg-green-50 text-green-500 p-6 mb-10 text-sm rounded-2xl" role="alert">
@@ -204,38 +213,42 @@ function AdminsType_management() {
                                 <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden text-sm">
                                     <thead>
                                         <tr className="bg-gray-200 text-gray-600 text-left text-sm uppercase font-semibold tracking-wider">
-                                            <th className="px-4 py-2 border-b-2 border-gray-200">ชื่อประเภท</th>
-                                            <th className="px-4 py-2 border-b-2 border-gray-200">รายละเอียด</th>
+                                            <th className="px-4 py-2 border-b-2 border-gray-200">ชื่อเรื่อง</th>
+                                            <th className="px-4 py-2 border-b-2 border-gray-200">รูปภาพ</th>
                                             <th className="px-4 py-2 border-b-2 border-gray-200">วันที่เพิ่ม</th>
                                             <th className="px-4 py-2 border-b-2 border-gray-200">การจัดการ</th>
                                         </tr>
                                     </thead>
                                     <tbody className="text-gray-700 text-sm">
-                                        {currentTypes.length > 0 ? (
-                                            currentTypes.map(type => (
-                                                <tr key={type.id} className="hover:bg-gray-100 text-xs">
-                                                    <td className="px-4 py-2 border-b">{type.name}</td>
-                                                    <td className="px-4 py-2 border-b">{type.description}</td>
+                                        {currentImages.length > 0 ? (
+                                            currentImages.map(image => (
+                                                <tr key={image.id} className="hover:bg-gray-100 text-xs">
+                                                    <td className="px-4 py-2 border-b">{image.title}</td>
                                                     <td className="px-4 py-2 border-b">
-                                                        {type.createdAt ? new Date(String(type.createdAt)).toLocaleDateString() : 'ไม่ทราบวันที่'}
+                                                        <img
+                                                            src={`/uploads/${image.filename}`}
+                                                            alt={image.title}
+                                                            className="w-16 h-16 object-cover cursor-pointer"
+                                                            onClick={() => setSelectedImage(`/uploads/${image.filename}`)}
+                                                        />
                                                     </td>
-
+                                                    <td className="px-4 py-2 border-b">{new Date(image.addedDate).toLocaleDateString()}</td>
                                                     <td className="px-4 py-2 border-b">
-                                                        <button onClick={() => openEditModal(type)} className="mb-4 bg-yellow-500 text-white py-2 px-2 mr-2 rounded-md hover:bg-yellow-600 transition">แก้ไข</button>
-                                                        <button onClick={() => handleDelete(type.id)} className="mb-4 bg-red-500 text-white py-2 px-2 rounded-md hover:bg-red-600 transition">ลบ</button>
+                                                        <button onClick={() => openEditModal(image)} className="mb-4 bg-yellow-500 text-white py-2 px-2 mr-2 rounded-md hover:bg-yellow-600 transition">แก้ไข</button>
+                                                        <button onClick={() => handleDelete(image.id)} className="mb-4 bg-red-500 text-white py-2 px-2 rounded-md hover:bg-red-600 transition">ลบ</button>
                                                     </td>
                                                 </tr>
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan={4} className="text-center py-4">ไม่มีข้อมูลประเภท</td>
+                                                <td colSpan={4} className="text-center py-4">ไม่มีข้อมูลรูปภาพ</td>
                                             </tr>
                                         )}
                                     </tbody>
                                 </table>
 
                                 <div className="flex items-center justify-between mt-6">
-                                    <span className="text-sm text-gray-600">Showing {startIndex + 1} to {Math.min(endIndex, types.length)} of {types.length} entries</span>
+                                    <span className="text-sm text-gray-600">Showing {startIndex + 1} to {Math.min(endIndex, images.length)} of {images.length} entries</span>
                                     <div className="flex space-x-2">
                                         <button
                                             onClick={goToPreviousPage}
@@ -269,22 +282,22 @@ function AdminsType_management() {
                                             <h3 className="font-bold text-xl mb-6 text-center text-gray-800">เพิ่มรูปภาพ</h3>
                                             <form onSubmit={handleSubmit}>
                                                 <div className="form-control mb-6">
-                                                    <label className="label text-gray-700 font-semibold mb-2">ชื่อประเภท</label>
+                                                    <label className="label text-gray-700 font-semibold mb-2">ชื่อเรื่อง</label>
                                                     <input
                                                         type="text"
                                                         className="input w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                        value={name} // เปลี่ยนจาก type เป็น name
-                                                        onChange={(e) => setName(e.target.value)} // เปลี่ยนจาก setType เป็น setName
+                                                        value={title}
+                                                        onChange={(e) => setTitle(e.target.value)}
                                                         required
                                                     />
                                                 </div>
                                                 <div className="form-control mb-6">
-                                                    <label className="label text-gray-700 font-semibold mb-2">รายละเอียด</label>
+                                                    <label className="label text-gray-700 font-semibold mb-2">ไฟล์รูปภาพ</label>
                                                     <input
-                                                        type="text"
+                                                        type="file"
+                                                        accept=".jpg,.png"
                                                         className="input w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                        value={description} // เปลี่ยนจาก type เป็น description
-                                                        onChange={(e) => setDescription(e.target.value)} // เปลี่ยนจาก setType เป็น setDescription
+                                                        onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
                                                         required
                                                     />
                                                 </div>
@@ -304,10 +317,10 @@ function AdminsType_management() {
                                                     </button>
                                                 </div>
                                             </form>
-
                                         </div>
                                     </div>
                                 )}
+
 
                                 {editModalVisible && (
                                     <div className="modal fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
@@ -315,36 +328,35 @@ function AdminsType_management() {
                                             <h3 className="font-bold text-xl mb-6 text-center text-gray-800">แก้ไขรูปภาพ</h3>
                                             <form onSubmit={handleEditSubmit}>
                                                 <div className="form-control mb-6">
-                                                    <label className="label text-gray-700 font-semibold mb-2">ชื่อประเภท</label>
+                                                    <label className="label text-gray-700 font-semibold mb-2">ชื่อเรื่อง</label>
                                                     <input
                                                         type="text"
                                                         className="input w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                        value={editName}
-                                                        onChange={(e) => setEditName(e.target.value)}
+                                                        value={editTitle}
+                                                        onChange={(e) => setEditTitle(e.target.value)}
                                                         required
                                                     />
                                                 </div>
                                                 <div className="form-control mb-6">
-                                                    <label className="label text-gray-700 font-semibold mb-2">รายละเอียด</label>
+                                                    <label className="label text-gray-700 font-semibold mb-2">ไฟล์รูปภาพใหม่ (ถ้ามี)</label>
                                                     <input
-                                                        type="text"
+                                                        type="file"
+                                                        accept=".jpg,.png"
                                                         className="input w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                        value={editDescription}
-                                                        onChange={(e) => setEditDescription(e.target.value)}
-                                                        required
+                                                        onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
                                                     />
                                                 </div>
                                                 <div className="modal-action flex justify-end space-x-4">
                                                     <button
                                                         type="button"
                                                         onClick={() => setEditModalVisible(false)}
-                                                        className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-md transition"
+                                                        className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-all"
                                                     >
                                                         ยกเลิก
                                                     </button>
                                                     <button
                                                         type="submit"
-                                                        className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-md transition"
+                                                        className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg transition-all"
                                                     >
                                                         บันทึก
                                                     </button>
@@ -353,6 +365,23 @@ function AdminsType_management() {
                                         </div>
                                     </div>
                                 )}
+
+
+                                {selectedImage && (
+                                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                        <div className="bg-white p-4 rounded-lg w-full max-w-md flex flex-col items-center">
+                                            <img src={selectedImage} alt="Selected" className="w-96 h-auto mb-4" />
+                                            <button
+                                                onClick={() => setSelectedImage(null)}
+                                                className="bg-red-500 text-white py-2 px-4 rounded-lg"
+                                            >
+                                                ปิด
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+
                             </div>
                         </div>
                     </div>
@@ -362,4 +391,4 @@ function AdminsType_management() {
     );
 }
 
-export default AdminsType_management;
+export default Adminsimage;

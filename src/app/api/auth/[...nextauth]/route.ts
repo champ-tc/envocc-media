@@ -1,13 +1,42 @@
-// pages/api/auth/[...nextauth].ts
+// src/api/auth/[...nextauth].ts
 
-import NextAuth from "next-auth/next";
-import CredentialsProvider from "next-auth/providers/credentials";
+import NextAuth, { NextAuthOptions, User as NextAuthUser } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-const authOptions = {
+interface User {
+  id: number;
+  name: string;
+  role: string;
+}
+
+declare module 'next-auth' {
+  interface Session {
+    user: {
+      id: number;
+      role: string;
+      name: string;
+    };
+    token?: any; // เพิ่ม token ลงใน Session
+  }
+
+  interface User {
+    id: number;
+    role: string;
+    name: string;
+  }
+
+  interface JWT {
+    id: number;
+    role: string;
+    name: string;
+  }
+}
+
+const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -15,30 +44,27 @@ const authOptions = {
         username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
-        const { username, password } = credentials;
-
-        if (!username || !password) {
+      async authorize(credentials): Promise<User | null> {
+        if (!credentials?.username || !credentials?.password) {
           return null;
         }
 
+        const { username, password } = credentials;
+
         try {
-          // ค้นหาผู้ใช้ในฐานข้อมูล
           const user = await prisma.user.findUnique({
             where: { username },
           });
 
           if (!user) return null;
 
-          // ตรวจสอบการเปรียบเทียบรหัสผ่าน
           const passwordMatch = await bcrypt.compare(password, user.password);
           if (!passwordMatch) return null;
 
-          // คืนค่าผู้ใช้หากผ่านการยืนยัน
           return {
             id: user.id,
+            name: user.username,
             role: user.role,
-            name: user.name || user.username,
           };
         } catch (error) {
           console.error("Authorization Error:", error);
@@ -49,8 +75,8 @@ const authOptions = {
   ],
   session: {
     strategy: "jwt",
-    maxAge: 60 * 60, // 1 ชั่วโมง
-    updateAge: 60 * 60, // อัพเดตทุก 1 ชั่วโมง
+    maxAge: 60 * 60,
+    updateAge: 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
@@ -66,13 +92,12 @@ const authOptions = {
       return token;
     },
     async session({ session, token }) {
-      if (token) {
-        session.user = {
-          id: token.id,
-          role: token.role,
-          name: token.name,
-        };
-      }
+      session.user = {
+        id: token.id as number,
+        role: token.role as string,
+        name: token.name as string,
+      };
+      session.token = token;
       return session;
     },
   },

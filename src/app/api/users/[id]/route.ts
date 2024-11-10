@@ -1,13 +1,40 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getToken } from "next-auth/jwt";
+import { z } from "zod";
 
-const handleError = (error, message = "An error occurred", status = 500) => {
+// ฟังก์ชันจัดการข้อผิดพลาด
+const handleError = (error: any, message = "An error occurred", status = 500) => {
     console.error(message, error);
     return NextResponse.json({ error: message }, { status });
 };
 
-// ดึงข้อมูล, อัปเดต และลบผู้ใช้ตาม id
-export async function GET(req, { params: { id } }) {
+// ฟังก์ชันตรวจสอบสิทธิ์
+async function checkAdminSession(request: Request): Promise<boolean> {
+    const token = await getToken({ req: request as any });
+    return !!(token && token.role === 'admin');
+}
+
+// Schema สำหรับตรวจสอบข้อมูลในฟังก์ชัน PUT
+const userUpdateSchema = z.object({
+    username: z.string().min(1, "Username is required"),
+    title: z.string().min(1, "Title is required"),
+    firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
+    tel: z.string().min(1, "Telephone number is required"),
+    email: z.string().email("Invalid email format"),
+    department: z.string().min(1, "Department is required"),
+    position: z.string().min(1, "Position is required"),
+    role: z.string().optional(), // role เป็น optional
+});
+
+// ฟังก์ชัน GET สำหรับดึงข้อมูลผู้ใช้ตาม id
+export async function GET(req: Request, { params: { id } }: { params: { id: string } }) {
+    // ตรวจสอบสิทธิ์การเข้าถึง
+    if (!(await checkAdminSession(req))) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     try {
         const user = await prisma.user.findUnique({ where: { id: Number(id) } });
         return user ? NextResponse.json(user) : NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -16,21 +43,47 @@ export async function GET(req, { params: { id } }) {
     }
 }
 
-export async function PUT(req, { params: { id } }) {
-    try {
-      const { username, title, firstName, lastName, tel, email, department, position, role } = await req.json();
-      const updatedUser = await prisma.user.update({
-        where: { id: Number(id) },
-        data: { username, title, firstName, lastName, tel, email, department, position, role },
-      });
-      return NextResponse.json(updatedUser);
-    } catch (error) {
-      return handleError(error, "อัปเดทไม่สำเร็จ");
+// ฟังก์ชัน PUT สำหรับอัปเดตข้อมูลผู้ใช้ตาม id
+export async function PUT(req: Request, { params: { id } }: { params: { id: string } }) {
+    // ตรวจสอบสิทธิ์การเข้าถึง
+    if (!(await checkAdminSession(req))) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
-  }
-  
 
-export async function DELETE(req, { params: { id } }) {
+    try {
+        // ตรวจสอบความถูกต้องของข้อมูลที่ได้รับ
+        const data = userUpdateSchema.parse(await req.json());
+
+        const updatedUser = await prisma.user.update({
+            where: { id: Number(id) },
+            data: {
+                username: data.username,
+                title: data.title,
+                firstName: data.firstName,
+                lastName: data.lastName,
+                tel: data.tel,
+                email: data.email,
+                department: data.department,
+                position: data.position,
+                role: data.role,
+            },
+        });
+        return NextResponse.json(updatedUser);
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return NextResponse.json({ error: 'Invalid input data', details: error.errors }, { status: 400 });
+        }
+        return handleError(error, "Update failed");
+    }
+}
+
+// ฟังก์ชัน DELETE สำหรับลบข้อมูลผู้ใช้ตาม id
+export async function DELETE(req: Request, { params: { id } }: { params: { id: string } }) {
+    // ตรวจสอบสิทธิ์การเข้าถึง
+    if (!(await checkAdminSession(req))) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     try {
         const deletedUser = await prisma.user.delete({ where: { id: Number(id) } });
         return NextResponse.json(deletedUser);
