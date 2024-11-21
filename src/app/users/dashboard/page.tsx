@@ -1,37 +1,25 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import useAuthCheck from "@/hooks/useAuthCheck";  // นำเข้า useAuthCheck
 import Sidebar from "@/components/Sidebar_User";
 import TopBar from "@/components/TopBar";
 
 function UserDashboard() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { session, isLoading } = useAuthCheck("user"); // ตรวจสอบว่าเป็น User
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    } else if (session && session.user.role !== 'user') {
-      router.push("/admins/dashboard");
-    }
-  }, [status, session]);
+  if (isLoading) {
+    return <p>Loading...</p>; // แสดงข้อความ Loading หากกำลังโหลด session
+  }
 
-  if (status === "loading") {
-    return <p>Loading...</p>;
+  if (!session) {
+    return null; // ไม่แสดงผลใด ๆ หากไม่มี session
   }
 
   return (
     <div className="min-h-screen flex bg-gray-50">
-      {/* Sidebar */}
       <Sidebar />
-
-      {/* Main Content Container */}
       <div className="flex-1 flex flex-col">
         <TopBar />
-
-        {/* Main content */}
         <div className="flex-1 flex items-start justify-center p-6">
           <div className="bg-white rounded-lg shadow-lg max-w-3xl w-full p-8 mt-4">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">Welcome to your Dashboard</h2>

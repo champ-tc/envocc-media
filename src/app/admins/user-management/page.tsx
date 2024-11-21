@@ -65,6 +65,14 @@ function AdminsUserManagement() {
         }
     }, [session]);
 
+    useEffect(() => {
+        if (status === "unauthenticated") {
+            router.push("/login");
+        } else if (session && session.user?.role !== 'admin') {
+            router.push("/admins/dashboard");
+        }
+    }, [status, session]);
+
     const handleDelete = async (id: string | number) => {
         if (!confirm("คุณต้องการลบผู้ใช้งานหรือไม่")) return;
 

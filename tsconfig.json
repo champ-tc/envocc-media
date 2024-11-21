@@ -17,8 +17,9 @@
         "name": "next"
       }
     ],
+    "baseUrl": "src",  // ตั้งค่า baseUrl เป็น src เพื่อให้เส้นทางเริ่มต้นจาก src
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["*"]  // ตั้งค่า alias สำหรับ @ ที่จะชี้ไปยัง src/*
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

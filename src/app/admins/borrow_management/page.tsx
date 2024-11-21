@@ -17,6 +17,7 @@ interface Borrow {
     is_borro_restricted: boolean;
     description?: string;
     createdAt: string;
+    borrow_images?: string; // เพิ่มกรณีที่มีรูปภาพ
 }
 
 interface Type {
@@ -34,6 +35,10 @@ function AdminsBorrow_management() {
     const [types, setTypes] = useState<Type[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [editModal, setEditModal] = useState(false);
+    const [borrowImage, setBorrowImage] = useState<File | null>(null);
+
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
     const [selectedBorrow, setSelectedBorrow] = useState<Borrow | null>(null);
     const [newBorrow, setNewBorrow] = useState<Borrow>({
         id: 0,
@@ -48,7 +53,6 @@ function AdminsBorrow_management() {
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const totalPages = Math.ceil(borrows.length / itemsPerPage);
@@ -83,9 +87,31 @@ function AdminsBorrow_management() {
             console.error('Error fetching types:', error);
         }
     };
+    const handleImageClick = (imageUrl: string | undefined) => {
+        if (imageUrl) {
+            setSelectedImage(imageUrl); // ตั้งค่าให้เปิด modal และแสดงรูป
+        } else {
+            // จัดการกรณีที่ไม่มีรูปภาพ
+            console.log('No image to display');
+        }
+    };
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setBorrowImage(e.target.files[0]); // เก็บไฟล์ที่เลือก
+        }
+    };
+
+    const openEditModal = (borrow: Borrow) => {
+        setSelectedBorrow(borrow);
+        setNewBorrow(borrow);
+        setBorrowImage(null); // รีเซ็ตค่าภาพที่เลือกใน modal แก้ไข
+        setEditModal(true);
+    };
 
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
+
         // การตรวจสอบฟิลด์ที่จำเป็น
         if (!newBorrow.borrow_name || !newBorrow.unit || newBorrow.type_id === 0 || newBorrow.quantity === 0) {
             setError("กรุณากรอกข้อมูลให้ครบถ้วน");
@@ -93,13 +119,45 @@ function AdminsBorrow_management() {
             return;
         }
 
+        // ตรวจสอบว่าได้เลือกรูปภาพหรือไม่
+        if (!borrowImage) {
+            setError('กรุณาเลือกไฟล์รูปภาพ');
+            setTimeout(() => setError(null), 5000);
+            return;
+        }
+
+        // ตรวจสอบขนาดไฟล์ (ไม่เกิน 10MB)
+        const maxSize = 10 * 1024 * 1024;
+        if (borrowImage.size > maxSize) {
+            setError('ไฟล์มีขนาดเกิน 10MB');
+            setTimeout(() => setError(null), 5000);
+            return;
+        }
+
+        // สร้าง FormData เพื่อส่งข้อมูล
+        const formData = new FormData();
+        formData.append('borrow_name', newBorrow.borrow_name);
+        formData.append('unit', newBorrow.unit);
+        formData.append('type_id', newBorrow.type_id.toString());
+        formData.append('quantity', newBorrow.quantity.toString());
+        formData.append('is_borro_restricted', String(newBorrow.is_borro_restricted));
+        formData.append('description', newBorrow.description || '');
+
+        // เพิ่มไฟล์รูปภาพหากมี
+        formData.append('file', borrowImage);
+
         try {
-            const response = await axios.post('/api/borrow', newBorrow);
+            const response = await axios.post('/api/borrow', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+
             if (response.status === 200) {
-                fetchBorrows();
+                fetchBorrows(); // รีเฟรชรายการ
                 setShowModal(false);
                 setSuccessMessage("เพิ่มข้อมูลสำเร็จ!");
                 setTimeout(() => setSuccessMessage(null), 5000);
+
+                // รีเซ็ตฟอร์ม
                 setNewBorrow({
                     id: 0,
                     borrow_name: '',
@@ -110,6 +168,7 @@ function AdminsBorrow_management() {
                     description: '',
                     createdAt: new Date().toISOString(),
                 });
+                setBorrowImage(null); // รีเซ็ตภาพที่เลือก
             }
         } catch (error) {
             console.error('Error adding borrow:', error);
@@ -118,25 +177,63 @@ function AdminsBorrow_management() {
         }
     };
 
-    const handleEdit = async (e: React.FormEvent) => {
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newBorrow.borrow_name || !newBorrow.unit || newBorrow.type_id === 0 || newBorrow.quantity === 0) {
-            setError("กรุณากรอกข้อมูลให้ครบถ้วน");
+    
+        // ตรวจสอบขนาดไฟล์ (ถ้ามี)
+        if (borrowImage && borrowImage.size > 10 * 1024 * 1024) {
+            setError("ไฟล์มีขนาดเกิน 10MB");
             setTimeout(() => setError(null), 5000);
             return;
         }
-
-        if (!window.confirm("คุณต้องการแก้ไขข้อมูลหรือไม่?")) {
+    
+        // ตรวจสอบการเปลี่ยนแปลงข้อมูล
+        const hasChanges =
+            newBorrow.borrow_name !== selectedBorrow?.borrow_name ||
+            newBorrow.unit !== selectedBorrow?.unit ||
+            newBorrow.type_id !== selectedBorrow?.type_id ||
+            newBorrow.quantity !== selectedBorrow?.quantity ||
+            newBorrow.is_borro_restricted !== selectedBorrow?.is_borro_restricted ||
+            newBorrow.description !== selectedBorrow?.description ||
+            borrowImage !== null; // ตรวจสอบว่ามีการเปลี่ยนแปลงไฟล์หรือไม่
+    
+        if (!hasChanges) {
+            setError("ไม่มีการเปลี่ยนแปลงข้อมูล");
+            setTimeout(() => setError(null), 5000);
             return;
         }
-
+    
+        // ยืนยันการแก้ไข
+        if (!window.confirm("คุณต้องการแก้ไขรายการนี้หรือไม่?")) {
+            return;
+        }
+    
+        const formData = new FormData();
+        formData.append('borrow_name', newBorrow.borrow_name);
+        formData.append('unit', newBorrow.unit);
+        formData.append('type_id', newBorrow.type_id.toString());
+        formData.append('quantity', newBorrow.quantity.toString());
+        formData.append('is_borro_restricted', String(newBorrow.is_borro_restricted));
+        formData.append('description', newBorrow.description || '');
+    
+        if (borrowImage) {
+            formData.append('file', borrowImage); // ถ้ามีการเลือกรูปภาพใหม่
+        } else {
+            formData.append('borrow_images', selectedBorrow?.borrow_images || ''); // ส่งไฟล์เดิม
+        }
+    
         try {
-            const response = await axios.put(`/api/borrow/${selectedBorrow?.id}`, newBorrow);
+            const response = await axios.put(`/api/borrow/${selectedBorrow?.id}`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+    
             if (response.status === 200) {
-                fetchBorrows();
+                fetchBorrows(); // รีเฟรชรายการ
                 setEditModal(false);
                 setSuccessMessage("แก้ไขข้อมูลสำเร็จ!");
                 setTimeout(() => setSuccessMessage(null), 5000);
+    
                 setNewBorrow({
                     id: 0,
                     borrow_name: '',
@@ -147,20 +244,17 @@ function AdminsBorrow_management() {
                     description: '',
                     createdAt: new Date().toISOString(),
                 });
+                setBorrowImage(null); // รีเซ็ตภาพที่เลือก
                 setSelectedBorrow(null);
             }
         } catch (error) {
-            console.error('Error editing borrow:', error);
+            console.error("Error editing borrow:", error);
             setError("เกิดข้อผิดพลาดในการแก้ไขข้อมูล");
             setTimeout(() => setError(null), 5000);
         }
     };
+    
 
-    const openEditModal = (borrow: Borrow) => {
-        setSelectedBorrow(borrow);
-        setNewBorrow(borrow);
-        setEditModal(true);
-    };
 
     const handleDelete = async (id: number) => {
         if (!window.confirm('คุณต้องการลบรายการนี้หรือไม่?')) return;
@@ -176,7 +270,6 @@ function AdminsBorrow_management() {
         }
     };
 
-    // Pagination functions
     const handlePageChange = (page: number) => setCurrentPage(page);
     const goToPreviousPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
     const goToNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
@@ -220,27 +313,52 @@ function AdminsBorrow_management() {
                                     <th className="px-4 py-2">ประเภท</th>
                                     <th className="px-4 py-2">จำนวนคงเหลือ</th>
                                     <th className="px-4 py-2">คำอธิบาย</th>
+                                    <th className="px-4 py-2">รูปภาพ</th> {/* เพิ่มคอลัมน์รูปภาพ */}
                                     <th className="px-4 py-2">จัดการ</th>
                                 </tr>
                             </thead>
                             <tbody className="text-gray-700 text-sm">
                                 {paginatedBorrows.length > 0 ? (
-                                    paginatedBorrows.map(borrow => (
+                                    paginatedBorrows.map((borrow) => (
                                         <tr key={borrow.id}>
                                             <td className="px-4 py-2 border">{borrow.borrow_name}</td>
                                             <td className="px-4 py-2 border">{borrow.unit}</td>
-                                            <td className="px-4 py-2 border">{types.find(type => type.id === borrow.type_id)?.name || '-'}</td>
+                                            <td className="px-4 py-2 border">
+                                                {types.find((type) => type.id === borrow.type_id)?.name || '-'}
+                                            </td>
                                             <td className="px-4 py-2 border">{borrow.quantity}</td>
                                             <td className="px-4 py-2 border">{borrow.description || '-'}</td>
                                             <td className="px-4 py-2 border">
-                                                <button onClick={() => openEditModal(borrow)} className="bg-yellow-500 text-white px-2 py-1 mr-2 rounded">แก้ไข</button>
-                                                <button onClick={() => handleDelete(borrow.id)} className="bg-red-500 text-white px-2 py-1 rounded">ลบ</button>
+                                                {borrow.borrow_images ? (
+                                                    <img
+                                                        src={`/borrows/${borrow.borrow_images}`} // ใช้ชื่อไฟล์จากฐานข้อมูลและแปลงเป็น URL
+                                                        alt="Borrow"
+                                                        className="w-12 h-12 object-cover cursor-pointer"
+                                                        onClick={() => handleImageClick(`/borrows/${borrow.borrow_images}`)} // เปิด modal ดูรูป
+                                                    />
+                                                ) : (
+                                                    'ไม่มีรูปภาพ'
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-2 border">
+                                                <button
+                                                    onClick={() => openEditModal(borrow)}
+                                                    className="bg-yellow-500 text-white px-2 py-1 mr-2 rounded"
+                                                >
+                                                    แก้ไข
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(borrow.id)}
+                                                    className="bg-red-500 text-white px-2 py-1 rounded"
+                                                >
+                                                    ลบ
+                                                </button>
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={6} className="text-center py-4">ไม่มีข้อมูลในตาราง</td>
+                                        <td colSpan={7} className="text-center py-4">ไม่มีข้อมูลในตาราง</td>
                                     </tr>
                                 )}
                             </tbody>
@@ -277,87 +395,249 @@ function AdminsBorrow_management() {
                             </div>
                         </div>
 
+                        {selectedImage && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                <div className="bg-white p-4 rounded-lg w-full max-w-md flex flex-col items-center">
+                                    <img src={selectedImage} alt="Selected" className="w-96 h-auto mb-4" />
+                                    <button
+                                        onClick={() => setSelectedImage(null)}
+                                        className="bg-red-500 text-white py-2 px-4 rounded-lg"
+                                    >
+                                        ปิด
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         {showModal && (
                             <div className="modal fixed inset-0 flex items-center justify-center bg-gray-600 bg-opacity-50">
-                                <div className="modal-box w-full max-w-lg bg-white p-6 rounded shadow-lg h-auto">
-                                    <h2 className="text-xl font-semibold mb-4 text-center">เพิ่ม Borrow</h2>
-                                    <form onSubmit={handleAdd} className="space-y-4">
+                                <div className="modal-box w-full max-w-md bg-white p-6 rounded-lg shadow-md max-h-[95vh]">
+                                    <h2 className="text-lg font-medium mb-4 text-center text-gray-800">เพิ่ม Borrow</h2>
+                                    <form onSubmit={handleAdd} className="space-y-4 text-sm">
                                         <div>
                                             <label className="block text-gray-700 font-medium mb-1">ชื่อสื่อ</label>
-                                            <input type="text" placeholder="ชื่อสื่อ" value={newBorrow.borrow_name} onChange={(e) => setNewBorrow({ ...newBorrow, borrow_name: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2" required />
+                                            <input
+                                                type="text"
+                                                placeholder="ชื่อสื่อ"
+                                                value={newBorrow.borrow_name}
+                                                onChange={(e) => setNewBorrow({ ...newBorrow, borrow_name: e.target.value })}
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                required
+                                            />
                                         </div>
                                         <div>
-                                            <label className="block text-gray-700 font-medium mb-1">หน่วยนับ</label>
-                                            <input type="text" placeholder="หน่วยนับ" value={newBorrow.unit} onChange={(e) => setNewBorrow({ ...newBorrow, unit: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2" required />
+                                            <label className="block text-gray-700 font-medium mb-1">เลือกรูปภาพ</label>
+                                            <input
+                                                type="file"
+                                                onChange={(e) => handleImageChange(e)}
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                            />
                                         </div>
-                                        <div>
-                                            <label className="block text-gray-700 font-medium mb-1">ประเภท</label>
-                                            <select value={newBorrow.type_id} onChange={(e) => setNewBorrow({ ...newBorrow, type_id: Number(e.target.value) })} className="w-full border border-gray-300 rounded px-3 py-2" required>
-                                                <option value="">เลือกประเภท</option>
-                                                {types.map(type => (
-                                                    <option key={type.id} value={type.id}>{type.name}</option>
-                                                ))}
-                                            </select>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-gray-700 font-medium mb-1">หน่วยนับ</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="หน่วยนับ"
+                                                    value={newBorrow.unit}
+                                                    onChange={(e) => setNewBorrow({ ...newBorrow, unit: e.target.value })}
+                                                    className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-gray-700 font-medium mb-1">ประเภท</label>
+                                                <select
+                                                    value={newBorrow.type_id}
+                                                    onChange={(e) => setNewBorrow({ ...newBorrow, type_id: Number(e.target.value) })}
+                                                    className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                    required
+                                                >
+                                                    <option value="">เลือกประเภท</option>
+                                                    {types.map((type) => (
+                                                        <option key={type.id} value={type.id}>
+                                                            {type.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
                                         </div>
                                         <div>
                                             <label className="block text-gray-700 font-medium mb-1">จำนวนคงเหลือ</label>
-                                            <input type="number" placeholder="จำนวนคงเหลือ" value={newBorrow.quantity} onChange={(e) => setNewBorrow({ ...newBorrow, quantity: Number(e.target.value) })} className="w-full border border-gray-300 rounded px-3 py-2" required />
+                                            <input
+                                                type="number"
+                                                placeholder="จำนวนคงเหลือ"
+                                                value={newBorrow.quantity}
+                                                onChange={(e) => setNewBorrow({ ...newBorrow, quantity: Number(e.target.value) })}
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                required
+                                            />
                                         </div>
                                         <div>
                                             <label className="block text-gray-700 font-medium mb-1">คำอธิบายเพิ่มเติม</label>
-                                            <textarea placeholder="คำอธิบายเพิ่มเติม" value={newBorrow.description} onChange={(e) => setNewBorrow({ ...newBorrow, description: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2" />
+                                            <textarea
+                                                placeholder="คำอธิบายเพิ่มเติม"
+                                                value={newBorrow.description}
+                                                onChange={(e) => setNewBorrow({ ...newBorrow, description: e.target.value })}
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                            />
                                         </div>
-                                        <div className="text-right">
-                                            <button type="button" onClick={() => setShowModal(false)} className="mr-4 bg-red-500 text-white py-2 px-4 rounded">ยกเลิก</button>
-                                            <button type="submit" className="bg-blue-500 text-white py-2 px-4 rounded">บันทึก</button>
+                                        <div className="flex justify-end space-x-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowModal(false)}
+                                                className="bg-red-500 text-white py-1 px-4 rounded-lg hover:bg-red-600 transition text-sm"
+                                            >
+                                                ยกเลิก
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                className="bg-blue-500 text-white py-1 px-4 rounded-lg hover:bg-blue-600 transition text-sm"
+                                            >
+                                                บันทึก
+                                            </button>
                                         </div>
                                     </form>
                                 </div>
                             </div>
                         )}
 
+
                         {editModal && (
                             <div className="modal fixed inset-0 flex items-center justify-center bg-gray-600 bg-opacity-50">
-                                <div className="modal-box w-full max-w-lg bg-white p-6 rounded shadow-lg h-auto">
-                                    <h2 className="text-xl font-semibold mb-4 text-center">แก้ไข Borrow</h2>
-                                    <form onSubmit={handleEdit} className="space-y-4">
+                                <div className="modal-box w-full max-w-md bg-white p-6 rounded-lg shadow-md max-h-[95vh]">
+                                    <h2 className="text-lg font-medium mb-4 text-center text-gray-800">แก้ไข Borrow</h2>
+                                    <form onSubmit={handleEditSubmit} className="space-y-4 text-sm">
                                         <div>
                                             <label className="block text-gray-700 font-medium mb-1">ชื่อสื่อ</label>
-                                            <input type="text" placeholder="ชื่อสื่อ" value={newBorrow.borrow_name} onChange={(e) => setNewBorrow({ ...newBorrow, borrow_name: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2" required />
+                                            <input
+                                                type="text"
+                                                placeholder="ชื่อสื่อ"
+                                                value={newBorrow.borrow_name}
+                                                onChange={(e) =>
+                                                    setNewBorrow({ ...newBorrow, borrow_name: e.target.value })
+                                                }
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                required
+                                            />
                                         </div>
                                         <div>
-                                            <label className="block text-gray-700 font-medium mb-1">หน่วยนับ</label>
-                                            <input type="text" placeholder="หน่วยนับ" value={newBorrow.unit} onChange={(e) => setNewBorrow({ ...newBorrow, unit: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2" required />
+                                            <label className="block text-gray-700 font-medium mb-1">อัปโหลดรูปภาพ</label>
+                                            <input
+                                                type="file"
+                                                onChange={(e) =>
+                                                    setBorrowImage(e.target.files ? e.target.files[0] : null)
+                                                }
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                            />
+                                            {selectedBorrow && selectedBorrow.borrow_images && !borrowImage && (
+                                                <div>
+                                                    <img
+                                                        src={`/borrows/${selectedBorrow.borrow_images}`}
+                                                        alt="Borrow Image"
+                                                        className="w-16 h-16 mt-2 rounded-md border"
+                                                    />
+                                                </div>
+                                            )}
+                                            {borrowImage && (
+                                                <div>
+                                                    <img
+                                                        src={URL.createObjectURL(borrowImage)}
+                                                        alt="Selected Image"
+                                                        className="w-16 h-16 mt-2 rounded-md border"
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
-                                        <div>
-                                            <label className="block text-gray-700 font-medium mb-1">ประเภท</label>
-                                            <select value={newBorrow.type_id} onChange={(e) => setNewBorrow({ ...newBorrow, type_id: Number(e.target.value) })} className="w-full border border-gray-300 rounded px-3 py-2" required>
-                                                <option value="">เลือกประเภท</option>
-                                                {types.map(type => (
-                                                    <option key={type.id} value={type.id}>{type.name}</option>
-                                                ))}
-                                            </select>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-gray-700 font-medium mb-1">หน่วยนับ</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="หน่วยนับ"
+                                                    value={newBorrow.unit}
+                                                    onChange={(e) =>
+                                                        setNewBorrow({ ...newBorrow, unit: e.target.value })
+                                                    }
+                                                    className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-gray-700 font-medium mb-1">ประเภท</label>
+                                                <select
+                                                    value={newBorrow.type_id}
+                                                    onChange={(e) =>
+                                                        setNewBorrow({ ...newBorrow, type_id: Number(e.target.value) })
+                                                    }
+                                                    className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                    required
+                                                >
+                                                    <option value="">เลือกประเภท</option>
+                                                    {types.map((type) => (
+                                                        <option key={type.id} value={type.id}>
+                                                            {type.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
                                         </div>
                                         <div>
                                             <label className="block text-gray-700 font-medium mb-1">จำนวนคงเหลือ</label>
-                                            <input type="number" placeholder="จำนวนคงเหลือ" value={newBorrow.quantity} onChange={(e) => setNewBorrow({ ...newBorrow, quantity: Number(e.target.value) })} className="w-full border border-gray-300 rounded px-3 py-2" required />
+                                            <input
+                                                type="number"
+                                                placeholder="จำนวนคงเหลือ"
+                                                value={newBorrow.quantity}
+                                                onChange={(e) =>
+                                                    setNewBorrow({ ...newBorrow, quantity: Number(e.target.value) })
+                                                }
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                required
+                                            />
                                         </div>
                                         <div>
                                             <label className="block text-gray-700 font-medium mb-1">คำอธิบายเพิ่มเติม</label>
-                                            <textarea placeholder="คำอธิบายเพิ่มเติม" value={newBorrow.description} onChange={(e) => setNewBorrow({ ...newBorrow, description: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2" />
+                                            <textarea
+                                                placeholder="คำอธิบายเพิ่มเติม"
+                                                value={newBorrow.description}
+                                                onChange={(e) =>
+                                                    setNewBorrow({ ...newBorrow, description: e.target.value })
+                                                }
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                            />
                                         </div>
-                                        <div>
-                                            <label className="block text-gray-700 font-medium mb-1">ระบุว่านี้ห้ามยืมหรือไม่</label>
-                                            <input type="checkbox" checked={newBorrow.is_borro_restricted} onChange={(e) => setNewBorrow({ ...newBorrow, is_borro_restricted: e.target.checked })} />
+                                        <div className="flex items-center">
+                                            <label className="text-gray-700 font-medium">ระบุว่านี้ห้ามยืมหรือไม่</label>
+                                            <input
+                                                type="checkbox"
+                                                checked={newBorrow.is_borro_restricted}
+                                                onChange={(e) =>
+                                                    setNewBorrow({ ...newBorrow, is_borro_restricted: e.target.checked })
+                                                }
+                                                className="ml-2"
+                                            />
                                         </div>
-                                        <div className="text-right">
-                                            <button type="button" onClick={() => setEditModal(false)} className="mr-4 bg-red-500 text-white py-2 px-4 rounded">ยกเลิก</button>
-                                            <button type="submit" className="bg-blue-500 text-white py-2 px-4 rounded">บันทึก</button>
+                                        <div className="flex justify-end space-x-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setEditModal(false)}
+                                                className="bg-red-500 text-white py-1 px-4 rounded-lg hover:bg-red-600 transition text-sm"
+                                            >
+                                                ยกเลิก
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                className="bg-blue-500 text-white py-1 px-4 rounded-lg hover:bg-blue-600 transition text-sm"
+                                            >
+                                                บันทึก
+                                            </button>
                                         </div>
                                     </form>
                                 </div>
                             </div>
                         )}
+
+
                     </div>
                 </div>
             </div>

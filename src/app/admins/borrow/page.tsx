@@ -1,28 +1,20 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from "../../hooks/useAuth"; // เปลี่ยนเป็นการนำเข้าจากเส้นทางสัมบูรณ์
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import useAuthCheck from "@/hooks/useAuthCheck";  // นำเข้า useAuthCheck
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 
 function AdminsBorrow() {
-    useAuth('admin');
+    const { session, isLoading } = useAuthCheck("admin");
 
-    const { data: session, status } = useSession();
-    const router = useRouter();
-
-    useEffect(() => {
-        if (status === "unauthenticated") {
-            router.push("/login");
-        } else if (session && session.user.role !== 'admin') {
-            router.push("/admins/dashboard");
-        }
-    }, [status, session]);
-
-    if (status === "loading") {
+    // แสดงสถานะ Loading หากยังตรวจสอบสิทธิ์ไม่เสร็จ
+    if (isLoading) {
         return <p>Loading...</p>;
+    }
+
+    // หากไม่มี session ไม่แสดงผลใด ๆ
+    if (!session) {
+        return null;
     }
 
     return (

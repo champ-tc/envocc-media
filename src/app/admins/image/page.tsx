@@ -33,6 +33,8 @@ function Adminsimage() {
     const [editImageId, setEditImageId] = useState<number | null>(null);
 
 
+
+
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const totalPages = Math.ceil(images.length / itemsPerPage);

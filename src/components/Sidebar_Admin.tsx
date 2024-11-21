@@ -16,7 +16,9 @@ const Sidebar = () => {
     const menuItems = [
         { href: '/admins/dashboard', src: '/images/dashboard.png', label: 'Dashboard' },
         { href: '/admins/requisition', src: '/images/requisition.png', label: 'เบิกสื่อ' },
+        { href: '/admins/confirm_requisition', src: '/images/requisition.png', label: 'อนุมัติเบิกสื่อ' },
         { href: '/admins/borrow', src: '/images/borrow.png', label: 'ยืม/คืน สื่อ' },
+        { href: '/admins/confirm_borrow', src: '/images/borrow.png', label: 'อนุมัติยืม/คืน สื่อ' },
         { isDropdown: true, label: 'จัดการสื่อ', src: '/images/type.png' },
         { href: '/admins/reports', src: '/images/reports.png', label: 'รายงาน' },
         { href: '/admins/user-management', src: '/images/user.png', label: 'จัดการผู้ใช้งาน' },

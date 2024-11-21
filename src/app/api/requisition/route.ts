@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getToken } from 'next-auth/jwt';
 import { z } from 'zod';
+import { v4 as uuidv4 } from 'uuid'; // สำหรับสร้างชื่อไฟล์แบบสุ่ม
+import fs from 'fs';
+import path from 'path';
 
 // Schema สำหรับตรวจสอบความถูกต้องของข้อมูล
 const requisitionSchema = z.object({
@@ -20,6 +23,70 @@ async function checkAdminSession(request: Request): Promise<boolean> {
     return !!(token && token.role === 'admin');
 }
 
+// ฟังก์ชัน POST สำหรับเพิ่มข้อมูล requisition ใหม่พร้อมอัปโหลดรูปภาพ
+export async function POST(request: Request) {
+    try {
+        if (!(await checkAdminSession(request))) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        }
+
+        const formData = await request.formData();
+        const requisition_name = formData.get('requisition_name')?.toString() || "";
+        const unit = formData.get('unit')?.toString() || "";
+        const type_id = parseInt(formData.get('type_id')?.toString() || "0");
+        const quantity = parseInt(formData.get('quantity')?.toString() || "0");
+        const reserved_quantity = parseInt(formData.get('reserved_quantity')?.toString() || "0");
+        const description = formData.get('description')?.toString() || "";
+        const is_borro_restricted = formData.get('is_borro_restricted') === "true";
+        const file = formData.get('file') as File | null;
+
+        // บันทึกไฟล์ภาพ (ถ้ามี)
+        let filename = "";
+        if (file) {
+            filename = `${uuidv4()}.${file.type.split('/')[1]}`;
+            const filePath = path.join(process.cwd(), 'public', 'requisitions', filename);
+            const fileBuffer = Buffer.from(await file.arrayBuffer());
+            fs.writeFileSync(filePath, fileBuffer);
+        }
+
+        // เพิ่มข้อมูลในตาราง requisition
+        const newRequisition = await prisma.requisition.create({
+            data: {
+                requisition_name,
+                unit,
+                type_id,
+                quantity,
+                reserved_quantity,
+                description,
+                is_borro_restricted,
+                requisition_images: filename,
+            },
+        });
+
+        // เพิ่มข้อมูลใน requisition_updates
+        await prisma.requisition_updates.create({
+            data: {
+                requisitionId: newRequisition.id,
+                addedQuantity: quantity, // ใช้จำนวนที่เพิ่มเป็นค่าเริ่มต้น
+                updateType: quantity > 0 ? "insert" : "reduce", // ถ้าจำนวน > 0 จะใช้ "insert" ถ้าน้อยกว่า 0 จะใช้ "reduce"
+                remarks: "เพิ่ม requisition ใหม่", // หมายเหตุ
+            },
+        });
+        
+
+        return NextResponse.json(newRequisition);
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return NextResponse.json({ error: 'Invalid input data', details: error.errors }, { status: 400 });
+        }
+
+        console.error('Error in POST /api/requisition:', error);
+        return NextResponse.json({ error: 'Error creating requisition' }, { status: 500 });
+    }
+}
+
+
+
 // ฟังก์ชัน GET สำหรับดึงข้อมูล requisition ทั้งหมด
 export async function GET(request: Request) {
     try {
@@ -32,38 +99,5 @@ export async function GET(request: Request) {
     } catch (error) {
         console.error('Error fetching requisitions:', error);
         return NextResponse.json({ error: 'Error fetching requisitions' }, { status: 500 });
-    }
-}
-
-// ฟังก์ชัน POST สำหรับเพิ่มข้อมูล requisition ใหม่
-export async function POST(request: Request) {
-    try {
-        if (!(await checkAdminSession(request))) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-        }
-
-        const jsonData = await request.json();
-        const data = requisitionSchema.parse(jsonData);
-
-        const newRequisition = await prisma.requisition.create({
-            data: {
-                requisition_name: data.requisition_name,
-                unit: data.unit,
-                type_id: data.type_id,
-                quantity: data.quantity,
-                reserved_quantity: data.reserved_quantity || 0,
-                description: data.description || null,
-                is_borro_restricted: data.is_borro_restricted ?? false,
-            },
-        });
-
-        return NextResponse.json(newRequisition);
-    } catch (error) {
-        if (error instanceof z.ZodError) {
-            return NextResponse.json({ error: 'Invalid input data', details: error.errors }, { status: 400 });
-        }
-
-        console.error('Error in POST /api/requisition:', error);
-        return NextResponse.json({ error: 'Error creating requisition' }, { status: 500 });
     }
 }

@@ -3,12 +3,15 @@ import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
 import { getToken } from 'next-auth/jwt';
+import cookie from 'cookie';
+import { NextResponse } from 'next/server';
 
 // ฟังก์ชันตรวจสอบสิทธิ์
 async function checkAdminSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request });
+    const token = await getToken({ req: request as any });
     return !!(token && token.role === 'admin');
 }
+
 
 // API สำหรับลบข้อมูล
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
@@ -95,7 +98,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 }
 
-
 // API สำหรับ GET ข้อมูลภาพ
 export async function GET(request: Request, { params }: { params: { id: string } }) {
     const filename = params.id;
@@ -130,19 +132,35 @@ export async function POST(request: Request, { params }: { params: { id: string 
             return new Response(JSON.stringify({ error: "Image not found" }), { status: 404 });
         }
 
+        // ตรวจสอบ Cookie ว่าเคยบันทึกการเข้าชมแล้วหรือไม่
+        const cookies = cookie.parse(request.headers.get('cookie') || '');
+        if (cookies[`viewed_${filename}`]) {
+            // ถ้ามีการเข้าชมแล้วในช่วงเวลาที่กำหนด ข้ามการเพิ่ม viewCount
+            return new Response(JSON.stringify({ message: "Already viewed recently" }), { status: 200 });
+        }
+
         // อัปเดต viewCount ในฐานข้อมูลโดยใช้คำสั่ง increment
         const updatedImage = await prisma.image.update({
             where: { id: image.id },
             data: {
                 viewCount: {
-                    increment: 1, // ใช้ increment เพื่อเพิ่มค่า viewCount อย่างปลอดภัย
+                    increment: 1, // เพิ่มค่า viewCount อย่างปลอดภัย
                 },
             },
         });
 
-        return new Response(JSON.stringify(updatedImage), { status: 200 });
+        // ตั้งค่า Cookie เพื่อบันทึกการเข้าชม โดยกำหนดอายุเป็น 1 ชั่วโมง
+        const response = new Response(JSON.stringify(updatedImage), { status: 200 });
+        response.headers.set('Set-Cookie', cookie.serialize(`viewed_${filename}`, 'true', {
+            maxAge: 60 * 60, // อายุของ Cookie เป็น 1 ชั่วโมง
+            httpOnly: true,
+            path: '/',
+        }));
+
+        return response;
     } catch (error) {
         console.error('Error updating view count:', error);
         return new Response(JSON.stringify({ error: "Error updating view count" }), { status: 500 });
     }
 }
+
