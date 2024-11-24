@@ -4,33 +4,34 @@ import { prisma } from "@/lib/prisma";
 // เพิ่มคำสั่งซื้อ
 export async function POST(req: Request) {
     try {
-        const { userId, requisitionId, requisition_type, quantity } = await req.json();
+        const { userId, requisitionId, borrowId, requisition_type, quantity } = await req.json();
         const date = new Date();
 
-        // ตรวจสอบว่ามี requisitionId หรือ borrowId
-        if (!requisitionId || !userId || !quantity || !requisition_type) {
+        // ตรวจสอบ input ที่จำเป็น
+        if (!userId || !quantity || !requisition_type || (!requisitionId && !borrowId)) {
             return NextResponse.json({ message: "Invalid input" }, { status: 400 });
         }
 
-        // ตรวจสอบ Requisition (เฉพาะกรณีที่ requisition_type เป็นการเบิก)
-        if (requisition_type === 1) {
-            const requisition = await prisma.requisition.findUnique({ where: { id: requisitionId } });
+        // ตรวจสอบ Borrow (เฉพาะกรณี requisition_type เป็นการยืม)
+        if (requisition_type === 2 && borrowId) {
+            const borrow = await prisma.borrow.findUnique({ where: { id: borrowId } });
 
-            if (!requisition) {
-                return NextResponse.json({ message: "Requisition not found" }, { status: 404 });
+            if (!borrow) {
+                return NextResponse.json({ message: "Borrow not found" }, { status: 404 });
             }
 
             // ตรวจสอบว่ามีสินค้าคงเหลือเพียงพอหรือไม่
-            if (quantity > requisition.quantity) {
+            if (quantity > borrow.quantity) {
                 return NextResponse.json({ message: "Not enough stock available" }, { status: 400 });
             }
         }
 
-        // สร้างคำสั่งซื้อในตาราง Order โดยไม่แก้ไขตาราง Requisition
+        // สร้างคำสั่งซื้อในตาราง Order
         const order = await prisma.order.create({
             data: {
                 userId,
-                requisitionId: requisitionId,
+                requisitionId: requisitionId || null,
+                borrowId: borrowId || null,
                 requisition_type,
                 quantity,
                 date,
@@ -45,8 +46,9 @@ export async function POST(req: Request) {
 }
 
 
+
 // ดึงรายการคำสั่งซื้อ
-export async function GET(req) {
+export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const userId = searchParams.get("userId");
@@ -56,9 +58,10 @@ export async function GET(req) {
         }
 
         const orders = await prisma.order.findMany({
-            where: { userId: parseInt(userId) },
+            where: { userId: parseInt(userId, 10) },
             include: {
-                requisition: true, // ดึงข้อมูล requisition มาด้วย
+                requisition: true,
+                borrow: true,
             },
         });
 

@@ -50,6 +50,17 @@ function AdminsBorrow_management() {
         description: '',
         createdAt: new Date().toISOString(),
     });
+    const initialBorrowState = {
+        id: 0,
+        borrow_name: '',
+        unit: '',
+        type_id: 0,
+        quantity: 0,
+        is_borro_restricted: false,
+        description: '',
+        createdAt: new Date().toISOString(),
+    };
+    
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -75,9 +86,11 @@ function AdminsBorrow_management() {
             const response = await axios.get('/api/borrow');
             setBorrows(response.data);
         } catch (error) {
-            console.error('Error fetching borrows:', error);
+            setError("เกิดข้อผิดพลาดในการดึงข้อมูล");
+            setTimeout(() => setError(null), 5000);
         }
     };
+    
 
     const fetchTypes = async () => {
         try {
@@ -111,84 +124,67 @@ function AdminsBorrow_management() {
 
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        // การตรวจสอบฟิลด์ที่จำเป็น
+    
         if (!newBorrow.borrow_name || !newBorrow.unit || newBorrow.type_id === 0 || newBorrow.quantity === 0) {
             setError("กรุณากรอกข้อมูลให้ครบถ้วน");
             setTimeout(() => setError(null), 5000);
             return;
         }
-
-        // ตรวจสอบว่าได้เลือกรูปภาพหรือไม่
+    
         if (!borrowImage) {
-            setError('กรุณาเลือกไฟล์รูปภาพ');
+            setError("กรุณาเลือกไฟล์รูปภาพ");
             setTimeout(() => setError(null), 5000);
             return;
         }
-
-        // ตรวจสอบขนาดไฟล์ (ไม่เกิน 10MB)
+    
         const maxSize = 10 * 1024 * 1024;
         if (borrowImage.size > maxSize) {
-            setError('ไฟล์มีขนาดเกิน 10MB');
+            setError("ไฟล์มีขนาดเกิน 10MB");
             setTimeout(() => setError(null), 5000);
             return;
         }
-
-        // สร้าง FormData เพื่อส่งข้อมูล
+    
         const formData = new FormData();
-        formData.append('borrow_name', newBorrow.borrow_name);
-        formData.append('unit', newBorrow.unit);
-        formData.append('type_id', newBorrow.type_id.toString());
-        formData.append('quantity', newBorrow.quantity.toString());
-        formData.append('is_borro_restricted', String(newBorrow.is_borro_restricted));
-        formData.append('description', newBorrow.description || '');
-
-        // เพิ่มไฟล์รูปภาพหากมี
-        formData.append('file', borrowImage);
-
+        formData.append("borrow_name", newBorrow.borrow_name);
+        formData.append("unit", newBorrow.unit);
+        formData.append("type_id", newBorrow.type_id.toString());
+        formData.append("quantity", newBorrow.quantity.toString());
+        formData.append("is_borro_restricted", String(newBorrow.is_borro_restricted));
+        formData.append("description", newBorrow.description || "");
+        formData.append("file", borrowImage);
+    
         try {
-            const response = await axios.post('/api/borrow', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
+            const response = await axios.post("/api/borrow", formData, {
+                headers: { "Content-Type": "multipart/form-data" },
             });
-
+    
             if (response.status === 200) {
-                fetchBorrows(); // รีเฟรชรายการ
-                setShowModal(false);
+                fetchBorrows();
+                setShowModal(false); // ปิด Modal ก่อน
                 setSuccessMessage("เพิ่มข้อมูลสำเร็จ!");
-                setTimeout(() => setSuccessMessage(null), 5000);
-
-                // รีเซ็ตฟอร์ม
-                setNewBorrow({
-                    id: 0,
-                    borrow_name: '',
-                    unit: '',
-                    type_id: 0,
-                    quantity: 0,
-                    is_borro_restricted: false,
-                    description: '',
-                    createdAt: new Date().toISOString(),
-                });
-                setBorrowImage(null); // รีเซ็ตภาพที่เลือก
             }
         } catch (error) {
-            console.error('Error adding borrow:', error);
+            console.error("Error adding borrow:", error);
             setError("เกิดข้อผิดพลาดในการเพิ่มข้อมูล");
-            setTimeout(() => setError(null), 5000);
+        } finally {
+            setTimeout(() => {
+                setError(null);
+                setSuccessMessage(null);
+            }, 5000);
         }
     };
+    
 
 
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
     
-        // ตรวจสอบขนาดไฟล์ (ถ้ามี)
         if (borrowImage && borrowImage.size > 10 * 1024 * 1024) {
             setError("ไฟล์มีขนาดเกิน 10MB");
             setTimeout(() => setError(null), 5000);
             return;
         }
     
-        // ตรวจสอบการเปลี่ยนแปลงข้อมูล
         const hasChanges =
             newBorrow.borrow_name !== selectedBorrow?.borrow_name ||
             newBorrow.unit !== selectedBorrow?.unit ||
@@ -196,64 +192,104 @@ function AdminsBorrow_management() {
             newBorrow.quantity !== selectedBorrow?.quantity ||
             newBorrow.is_borro_restricted !== selectedBorrow?.is_borro_restricted ||
             newBorrow.description !== selectedBorrow?.description ||
-            borrowImage !== null; // ตรวจสอบว่ามีการเปลี่ยนแปลงไฟล์หรือไม่
+            borrowImage !== null;
     
         if (!hasChanges) {
+            setEditModal(false);
             setError("ไม่มีการเปลี่ยนแปลงข้อมูล");
             setTimeout(() => setError(null), 5000);
             return;
         }
     
-        // ยืนยันการแก้ไข
         if (!window.confirm("คุณต้องการแก้ไขรายการนี้หรือไม่?")) {
             return;
         }
     
         const formData = new FormData();
-        formData.append('borrow_name', newBorrow.borrow_name);
-        formData.append('unit', newBorrow.unit);
-        formData.append('type_id', newBorrow.type_id.toString());
-        formData.append('quantity', newBorrow.quantity.toString());
-        formData.append('is_borro_restricted', String(newBorrow.is_borro_restricted));
-        formData.append('description', newBorrow.description || '');
+        formData.append("borrow_name", newBorrow.borrow_name);
+        formData.append("unit", newBorrow.unit);
+        formData.append("type_id", newBorrow.type_id.toString());
+        formData.append("quantity", newBorrow.quantity.toString());
+        formData.append("is_borro_restricted", String(newBorrow.is_borro_restricted));
+        formData.append("description", newBorrow.description || "");
     
         if (borrowImage) {
-            formData.append('file', borrowImage); // ถ้ามีการเลือกรูปภาพใหม่
-        } else {
-            formData.append('borrow_images', selectedBorrow?.borrow_images || ''); // ส่งไฟล์เดิม
+            formData.append("file", borrowImage);
+        } else if (selectedBorrow?.borrow_images) {
+            formData.append("borrow_images", selectedBorrow.borrow_images);
         }
     
         try {
             const response = await axios.put(`/api/borrow/${selectedBorrow?.id}`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
+                headers: { "Content-Type": "multipart/form-data" },
             });
     
             if (response.status === 200) {
-                fetchBorrows(); // รีเฟรชรายการ
-                setEditModal(false);
+                fetchBorrows();
+                setEditModal(false); // ปิด Modal ก่อน
                 setSuccessMessage("แก้ไขข้อมูลสำเร็จ!");
-                setTimeout(() => setSuccessMessage(null), 5000);
-    
-                setNewBorrow({
-                    id: 0,
-                    borrow_name: '',
-                    unit: '',
-                    type_id: 0,
-                    quantity: 0,
-                    is_borro_restricted: false,
-                    description: '',
-                    createdAt: new Date().toISOString(),
-                });
-                setBorrowImage(null); // รีเซ็ตภาพที่เลือก
-                setSelectedBorrow(null);
             }
         } catch (error) {
             console.error("Error editing borrow:", error);
             setError("เกิดข้อผิดพลาดในการแก้ไขข้อมูล");
-            setTimeout(() => setError(null), 5000);
+        } finally {
+            setTimeout(() => {
+                setError(null);
+                setSuccessMessage(null);
+            }, 5000);
         }
     };
     
+    
+    
+    const handleEnable = async (id: number) => {
+        if (!window.confirm("คุณต้องการเปิดการใช้งานรายการนี้หรือไม่?")) return;
+    
+        try {
+            const response = await axios.patch(`/api/borrow/${id}`, { status: 1 });
+            if (response.status === 200) {
+                setBorrows((prev) =>
+                    prev.map((borrow) =>
+                        borrow.id === id ? { ...borrow, status: 1 } : borrow
+                    )
+                );
+                setSuccessMessage("เปิดการใช้งานสำเร็จ!");
+            }
+        } catch (error) {
+            console.error("Error enabling borrow:", error);
+            setError("เกิดข้อผิดพลาดในการเปิดการใช้งาน");
+        } finally {
+            setTimeout(() => {
+                setError(null);
+                setSuccessMessage(null);
+            }, 5000);
+        }
+    };
+    
+    
+    const handleDisable = async (id: number) => {
+        if (!window.confirm("คุณต้องการปิดการใช้งานรายการนี้หรือไม่?")) return;
+    
+        try {
+            const response = await axios.patch(`/api/borrow/${id}`, { status: 0 });
+            if (response.status === 200) {
+                setBorrows((prev) =>
+                    prev.map((borrow) =>
+                        borrow.id === id ? { ...borrow, status: 0 } : borrow
+                    )
+                );
+                setSuccessMessage("ปิดการใช้งานสำเร็จ!");
+            }
+        } catch (error) {
+            console.error("Error disabling borrow:", error);
+            setError("เกิดข้อผิดพลาดในการปิดการใช้งาน");
+        } finally {
+            setTimeout(() => {
+                setError(null);
+                setSuccessMessage(null);
+            }, 5000);
+        }
+    };
 
 
     const handleDelete = async (id: number) => {
@@ -306,62 +342,78 @@ function AdminsBorrow_management() {
                         <button onClick={() => setShowModal(true)} className="mb-4 bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition">เพิ่ม Borrow</button>
 
                         <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden text-sm">
-                            <thead>
-                                <tr className="bg-gray-200 text-gray-600 text-left text-sm uppercase font-semibold tracking-wider">
-                                    <th className="px-4 py-2">ชื่อสื่อ</th>
-                                    <th className="px-4 py-2">หน่วยนับ</th>
-                                    <th className="px-4 py-2">ประเภท</th>
-                                    <th className="px-4 py-2">จำนวนคงเหลือ</th>
-                                    <th className="px-4 py-2">คำอธิบาย</th>
-                                    <th className="px-4 py-2">รูปภาพ</th> {/* เพิ่มคอลัมน์รูปภาพ */}
-                                    <th className="px-4 py-2">จัดการ</th>
-                                </tr>
-                            </thead>
-                            <tbody className="text-gray-700 text-sm">
-                                {paginatedBorrows.length > 0 ? (
-                                    paginatedBorrows.map((borrow) => (
-                                        <tr key={borrow.id}>
-                                            <td className="px-4 py-2 border">{borrow.borrow_name}</td>
-                                            <td className="px-4 py-2 border">{borrow.unit}</td>
-                                            <td className="px-4 py-2 border">
-                                                {types.find((type) => type.id === borrow.type_id)?.name || '-'}
-                                            </td>
-                                            <td className="px-4 py-2 border">{borrow.quantity}</td>
-                                            <td className="px-4 py-2 border">{borrow.description || '-'}</td>
-                                            <td className="px-4 py-2 border">
-                                                {borrow.borrow_images ? (
-                                                    <img
-                                                        src={`/borrows/${borrow.borrow_images}`} // ใช้ชื่อไฟล์จากฐานข้อมูลและแปลงเป็น URL
-                                                        alt="Borrow"
-                                                        className="w-12 h-12 object-cover cursor-pointer"
-                                                        onClick={() => handleImageClick(`/borrows/${borrow.borrow_images}`)} // เปิด modal ดูรูป
-                                                    />
-                                                ) : (
-                                                    'ไม่มีรูปภาพ'
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-2 border">
-                                                <button
-                                                    onClick={() => openEditModal(borrow)}
-                                                    className="bg-yellow-500 text-white px-2 py-1 mr-2 rounded"
-                                                >
-                                                    แก้ไข
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(borrow.id)}
-                                                    className="bg-red-500 text-white px-2 py-1 rounded"
-                                                >
-                                                    ลบ
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan={7} className="text-center py-4">ไม่มีข้อมูลในตาราง</td>
-                                    </tr>
-                                )}
-                            </tbody>
+                        <thead>
+    <tr className="bg-gray-200 text-gray-600 text-left text-sm uppercase font-semibold tracking-wider">
+        <th className="px-4 py-2">ชื่อสื่อ</th>
+        <th className="px-4 py-2">หน่วยนับ</th>
+        <th className="px-4 py-2">ประเภท</th>
+        <th className="px-4 py-2">จำนวนคงเหลือ</th>
+        <th className="px-4 py-2">เบิก</th> {/* คอลัมน์ใหม่สำหรับสถานะเบิก */}
+        <th className="px-4 py-2">คำอธิบาย</th>
+        <th className="px-4 py-2">รูปภาพ</th>
+        <th className="px-4 py-2">จัดการ</th>
+    </tr>
+</thead>
+<tbody className="text-gray-700 text-sm">
+    {paginatedBorrows.length > 0 ? (
+        paginatedBorrows.map((borrow) => (
+            <tr key={borrow.id}>
+                <td className="px-4 py-2 border">{borrow.borrow_name}</td>
+                <td className="px-4 py-2 border">{borrow.unit}</td>
+                <td className="px-4 py-2 border">
+                    {types.find((type) => type.id === borrow.type_id)?.name || '-'}
+                </td>
+                <td className="px-4 py-2 border">{borrow.quantity}</td>
+                <td className="px-4 py-2 border">
+                    {borrow.is_borro_restricted ? "ห้ามเบิก" : "เบิกได้"} {/* แสดงสถานะเบิก */}
+                </td>
+                <td className="px-4 py-2 border">{borrow.description || '-'}</td>
+                <td className="px-4 py-2 border">
+                    {borrow.borrow_images ? (
+                        <img
+                            src={`/borrows/${borrow.borrow_images}`}
+                            alt="Borrow"
+                            className="w-12 h-12 object-cover cursor-pointer"
+                            onClick={() => handleImageClick(`/borrows/${borrow.borrow_images}`)}
+                        />
+                    ) : (
+                        'ไม่มีรูปภาพ'
+                    )}
+                </td>
+                <td className="px-4 py-2 border">
+                    <button
+                        onClick={() => openEditModal(borrow)}
+                        className="bg-yellow-500 text-white px-2 py-1 mr-2 rounded"
+                    >
+                        แก้ไข
+                    </button>
+                    {borrow.status === 1 ? (
+                        <button
+                            onClick={() => handleDisable(borrow.id)}
+                            className="bg-red-500 text-white px-2 py-1 rounded"
+                        >
+                            ปิดการใช้งาน
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => handleEnable(borrow.id)}
+                            className="bg-green-500 text-white px-2 py-1 rounded"
+                        >
+                            เปิดการใช้งาน
+                        </button>
+                    )}
+                </td>
+            </tr>
+        ))
+    ) : (
+        <tr>
+            <td colSpan={8} className="text-center py-4">
+                ไม่มีข้อมูลในตาราง
+            </td>
+        </tr>
+    )}
+</tbody>
+
                         </table>
 
                         <div className="flex items-center justify-between mt-6">

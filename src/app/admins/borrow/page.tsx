@@ -1,21 +1,104 @@
 "use client";
 
-import useAuthCheck from "@/hooks/useAuthCheck";  // นำเข้า useAuthCheck
+import React, { useState, useEffect } from "react";
+import useAuthCheck from "@/hooks/useAuthCheck";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 
+interface Borrow {
+    id: number;
+    borrow_name: string;
+    type: {
+        name: string;
+    };
+    quantity: number;
+    reserved_quantity: number;
+    borrow_images?: string;
+    unit: string;
+}
+
 function AdminsBorrow() {
     const { session, isLoading } = useAuthCheck("admin");
+    const [borrows, setBorrows] = useState<Borrow[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filterType, setFilterType] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
-    // แสดงสถานะ Loading หากยังตรวจสอบสิทธิ์ไม่เสร็จ
+    useEffect(() => {
+        const fetchBorrows = async () => {
+            try {
+                const response = await fetch("/api/borrows");
+                const data = await response.json();
+
+                if (Array.isArray(data)) {
+                    setBorrows(data);
+                } else {
+                    console.error("API did not return an array:", data);
+                    setBorrows([]);
+                }
+            } catch (error) {
+                console.error("Error fetching borrows:", error);
+                setBorrows([]);
+            }
+        };
+
+        if (session) {
+            fetchBorrows();
+        }
+    }, [session]);
+
+    const updateQuantity = async (id: number, newQuantity: number) => {
+        try {
+            const response = await fetch(`/api/borrows/${id}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ quantity: newQuantity }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to update quantity");
+            }
+
+            const updatedBorrow = await response.json();
+
+            setBorrows((prev) =>
+                prev.map((borrow) =>
+                    borrow.id === id ? { ...borrow, quantity: updatedBorrow.quantity } : borrow
+                )
+            );
+        } catch (error) {
+            console.error("Error updating quantity:", error);
+            alert("ไม่สามารถเพิ่มจำนวนได้");
+        }
+    };
+
     if (isLoading) {
         return <p>Loading...</p>;
     }
 
-    // หากไม่มี session ไม่แสดงผลใด ๆ
     if (!session) {
         return null;
     }
+
+    const filteredBorrows = Array.isArray(borrows)
+        ? borrows.filter((item) => {
+            const matchesSearch = item.borrow_name
+                .toLowerCase()
+                .includes(searchQuery.toLowerCase());
+            const matchesType = filterType ? item.type.name === filterType : true;
+            return matchesSearch && matchesType;
+        })
+        : [];
+
+    const totalPages = Math.ceil(filteredBorrows.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentBorrows = filteredBorrows.slice(startIndex, endIndex);
+
+    const handlePageChange = (page: number) => setCurrentPage(page);
 
     return (
         <div className="min-h-screen flex bg-gray-50">
@@ -23,11 +106,99 @@ function AdminsBorrow() {
             <div className="flex-1 flex flex-col">
                 <TopBar />
                 <div className="flex-1 flex items-start justify-center p-2">
-                    <div className="bg-white rounded-lg shadow-lg max-w-3xl w-full p-8 mt-4">
-                        <h2 className="text-2xl font-semibold text-gray-800 mb-4">ยืม คืน</h2>
-                        <div className="grid grid-cols-1 gap-4 mt-2 sm:grid-cols-2">
-                            <div className="w-full">
-                                test
+                    <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
+                        <h2 className="text-2xl font-semibold text-gray-800 mb-4">ยืม</h2>
+                        <div className="flex flex-col md:flex-row justify-between items-center mb-4">
+                            <input
+                                type="text"
+                                placeholder="ค้นหาจากชื่อ..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="px-4 py-2 border rounded-md w-full md:w-1/2 mb-2 md:mb-0"
+                            />
+                            <select
+                                value={filterType}
+                                onChange={(e) => setFilterType(e.target.value)}
+                                className="px-4 py-2 border rounded-md w-full md:w-1/4"
+                            >
+                                <option value="">ทั้งหมด</option>
+                                {Array.isArray(borrows) &&
+                                    Array.from(
+                                        new Set(borrows.map((item) => item.type?.name))
+                                    ).map((type) => (
+                                        <option key={type} value={type}>
+                                            {type}
+                                        </option>
+                                    ))}
+                            </select>
+                        </div>
+                        <div className="grid grid-cols-1 gap-8 mt-6 sm:grid-cols-2 lg:grid-cols-4">
+                            {currentBorrows.map((item) => (
+                                <div
+                                    key={item.id}
+                                    className="bg-white p-4 rounded-xl shadow-lg border transition-transform transform hover:scale-105"
+                                >
+                                    {/* แสดงรูปภาพ */}
+                                    {item.borrow_images ? (
+                                        <img
+                                            src={`/borrows/${item.borrow_images}`}
+                                            alt={item.borrow_name}
+                                            className="w-full h-60 object-cover rounded-lg mb-4"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-60 bg-gray-200 flex items-center justify-center rounded-lg mb-4">
+                                            <span className="text-gray-600">ไม่มีรูปภาพ</span>
+                                        </div>
+                                    )}
+                                    {/* แสดงชื่อ */}
+                                    <h3 className="text-lg font-bold text-gray-800 mb-2">
+                                        {item.borrow_name}
+                                    </h3>
+                                    {/* แสดงประเภท */}
+                                    <p className="text-sm text-gray-500 mb-2">
+                                        ประเภท: {item.type?.name || "ไม่มีประเภท"}
+                                    </p>
+                                    {/* แสดงจำนวน */}
+                                    <p className="text-sm text-gray-500">
+                                        คงเหลือ:{" "}
+                                        <span className="text-green-500 font-bold">
+                                            {item.quantity - (item.reserved_quantity || 0)} {item.unit}
+                                        </span>
+                                    </p>
+                                    {/* ปุ่มเลือก */}
+                                    <button
+                                        className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 w-full"
+                                        onClick={() => {
+                                            window.location.assign(`/admins/borrow/${item.id}`);
+                                        }}
+                                    >
+                                        เลือก
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex items-center justify-between mt-6">
+                            <span className="text-sm text-gray-600">
+                                Showing {startIndex + 1} to{" "}
+                                {Math.min(endIndex, filteredBorrows.length)} of{" "}
+                                {filteredBorrows.length} entries
+                            </span>
+                            <div className="flex space-x-2">
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                                    (page) => (
+                                        <button
+                                            key={page}
+                                            onClick={() => handlePageChange(page)}
+                                            className={`px-4 py-2 rounded-md ${currentPage === page
+                                                    ? "bg-blue-500 text-white"
+                                                    : "bg-gray-200 text-gray-600"
+                                                }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    )
+                                )}
                             </div>
                         </div>
                     </div>

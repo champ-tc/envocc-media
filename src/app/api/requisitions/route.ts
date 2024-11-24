@@ -1,15 +1,16 @@
-// src/app/api/requisitions/route.ts
-
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 // Handler สำหรับ GET requests
 export async function GET() {
     try {
-        // ดึงข้อมูล requisitions และรวมข้อมูล types ที่เกี่ยวข้อง
         const requisitions = await prisma.requisition.findMany({
+            where: {
+                is_borro_restricted: false, // เงื่อนไข: is_borro_restricted = 0 (false)
+                status: 1,                 // เงื่อนไข: status = 1 (เปิดการใช้งาน)
+            },
             include: {
-                types: true,  // เปลี่ยนจาก 'type' เป็น 'types' ตาม Prisma schema
+                type: true, // แก้ไขจาก types เป็น type
             },
         });
 
@@ -19,4 +20,3 @@ export async function GET() {
         return NextResponse.json({ message: 'Error fetching requisitions' }, { status: 500 });
     }
 }
-

@@ -6,7 +6,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         const id = parseInt(params.id, 10);
         const requisition = await prisma.requisition.findUnique({
             where: { id },
-            include: { types: true },
+            include: { type: true },
         });
 
         if (!requisition) {

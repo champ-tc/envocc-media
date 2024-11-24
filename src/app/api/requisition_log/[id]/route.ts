@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+// เพิ่มข้อมูลใน RequisitionLog
 export async function POST(req: Request) {
     try {
         const { userId, orders, deliveryMethod, address } = await req.json();
@@ -11,30 +12,41 @@ export async function POST(req: Request) {
 
         // เพิ่มข้อมูลใน RequisitionLog
         const requisitionLogs = await Promise.all(
-            orders.map((order) =>
-                prisma.requisitionLog.create({
-                    data: {
-                        requisition_id: order.requisitionId,
-                        user_id: userId,
-                        requested_quantity: order.quantity,
-                        stock_after_requisition: 0, // คุณสามารถอัปเดตสต็อกหลังจากการอนุมัติ
-                    },
-                })
-            )
+            orders
+                .filter((order: { requisitionId?: number }) => order.requisitionId) // ตรวจสอบเฉพาะ requisition
+                .map((order: { requisitionId: number; quantity: number }) =>
+                    prisma.requisitionLog.create({
+                        data: {
+                            requisition_id: order.requisitionId, // ฟิลด์ที่จำเป็น
+                            user_id: userId, // ฟิลด์ที่จำเป็น
+                            requested_quantity: order.quantity, // ฟิลด์ที่จำเป็น
+                            status: "Pending", // ค่าเริ่มต้น
+                            requested_groupid: `group${Math.floor(Math.random() * 10000)}`, // สร้าง ID แบบสุ่ม
+                            delivery_method: deliveryMethod, // ใช้ค่าจาก request
+                            delivery_address: deliveryMethod === "delivery" ? address : null, // ใช้ที่อยู่ถ้าจัดส่ง
+                        },
+                    })
+                )
         );
 
-        // ลบข้อมูลใน Order
+
+        // ลบข้อมูลใน Order เฉพาะ requisition_type = 1 (เบิก)
         await prisma.order.deleteMany({
-            where: { userId },
+            where: {
+                userId,
+                requisition_type: 1,
+            },
         });
 
-        return NextResponse.json({ message: "Requisition submitted successfully", requisitionLogs });
+        return NextResponse.json({
+            message: "Requisition submitted successfully",
+            requisitionLogs,
+        });
     } catch (error) {
         console.error("Error submitting requisition:", error);
         return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
     }
 }
-
 
 // ดึงข้อมูล requisition log ตาม ID
 export async function GET(req: Request, { params }: { params: { id: string } }) {

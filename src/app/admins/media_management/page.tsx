@@ -18,6 +18,7 @@ interface Requisition {
     reserved_quantity?: number;
     is_borro_restricted: boolean;
     description?: string;
+    status: number;
     createdAt: string;
 }
 
@@ -56,6 +57,7 @@ function AdminsMedia_management() {
         reserved_quantity: 0,
         is_borro_restricted: false,
         description: '',
+        status: 1,
         createdAt: new Date().toISOString(),
     });
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -161,129 +163,6 @@ function AdminsMedia_management() {
     };
 
 
-
-    const handleEditSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-    
-        if (currentQuantity === null) {
-            setError("เกิดข้อผิดพลาด: จำนวนเดิมไม่สามารถระบุได้");
-            return;
-        }
-    
-        // ค้นหาข้อมูล requisition ปัจจุบัน
-        const currentRequisition = requisitions.find(req => req.id === newRequisition.id);
-        if (!currentRequisition) {
-            setError("ไม่พบข้อมูลรายการในระบบ");
-            return;
-        }
-    
-        // ตรวจสอบว่ามีการเปลี่ยนแปลงข้อมูลหรือไม่
-        const hasChanges =
-            newRequisition.requisition_name !== currentRequisition.requisition_name ||
-            newRequisition.unit !== currentRequisition.unit ||
-            newRequisition.type_id !== currentRequisition.type_id ||
-            newRequisition.quantity !== currentRequisition.quantity ||
-            newRequisition.reserved_quantity !== currentRequisition.reserved_quantity ||
-            newRequisition.description !== currentRequisition.description ||
-            newRequisition.is_borro_restricted !== currentRequisition.is_borro_restricted ||
-            editedImage !== null;
-    
-        if (!hasChanges) {
-            setError("ไม่มีการเปลี่ยนแปลงข้อมูล");
-            setEditModal(false);
-            setNewRequisition({
-                id: 0,
-                requisition_name: '',
-                unit: '',
-                type_id: 0,
-                quantity: 0,
-                reserved_quantity: 0,
-                is_borro_restricted: false,
-                description: '',
-                createdAt: new Date().toISOString(),
-            });
-
-            setTimeout(() => setError(null), 5000);
-            return;
-        }
-    
-        // ตรวจสอบว่าจำนวนใหม่ไม่ต่ำกว่าจำนวนเดิม
-        if (newRequisition.quantity < currentQuantity) {
-            setError("ไม่สามารถลดจำนวนให้น้อยกว่าจำนวนปัจจุบันได้");
-            setEditModal(false);
-            setNewRequisition({
-                id: 0,
-                requisition_name: '',
-                unit: '',
-                type_id: 0,
-                quantity: 0,
-                reserved_quantity: 0,
-                is_borro_restricted: false,
-                description: '',
-                createdAt: new Date().toISOString(),
-            });
-
-            setTimeout(() => setError(null), 5000);
-            return;
-        }
-    
-        // ยืนยันการแก้ไข
-        const confirmEdit = window.confirm("คุณต้องการแก้ไขรายการนี้หรือไม่?");
-        if (!confirmEdit) {
-            return;
-        }
-    
-        try {
-            // ส่งข้อมูลอัปเดตไปยังเซิร์ฟเวอร์
-            const formData = new FormData();
-            formData.append("requisition_name", newRequisition.requisition_name);
-            formData.append("unit", newRequisition.unit);
-            formData.append("type_id", newRequisition.type_id.toString());
-            formData.append("quantity", newRequisition.quantity.toString());
-            formData.append("reserved_quantity", (newRequisition.reserved_quantity || 0).toString());
-            formData.append("description", newRequisition.description || "");
-            formData.append("is_borro_restricted", String(newRequisition.is_borro_restricted));
-    
-            if (editedImage) {
-                formData.append("file", editedImage);
-            } else if (currentImage) {
-                formData.append("requisition_images", currentImage);
-            }
-    
-            const response = await axios.put(`/api/requisition/${newRequisition.id}`, formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
-    
-            if (response.status === 200) {
-                setRequisitions(requisitions.map(req => (req.id === newRequisition.id ? response.data : req)));
-                setEditModal(false);
-                setSuccessMessage("แก้ไขข้อมูลสำเร็จ!");
-
-                setNewRequisition({
-                    id: 0,
-                    requisition_name: '',
-                    unit: '',
-                    type_id: 0,
-                    quantity: 0,
-                    reserved_quantity: 0,
-                    is_borro_restricted: false,
-                    description: '',
-                    createdAt: new Date().toISOString(),
-                });
-
-                setTimeout(() => setSuccessMessage(null), 5000);
-            }
-        } catch (error) {
-            console.error("Error editing requisition:", error);
-            setError("เกิดข้อผิดพลาดในการแก้ไขข้อมูล");
-            setTimeout(() => setError(null), 5000);
-        }
-    };
-    
-
-
-
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -342,6 +221,7 @@ function AdminsMedia_management() {
                     reserved_quantity: 0,
                     is_borro_restricted: false,
                     description: '',
+                    status: 1,
                     createdAt: new Date().toISOString(),
                 });
 
@@ -364,19 +244,154 @@ function AdminsMedia_management() {
     };
 
 
-    const handleDelete = async (id: number) => {
-        if (!window.confirm('คุณต้องการลบรายการนี้หรือไม่?')) return;
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (currentQuantity === null) {
+            setError("เกิดข้อผิดพลาด: จำนวนเดิมไม่สามารถระบุได้");
+            return;
+        }
+
+        // ค้นหาข้อมูล requisition ปัจจุบัน
+        const currentRequisition = requisitions.find((req) => req.id === newRequisition.id);
+        if (!currentRequisition) {
+            setError("ไม่พบข้อมูลรายการในระบบ");
+            return;
+        }
+
+        // ตรวจสอบว่ามีการเปลี่ยนแปลงข้อมูลหรือไม่
+        const hasChanges =
+            newRequisition.requisition_name !== currentRequisition.requisition_name ||
+            newRequisition.unit !== currentRequisition.unit ||
+            newRequisition.type_id !== currentRequisition.type_id ||
+            newRequisition.quantity !== currentRequisition.quantity ||
+            newRequisition.reserved_quantity !== currentRequisition.reserved_quantity ||
+            newRequisition.description !== currentRequisition.description ||
+            newRequisition.is_borro_restricted !== currentRequisition.is_borro_restricted ||
+            editedImage !== null;
+
+        if (!hasChanges) {
+            setError("ไม่มีการเปลี่ยนแปลงข้อมูล");
+            setEditModal(false);
+            resetForm();
+            return;
+        }
+
+        // ตรวจสอบว่าจำนวนใหม่ไม่ต่ำกว่าจำนวนเดิม
+        if (newRequisition.quantity < currentQuantity) {
+            setError("ไม่สามารถลดจำนวนให้น้อยกว่าจำนวนปัจจุบันได้");
+            setEditModal(false);
+            resetForm();
+            return;
+        }
+
+        // ยืนยันการแก้ไข
+        if (!window.confirm("คุณต้องการแก้ไขรายการนี้หรือไม่?")) return;
+
         try {
-            await axios.delete(`/api/requisition/${id}`);
-            setRequisitions(requisitions.filter((req) => req.id !== id));
-            setSuccessMessage("ลบข้อมูลสำเร็จ!");
-            setTimeout(() => setSuccessMessage(null), 5000);
+            // ส่งข้อมูลอัปเดตไปยังเซิร์ฟเวอร์
+            const formData = new FormData();
+            formData.append("requisition_name", newRequisition.requisition_name);
+            formData.append("unit", newRequisition.unit);
+            formData.append("type_id", newRequisition.type_id.toString());
+            formData.append("quantity", newRequisition.quantity.toString());
+            formData.append("reserved_quantity", (newRequisition.reserved_quantity || 0).toString());
+            formData.append("description", newRequisition.description || "");
+            formData.append("is_borro_restricted", String(newRequisition.is_borro_restricted));
+
+            if (editedImage) {
+                formData.append("file", editedImage);
+            } else if (currentImage) {
+                formData.append("requisition_images", currentImage);
+            }
+
+            const response = await axios.put(`/api/requisition/${newRequisition.id}?action=updateDetails`, formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+
+            if (response.status === 200) {
+                setRequisitions((prev) =>
+                    prev.map((req) => (req.id === newRequisition.id ? response.data : req))
+                );
+                setEditModal(false);
+                setSuccessMessage("แก้ไขข้อมูลสำเร็จ!");
+                resetForm();
+            }
         } catch (error) {
-            console.error('Error deleting requisition:', error);
-            setError("เกิดข้อผิดพลาดในการลบข้อมูล");
+            console.error("Error editing requisition:", error);
+            setError("เกิดข้อผิดพลาดในการแก้ไขข้อมูล");
+        } finally {
             setTimeout(() => setError(null), 5000);
         }
     };
+
+    const resetForm = () => {
+        setNewRequisition({
+            id: 0,
+            requisition_name: '',
+            unit: '',
+            type_id: 0,
+            quantity: 0,
+            reserved_quantity: 0,
+            is_borro_restricted: false,
+            description: '',
+            status: 1,
+            createdAt: new Date().toISOString(),
+        });
+    };
+
+
+    const handleDelete = async (id: number) => {
+        if (!window.confirm("คุณต้องการปิดการใช้งานรายการนี้หรือไม่?")) return;
+
+        try {
+            const response = await axios.put(`/api/requisition/${id}?action=updateStatus`, {
+                status: 0, // เปลี่ยน status เป็น 0
+            });
+
+            if (response.status === 200) {
+                setRequisitions((prev) =>
+                    prev.map((req) => (req.id === id ? { ...req, status: 0 } : req))
+                );
+                setSuccessMessage("ปิดการใช้งานสำเร็จ!");
+            }
+        } catch (error) {
+            console.error("Error updating status:", error);
+            setError("เกิดข้อผิดพลาดในการปิดการใช้งาน");
+        } finally {
+            setTimeout(() => {
+                setError(null);
+                setSuccessMessage(null);
+            }, 5000);
+        }
+    };
+
+    const handleEnable = async (id: number) => {
+        if (!window.confirm("คุณต้องการเปิดการใช้งานรายการนี้หรือไม่?")) return;
+
+        try {
+            const response = await axios.put(`/api/requisition/${id}?action=updateStatus`, {
+                status: 1, // เปลี่ยน status เป็น 1
+            });
+
+            if (response.status === 200) {
+                setRequisitions((prev) =>
+                    prev.map((req) => (req.id === id ? { ...req, status: 1 } : req))
+                );
+                setSuccessMessage("เปิดการใช้งานสำเร็จ!");
+            }
+        } catch (error) {
+            console.error("Error enabling requisition:", error);
+            setError("เกิดข้อผิดพลาดในการเปิดการใช้งาน");
+        } finally {
+            setTimeout(() => {
+                setError(null);
+                setSuccessMessage(null);
+            }, 5000);
+        }
+    };
+
+
 
     const openEditModal = (req: Requisition) => {
         setNewRequisition(req);
@@ -426,6 +441,7 @@ function AdminsMedia_management() {
                                     <th className="px-4 py-2">จำนวนคงเหลือ</th>
                                     <th className="px-4 py-2">จำนวนที่เก็บ</th>
                                     <th className="px-4 py-2">คำอธิบาย</th>
+                                    <th className="px-4 py-2">เบิก</th>
                                     <th className="px-4 py-2">จัดการ</th>
                                 </tr>
                             </thead>
@@ -446,22 +462,41 @@ function AdminsMedia_management() {
                                         </td>
                                         <td className="px-4 py-2 border">{req.requisition_name}</td>
                                         <td className="px-4 py-2 border">{req.unit}</td>
-                                        <td className="px-4 py-2 border">{types.find((type) => type.id === req.type_id)?.name || '-'}</td>
+                                        <td className="px-4 py-2 border">
+                                            {types.find((type) => type.id === req.type_id)?.name || '-'}
+                                        </td>
                                         <td className="px-4 py-2 border">{req.quantity}</td>
                                         <td className="px-4 py-2 border">{req.reserved_quantity || 0}</td>
+                                        <td className="px-4 py-2 border">
+                                            {req.is_borro_restricted ? "ห้ามเบิก" : "เบิกได้"} {/* แสดงสถานะการเบิก */}
+                                        </td>
                                         <td className="px-4 py-2 border">{req.description || '-'}</td>
                                         <td className="px-4 py-2 border">
-                                            <button onClick={() => openEditModal(req)} className="bg-yellow-500 text-white px-2 py-1 mr-2 rounded">
+                                            <button
+                                                onClick={() => openEditModal(req)}
+                                                className="bg-yellow-500 text-white px-2 py-1 mr-2 rounded"
+                                            >
                                                 แก้ไข
                                             </button>
-                                            <button onClick={() => handleDelete(req.id)} className="bg-red-500 text-white px-2 py-1 rounded">
-                                                ลบ
-                                            </button>
+                                            {req.status === 1 ? (
+                                                <button
+                                                    onClick={() => handleDelete(req.id)}
+                                                    className="bg-red-500 text-white px-2 py-1 rounded"
+                                                >
+                                                    ปิดการใช้งาน
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleEnable(req.id)}
+                                                    className="bg-green-500 text-white px-2 py-1 rounded"
+                                                >
+                                                    เปิดการใช้งาน
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
-
                         </table>
 
                         <div className="flex items-center justify-between mt-6">
@@ -501,7 +536,6 @@ function AdminsMedia_management() {
                                 </button>
                             </div>
                         </div>
-
 
                         {selectedImage && (
                             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

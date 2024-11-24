@@ -25,99 +25,98 @@ const requisitionUpdateSchema = z.object({
 });
 
 
+// ฟังก์ชันแก้ไขรายละเอียด requisition
+async function updateRequisitionDetails(id: number, request: Request) {
+    const formData = await request.formData();
+    const requisition_name = formData.get("requisition_name")?.toString() || "";
+    const unit = formData.get("unit")?.toString() || "";
+    const type_id = parseInt(formData.get("type_id")?.toString() || "0");
+    const quantity = parseInt(formData.get("quantity")?.toString() || "0");
+    const reserved_quantity = parseInt(formData.get("reserved_quantity")?.toString() || "0");
+    const description = formData.get("description")?.toString() || "";
+    const is_borro_restricted = formData.get("is_borro_restricted") === "true";
+    const file = formData.get("file") as File | null;
+
+    const existingRequisition = await prisma.requisition.findUnique({ where: { id } });
+    if (!existingRequisition) {
+        return NextResponse.json({ error: "Requisition not found" }, { status: 404 });
+    }
+
+    const quantityDifference = quantity - existingRequisition.quantity;
+    let filename = "";
+    if (file) {
+        filename = `${uuidv4()}.${file.type.split("/")[1]}`;
+        const filePath = path.join(process.cwd(), "public", "requisitions", filename);
+        const fileBuffer = Buffer.from(await file.arrayBuffer());
+        fs.writeFileSync(filePath, fileBuffer);
+    }
+
+    const updatedRequisition = await prisma.requisition.update({
+        where: { id },
+        data: {
+            requisition_name,
+            unit,
+            type_id,
+            quantity,
+            reserved_quantity,
+            description,
+            is_borro_restricted,
+            requisition_images: filename || undefined,
+        },
+    });
+
+    await prisma.requisition_updates.create({
+        data: {
+            requisitionId: updatedRequisition.id,
+            addedQuantity: quantityDifference,
+            updateType: quantityDifference > 0 ? "insert" : "reduce",
+            remarks: quantityDifference > 0 ? "เพิ่มจำนวน requisition" : "ลดจำนวน requisition",
+        },
+    });
+
+    return NextResponse.json(updatedRequisition);
+}
+
+// ฟังก์ชันเปลี่ยนสถานะ requisition
+async function updateRequisitionStatus(id: number, request: Request) {
+    const { status } = await request.json();
+
+    if (![0, 1].includes(status)) {
+        return NextResponse.json({ error: "Invalid status value" }, { status: 400 });
+    }
+
+    const updatedRequisition = await prisma.requisition.update({
+        where: { id },
+        data: { status },
+    });
+
+    return NextResponse.json(updatedRequisition);
+}
+
+// ตัวควบคุมหลัก
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
     const id = parseInt(params.id);
     if (isNaN(id)) {
         return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
     }
 
-    try {
-        if (!(await checkAdminSession(request))) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-        }
-
-        const formData = await request.formData();
-        const requisition_name = formData.get("requisition_name")?.toString() || "";
-        const unit = formData.get("unit")?.toString() || "";
-        const type_id = parseInt(formData.get("type_id")?.toString() || "0");
-        const quantity = parseInt(formData.get("quantity")?.toString() || "0");
-        const reserved_quantity = parseInt(formData.get("reserved_quantity")?.toString() || "0");
-        const description = formData.get("description")?.toString() || "";
-        const is_borro_restricted = formData.get("is_borro_restricted") === "true";
-        const file = formData.get("file") as File | null;
-
-        // ค้นหา requisition เดิมเพื่อคำนวณความแตกต่าง
-        const existingRequisition = await prisma.requisition.findUnique({ where: { id } });
-        if (!existingRequisition) {
-            return NextResponse.json({ error: "Requisition not found" }, { status: 404 });
-        }
-
-        // คำนวณความแตกต่างในจำนวน
-        const quantityDifference = quantity - existingRequisition.quantity;
-
-        // จัดการอัปโหลดไฟล์ (ถ้ามี)
-        let filename = "";
-        if (file) {
-            filename = `${uuidv4()}.${file.type.split("/")[1]}`;
-            const filePath = path.join(process.cwd(), "public", "requisitions", filename);
-            const fileBuffer = Buffer.from(await file.arrayBuffer());
-            fs.writeFileSync(filePath, fileBuffer);
-        }
-
-        // อัปเดต requisition
-        const updatedRequisition = await prisma.requisition.update({
-            where: { id },
-            data: {
-                requisition_name,
-                unit,
-                type_id,
-                quantity,
-                reserved_quantity,
-                description,
-                is_borro_restricted,
-                requisition_images: filename || undefined,
-            },
-        });
-
-        // เพิ่มข้อมูลใน requisition_updates
-        await prisma.requisition_updates.create({
-            data: {
-                requisitionId: updatedRequisition.id,
-                addedQuantity: quantityDifference,
-                updateType: quantityDifference > 0 ? "insert" : "reduce",
-                remarks: quantityDifference > 0 ? "เพิ่มจำนวน requisition" : "ลดจำนวน requisition",
-            },
-        });
-
-        return NextResponse.json(updatedRequisition);
-    } catch (error) {
-        console.error("Error updating requisition:", error);
-        return NextResponse.json({ error: "Error updating requisition" }, { status: 500 });
+    if (!(await checkAdminSession(request))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
-}
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-    const id = parseInt(params.id);
-    if (isNaN(id)) {
-        return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
-    }
+    const url = new URL(request.url);
+    const action = url.searchParams.get('action');
 
     try {
-        // ตรวจสอบสิทธิ์ผู้ใช้ (ถ้าจำเป็น)
-        const token = await getToken({ req: request as any });
-        if (!token || token.role !== "admin") {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        if (action === 'updateDetails') {
+            return await updateRequisitionDetails(id, request);
+        } else if (action === 'updateStatus') {
+            return await updateRequisitionStatus(id, request);
+        } else {
+            return NextResponse.json({ error: "Invalid action" }, { status: 400 });
         }
-
-        // ลบ requisition
-        await prisma.requisition.delete({
-            where: { id },
-        });
-
-        return NextResponse.json({ message: "Requisition deleted successfully" });
     } catch (error) {
-        console.error("Error deleting requisition:", error);
-        return NextResponse.json({ error: "Error deleting requisition" }, { status: 500 });
+        console.error(`Error handling ${action}:`, error);
+        return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
     }
 }
-

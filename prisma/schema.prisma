@@ -7,16 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Type {
-  id          Int           @id @default(autoincrement())
-  name        String
-  description String?
-  createdAt   DateTime      @default(now())
-  borrows     Borrow[]
-  requisition requisition[]
 
-  @@map("types")
-}
 
 model RequisitionLog {
   id                      Int         @id @default(autoincrement())
@@ -64,6 +55,7 @@ model Borrow {
   description         String?
   createdAt           DateTime         @default(now())
   borrow_images       String
+  status              Int              @default(1) // 1 = ใช้งาน, 0 = ไม่ใช้งาน
   type                Type             @relation(fields: [type_id], references: [id])
   logs                BorrowLog[]
   updates             Borrow_updates[]
@@ -95,6 +87,11 @@ model BorrowLog {
   returned_quantity    Int?
   borrow_date          DateTime @default(now())
   return_due_date      DateTime
+  actual_return_date   DateTime?
+  delivery_method      String   @default("self")
+  delivery_address     String?
+  borrow_groupid       String
+  approved_quantity    Int?     // Add this field for approved quantity
   approved_by_admin_id Int?
   createdAt            DateTime @default(now())
   status               String   @default("pending")
@@ -107,6 +104,10 @@ model BorrowLog {
   @@index([user_id], map: "borrow_log_user_id_fkey")
   @@map("borrow_log")
 }
+
+
+
+
 
 model image {
   id        Int      @id @default(autoincrement())
@@ -142,13 +143,26 @@ model requisition {
   description         String?
   createdAt           DateTime              @default(now())
   requisition_images  String
+  status              Int                   @default(1) // 1 = ใช้งาน, 0 = ไม่ใช้งาน
   order               order[]
-  types               Type                  @relation(fields: [type_id], references: [id], map: "Requisition_type_id_fkey")
+  type                Type                  @relation(fields: [type_id], references: [id], map: "Requisition_type_id_fkey") // เปลี่ยนชื่อจาก types เป็น type
   logs                RequisitionLog[]
   updates             requisition_updates[]
 
   @@index([type_id], map: "Requisition_type_id_fkey")
 }
+
+model Type {
+  id          Int           @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime      @default(now())
+  borrows     Borrow[]
+  requisition requisition[]
+
+  @@map("types")
+}
+
 
 model user {
   id                   Int              @id @default(autoincrement())
