@@ -154,7 +154,7 @@ model requisition {
 
 model Type {
   id          Int           @id @default(autoincrement())
-  name        String
+  name        String        @unique  // เพิ่ม @unique เพื่อให้ name เป็นฟิลด์ที่ไม่ซ้ำ
   description String?
   createdAt   DateTime      @default(now())
   borrows     Borrow[]
@@ -162,6 +162,7 @@ model Type {
 
   @@map("types")
 }
+
 
 
 model user {

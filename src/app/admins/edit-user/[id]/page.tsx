@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from "../../../hooks/useAuth";
+import useAuthCheck from "@/hooks/useAuthCheck";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 import Link from 'next/link';
+import AlertModal from "@/components/AlertModal";
+import axios from "axios";
+
 
 interface EditUserProps {
   params: { id: string };
@@ -20,117 +23,97 @@ interface SessionUser {
 }
 
 function EditUser({ params }: EditUserProps) {
-  const { data: session, status } = useSession();
+  const { session, isLoading } = useAuthCheck("admin");
   const router = useRouter();
-
-  const [showPassword, setShowPassword] = useState(false);
-
-
-  useAuth('admin'); // ตรวจสอบสิทธิ์สำหรับหน้า admin
-
-  const [userData, setUserData] = useState({
-    username: '',
-    title: '',
-    firstName: '',
-    lastName: '',
-    tel: '',
-    email: '',
-    department: '',
-    position: '',
-    role: 'user'
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
   const { id } = params;
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    } else if ((session?.user as SessionUser)?.role !== 'admin') {
-      router.push("/admins/dashboard");
-    } else if (status === "authenticated") {
-      const fetchUser = async () => {
-        try {
-          const res = await fetch(`/api/users/${id}`);
-          if (!res.ok) throw new Error("Failed to fetch user");
-          const data = await res.json();
-          setUserData(data);
-        } catch (err) {
-          setError((err as Error).message);
-          setTimeout(() => setError(null), 5000); // แสดงข้อผิดพลาดเป็นเวลา 5 วินาที
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchUser();
+  const [userData, setUserData] = useState({
+    username: "",
+    title: "",
+    firstName: "",
+    lastName: "",
+    tel: "",
+    email: "",
+    department: "",
+    position: "",
+    role: "",
+  });
+
+  const [loading, setLoading] = useState(true);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [alertType, setAlertType] = useState<"success" | "error" | null>(null);
+
+  // ฟังก์ชันแสดงข้อความแจ้งเตือน
+  const showAlert = (message: string, type: "success" | "error") => {
+    setAlertMessage(message);
+    setAlertType(type);
+    setTimeout(() => {
+      setAlertMessage(null);
+      setAlertType(null);
+    }, 3000);
+  };
+
+  // ฟังก์ชันดึงข้อมูลผู้ใช้
+  const fetchUserData = async (url: string, setData: Function, errorMessage: string) => {
+    try {
+      const res = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${session?.token}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.status} ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      setData(data);
+    } catch (err) {
+      showAlert(errorMessage, "error");
+    } finally {
+      setLoading(false);
     }
-  }, [status, session, router, id]);
+  };
+
+  // ใช้ useEffect เพื่อดึงข้อมูลผู้ใช้
+  useEffect(() => {
+    if (session) {
+      fetchUserData(`/api/users/${id}`, setUserData, "ไม่สามารถดึงข้อมูลส่วนตัวได้");
+    }
+  }, [session, id]);
+
+  if (isLoading || loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p>กำลังโหลด...</p>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const { username, title, firstName, lastName, tel, email, department, position, role } = userData;
-
-    // ตรวจสอบข้อมูลที่จำเป็น
-    if (!username || !title || !firstName || !lastName || !tel || !email || !department || !position) {
-      setError("กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน");
-      setTimeout(() => setError(null), 5000);
-      return;
-    }
-
-
-    // ตรวจสอบรูปแบบอีเมล
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(email)) {
-      setError("รูปแบบอีเมลไม่ถูกต้อง");
-      setTimeout(() => setError(null), 5000);
-      return;
-    }
-
-    // ตรวจสอบเบอร์โทรว่ามี 10 หลัก
-    if (!/^\d{10}$/.test(tel)) {
-      setError("เบอร์โทรต้องเป็นตัวเลข 10 หลัก");
-      setTimeout(() => setError(null), 5000);
-      return;
-    }
-
-    // ตรวจสอบความยาวของชื่อและนามสกุล
-    if (firstName.length > 20 || lastName.length > 20) {
-      setError("ชื่อและนามสกุลต้องไม่เกิน 20 ตัวอักษร");
-      setTimeout(() => setError(null), 5000);
-      return;
-    }
-
-    // ตรวจสอบความยาวของตำแหน่ง/อาชีพ
-    if (position.length > 30) {
-      setError("ตำแหน่ง/อาชีพต้องไม่เกิน 30 ตัวอักษร");
-      setTimeout(() => setError(null), 5000);
-      return;
-    }
-
     try {
       const res = await fetch(`/api/users/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),
       });
-      if (!res.ok) throw new Error("Error updating user");
 
-      setSuccessMessage("อัปเดตข้อมูลสำเร็จ!");
-      setTimeout(() => setSuccessMessage(null), 3000);
+      if (!res.ok) {
+        throw new Error("Error updating user");
+      }
 
+      showAlert("อัปเดตข้อมูลสำเร็จ!", "success");
       setTimeout(() => {
-        router.push('/admins/user-management');
+        router.push("/admins/user-management");
       }, 3000);
     } catch (err) {
-      setError((err as Error).message);
-      setTimeout(() => setError(null), 5000);
+      showAlert("เกิดข้อผิดพลาดในการอัปเดตข้อมูล", "error");
     }
   };
 
-  if (loading) return <p>Loading...</p>;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -143,18 +126,13 @@ function EditUser({ params }: EditUserProps) {
           <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
             <h1 className="text-2xl font-bold mb-4">แก้ไขข้อมูลผู้ใช้งาน</h1>
 
-            {successMessage && (
-              <div className="bg-green-50 text-green-500 p-6 mb-10 text-sm rounded-2xl" role="alert">
-                <span>&#10004; </span>
-                <span>{successMessage}</span>
-              </div>
-            )}
-
-            {error && (
-              <div className="bg-red-50 text-red-500 p-6 mb-10 text-sm rounded-2xl" role="alert">
-                <span>&#10006; </span>
-                <span>{error}</span>
-              </div>
+            {alertMessage && (
+              <AlertModal
+                isOpen={!!alertMessage}
+                message={alertMessage}
+                type={alertType ?? "error"}
+                iconSrc={alertType === "success" ? "/images/check.png" : "/images/close.png"}
+              />
             )}
 
             <form onSubmit={handleSubmit}>
@@ -171,6 +149,20 @@ function EditUser({ params }: EditUserProps) {
                     className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
                     required
                   />
+                </div>
+                <div className="w-full">
+                  <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">สิทธิ์ผู้ใช้งาน</label>
+                  <select
+                    id="role"
+                    name="role"
+                    value={userData.role}
+                    onChange={(e) => setUserData({ ...userData, role: e.target.value })}
+                    className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 sm:text-sm"
+                    required
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
                 </div>
               </div>
 

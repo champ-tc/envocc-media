@@ -36,6 +36,23 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         // ตรวจสอบความถูกต้องของข้อมูลที่ได้รับ
         const data = typeSchema.parse({ name, description });
 
+        // **ตรวจสอบค่าซ้ำในฐานข้อมูล**
+        const existingType = await prisma.type.findFirst({
+            where: {
+                name: data.name,
+                NOT: {
+                    id, // ยกเว้นรายการที่กำลังแก้ไข
+                },
+            },
+        });
+
+        if (existingType) {
+            return NextResponse.json(
+                { error: 'Duplicate name', message: 'The type name already exists in the system.' },
+                { status: 400 }
+            );
+        }
+
         // แก้ไขข้อมูลในฐานข้อมูล
         const updatedType = await prisma.type.update({
             where: { id },
@@ -45,7 +62,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             },
         });
 
-        return NextResponse.json({ message: 'type updated successfully', type: updatedType });
+        return NextResponse.json({ message: 'Type updated successfully', type: updatedType });
     } catch (error) {
         if (error instanceof z.ZodError) {
             return NextResponse.json({ error: 'Invalid input data', details: error.errors }, { status: 400 });
@@ -54,6 +71,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         return NextResponse.json({ error: 'Error updating type' }, { status: 500 });
     }
 }
+
 
 // API สำหรับลบข้อมูล
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
@@ -69,7 +87,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
         }
 
         // ลบข้อมูลในฐานข้อมูล
-        await prisma.type.delete({ where: { id } });
+        await prisma.type.delete({ where: { id: Number(id) } });
 
         return NextResponse.json({ message: 'type deleted successfully' }, { status: 200 });
     } catch (error) {

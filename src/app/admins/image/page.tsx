@@ -1,11 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from "../../hooks/useAuth";
+import useAuthCheck from "@/hooks/useAuthCheck";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
+import axios from "axios";
+import ConfirmModal from "@/components/ConfirmModal";
+import AlertModal from "@/components/AlertModal";
+import ConfirmEditModal from "@/components/ConfirmEditModal";
+
 
 interface Image {
     id: number;
@@ -16,10 +21,9 @@ interface Image {
 
 
 function Adminsimage() {
-    useAuth('admin');
-
-    const { data: session, status } = useSession();
+    const { session, isLoading } = useAuthCheck("admin");
     const router = useRouter();
+
 
     const [images, setImages] = useState<Image[]>([]);
     const [showModal, setShowModal] = useState(false);
@@ -32,8 +36,11 @@ function Adminsimage() {
     const [editTitle, setEditTitle] = useState('');
     const [editImageId, setEditImageId] = useState<number | null>(null);
 
-
-
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+    const [isEditConfirmOpen, setIsEditConfirmOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
+    const [alertType, setAlertType] = useState<"success" | "error" | null>(null);
+    const [selectedImageId, setSelectedImageId] = useState<number | null>(null);
 
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -41,14 +48,6 @@ function Adminsimage() {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const currentImages = images.slice(startIndex, endIndex);
-
-    useEffect(() => {
-        if (status === "unauthenticated") {
-            router.push("/login");
-        } else if (session && session.user.role !== 'admin') {
-            router.push("/admins/dashboard");
-        }
-    }, [status, session]);
 
     useEffect(() => {
         fetchImages();
@@ -60,34 +59,42 @@ function Adminsimage() {
             const data = await response.json();
             setImages(Array.isArray(data) ? data : []);
         } else {
-            console.error('Failed to fetch images:', response.statusText);
+            showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์', 'error');
         }
     };
 
-    const handlePageChange = (page: number) => {
-        setCurrentPage(page);
-    };
-    const goToPreviousPage = () => {
-        if (currentPage > 1) setCurrentPage(currentPage - 1);
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <p>กำลังโหลด...</p>
+            </div>
+        );
+    }
+
+    const showAlert = (message: string, type: "success" | "error") => {
+        setAlertMessage(message);
+        setAlertType(type);
+
+
+        setTimeout(() => {
+            setAlertMessage(null);
+            setAlertType(null);
+        }, 3000);
     };
 
-    const goToNextPage = () => {
-        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-    };
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!file) {
-            setError('กรุณาเลือกไฟล์รูปภาพ');
-            setTimeout(() => setError(null), 5000);
+            showAlert('กรุณาเลือกไฟล์รูปภาพ', 'error');
             return;
         }
 
         const maxSize = 10 * 1024 * 1024; // ขนาดไฟล์สูงสุด 10MB
         if (file.size > maxSize) {
-            setError('ไฟล์มีขนาดเกิน 10MB');
-            setTimeout(() => setError(null), 5000);
+            showAlert('ไฟล์มีขนาดเกิน 10MB', 'error');
             return;
         }
 
@@ -102,89 +109,137 @@ function Adminsimage() {
             });
 
             if (response.ok) {
-                setSuccessMessage('เพิ่มรูปภาพสำเร็จ!');
-                setShowModal(false);
-                fetchImages(); // โหลดข้อมูลใหม่หลังจากเพิ่มรูปภาพสำเร็จ
-                setTimeout(() => setSuccessMessage(null), 5000);
+                showAlert('เพิ่มรูปภาพสำเร็จ!', 'success');
+                setShowModal(false); // ปิด Modal
+                fetchImages(); // โหลดข้อมูลใหม่หลังจากเพิ่มสำเร็จ
+                setTitle(''); // รีเซ็ต Title
+                setFile(null); // รีเซ็ตไฟล์
             } else {
                 const errorData = await response.json();
-                setError(`เกิดข้อผิดพลาดในการเพิ่มรูปภาพ: ${errorData.error}`);
-                setTimeout(() => setError(null), 5000);
+                showAlert(`เกิดข้อผิดพลาดในการเพิ่มรูปภาพ: ${errorData.error}`, 'error');
             }
         } catch (error) {
-            console.error('Error uploading image:', error);
-            setError('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
-            setTimeout(() => setError(null), 5000);
+            showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์', 'error');
         }
     };
 
-    const openEditModal = (image: { id: number; title: string; filename: string }) => {
-        setEditTitle(image.title);
-        setEditImageId(image.id);
-        setEditModalVisible(true);
+
+
+    const openEditConfirm = (image: Image) => {
+        setEditImageId(image.id); // ตั้งค่า ID
+        setEditTitle(image.title); // ตั้งค่า Title
+        setIsEditConfirmOpen(true); // เปิด Confirm Modal
     };
+
+
+    const handleEditConfirm = () => {
+        if (!editImageId) {
+            setAlertMessage('ไม่สามารถเปิดหน้าต่างแก้ไขได้: ไม่พบข้อมูล');
+            setAlertType('error');
+            return;
+        }
+        setEditModalVisible(true); // เปิด Modal แก้ไข
+        setIsEditConfirmOpen(false); // ปิด Confirm Modal
+    };
+
+
 
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+    
+        if (!editImageId) {
+            showAlert('เกิดข้อผิดพลาด: ไม่พบ ID ที่ต้องการแก้ไข', 'error');
+            return;
+        }
+    
         const formData = new FormData();
-        formData.append('id', editImageId!.toString()); // ใช้ `!` เพื่อระบุว่า editImageId ไม่เป็น null
+        formData.append('id', editImageId.toString());
         formData.append('title', editTitle);
         if (file) {
             formData.append('newFile', file);
         }
-
+    
         try {
-            const response = await fetch(`/api/images/${editImageId}`, {
-                method: 'PUT',
-                body: formData,
-            });
-
-            if (response.ok) {
-                setSuccessMessage('อัปเดตข้อมูลสำเร็จ!');
-                fetchImages();
-                setEditModalVisible(false);
+            const response = await axios.put(`/api/images/${editImageId}`, formData);
+    
+            if (response.status === 200) {
+                showAlert('อัปเดตข้อมูลสำเร็จ!', 'success');
+                fetchImages(); // โหลดข้อมูลใหม่
+                setEditModalVisible(false); // ปิด Modal
                 setEditTitle('');
                 setEditImageId(null);
                 setFile(null);
-                setTimeout(() => setSuccessMessage(''), 5000);
             } else {
-                const errorData = await response.json();
-                setError(`เกิดข้อผิดพลาดในการอัปเดตข้อมูล: ${errorData.error}`);
-                setTimeout(() => setError(''), 5000);
+                showAlert('เกิดข้อผิดพลาดในการอัปเดตข้อมูล', 'error');
             }
         } catch (error) {
-            setError('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
-            setTimeout(() => setError(''), 5000);
+            showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์', 'error');
         }
     };
+    
 
-    const handleDelete = async (id: number) => {
-        if (window.confirm("คุณต้องการลบรูปภาพนี้ใช่หรือไม่?")) {
-            try {
-                const response = await fetch(`/api/images/${id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ id }),
-                });
 
-                if (response.ok) {
-                    fetchImages();
-                    setSuccessMessage('ลบข้อมูลและไฟล์สำเร็จ!');
-                    setTimeout(() => setSuccessMessage(''), 5000);
-                } else {
-                    const errorData = await response.json();
-                    setError(`เกิดข้อผิดพลาด: ${errorData.error}`);
-                    setTimeout(() => setError(''), 5000);
-                }
-            } catch (error) {
-                setError('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
-                setTimeout(() => setError(''), 5000);
+
+
+    const openDeleteConfirm = (id: number) => {
+        setSelectedImageId(id); // เก็บ ID ของข้อมูลที่จะลบ
+        setIsDeleteConfirmOpen(true); // เปิด Modal ยืนยันการลบ
+    };
+
+
+
+    const handleDelete = async () => {
+        if (!selectedImageId) return;
+
+        try {
+            const response = await fetch(`/api/images/${selectedImageId}`, { method: 'DELETE' });
+            if (response.ok) {
+                fetchImages(); // โหลดข้อมูลใหม่
+                setAlertMessage("ลบข้อมูลสำเร็จ!");
+                setAlertType("success");
+
+                // ปิด AlertModal หลัง 3 วินาที
+                setTimeout(() => {
+                    setAlertMessage(null);
+                    setAlertType(null);
+                }, 3000);
+            } else {
+                setAlertMessage("เกิดข้อผิดพลาดในการลบข้อมูล");
+                setAlertType("error");
+
+                // ปิด AlertModal หลัง 3 วินาที
+                setTimeout(() => {
+                    setAlertMessage(null);
+                    setAlertType(null);
+                }, 3000);
             }
+        } catch {
+            setAlertMessage("เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์");
+            setAlertType("error");
+
+            // ปิด AlertModal หลัง 3 วินาที
+            setTimeout(() => {
+                setAlertMessage(null);
+                setAlertType(null);
+            }, 3000);
+        } finally {
+            setIsDeleteConfirmOpen(false); // ปิด Confirm Modal
+            setSelectedImageId(null); // รีเซ็ต ID
         }
     };
 
+
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+    const goToPreviousPage = () => {
+        if (currentPage > 1) setCurrentPage(currentPage - 1);
+    };
+
+    const goToNextPage = () => {
+        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+    };
 
     return (
         <div className="min-h-screen flex bg-gray-50">
@@ -193,30 +248,16 @@ function Adminsimage() {
                 <TopBar />
                 <div className="flex-1 flex items-start justify-center p-2">
                     <div className="bg-white rounded-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
-                        <h2 className="text-2xl font-semibold text-gray-800 mb-4">จัดการสื่อดาวน์โหลด</h2>
-
-                        {successMessage && (
-                            <div className="bg-green-50 text-green-500 p-6 mb-10 text-sm rounded-2xl" role="alert">
-                                <span>&#10004; </span>
-                                <span>{successMessage}</span>
-                            </div>
-                        )}
-
-                        {error && (
-                            <div className="bg-red-50 text-red-500 p-6 mb-10 text-sm rounded-2xl" role="alert">
-                                <span>&#10006; </span>
-                                <span>{error}</span>
-                            </div>
-                        )}
+                        <h2 className="text-2xl font-semibold text-gray-800 mb-4">สื่อดาวน์โหลด</h2>
 
                         <div className="">
                             <div className="w-full">
-                                <button onClick={() => setShowModal(true)} className="mb-4 bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition">เพิ่มรูปภาพ</button>
+                                <button onClick={() => setShowModal(true)} className="mb-4 bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 transition">+เพิ่มสื่อดาวน์โหลด</button>
                                 <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden text-sm">
                                     <thead>
                                         <tr className="bg-gray-200 text-gray-600 text-left text-sm uppercase font-semibold tracking-wider">
-                                            <th className="px-4 py-2 border-b-2 border-gray-200">ชื่อเรื่อง</th>
                                             <th className="px-4 py-2 border-b-2 border-gray-200">รูปภาพ</th>
+                                            <th className="px-4 py-2 border-b-2 border-gray-200">ชื่อเรื่อง</th>
                                             <th className="px-4 py-2 border-b-2 border-gray-200">วันที่เพิ่ม</th>
                                             <th className="px-4 py-2 border-b-2 border-gray-200">การจัดการ</th>
                                         </tr>
@@ -225,7 +266,6 @@ function Adminsimage() {
                                         {currentImages.length > 0 ? (
                                             currentImages.map(image => (
                                                 <tr key={image.id} className="hover:bg-gray-100 text-xs">
-                                                    <td className="px-4 py-2 border-b">{image.title}</td>
                                                     <td className="px-4 py-2 border-b">
                                                         <img
                                                             src={`/uploads/${image.filename}`}
@@ -234,10 +274,32 @@ function Adminsimage() {
                                                             onClick={() => setSelectedImage(`/uploads/${image.filename}`)}
                                                         />
                                                     </td>
+                                                    <td className="px-4 py-2 border-b">{image.title}</td>
                                                     <td className="px-4 py-2 border-b">{new Date(image.addedDate).toLocaleDateString()}</td>
                                                     <td className="px-4 py-2 border-b">
-                                                        <button onClick={() => openEditModal(image)} className="mb-4 bg-yellow-500 text-white py-2 px-2 mr-2 rounded-md hover:bg-yellow-600 transition">แก้ไข</button>
-                                                        <button onClick={() => handleDelete(image.id)} className="mb-4 bg-red-500 text-white py-2 px-2 rounded-md hover:bg-red-600 transition">ลบ</button>
+                                                        <button
+                                                            onClick={() => openEditConfirm(image)}
+                                                            className="mb-4 py-2 px-2 mr-2 rounded-md transition"
+                                                        >
+                                                            <img
+                                                                src="/images/edit.png"
+                                                                alt="Edit Icon"
+                                                                className="h-6 w-6"
+                                                            />
+                                                        </button>
+
+
+                                                        <button
+                                                            onClick={() => openDeleteConfirm(image.id)}
+                                                            className="mb-4  py-2 px-2 rounded-md htransition"
+                                                        >
+                                                            <img
+                                                                src="/images/delete.png"
+                                                                alt="Success Icon"
+                                                                className="h-6 w-6"
+                                                            />
+                                                        </button>
+
                                                     </td>
                                                 </tr>
                                             ))
@@ -250,20 +312,20 @@ function Adminsimage() {
                                 </table>
 
                                 <div className="flex items-center justify-between mt-6">
-                                    <span className="text-sm text-gray-600">Showing {startIndex + 1} to {Math.min(endIndex, images.length)} of {images.length} entries</span>
+                                    <span className="text-sm text-gray-600">รายการที่ {startIndex + 1} ถึง {Math.min(endIndex, images.length)} จาก {images.length} รายการ</span>
                                     <div className="flex space-x-2">
                                         <button
                                             onClick={goToPreviousPage}
                                             disabled={currentPage === 1}
-                                            className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-blue-400 hover:text-white transition disabled:opacity-50"
+                                            className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
                                         >
-                                            Previous
+                                            ก่อนหน้า
                                         </button>
                                         {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                                             <button
                                                 key={page}
                                                 onClick={() => handlePageChange(page)}
-                                                className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"} hover:bg-blue-400 hover:text-white transition`}
+                                                className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#fb8124] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#fb8124] hover:text-white transition`}
                                             >
                                                 {page}
                                             </button>
@@ -271,9 +333,9 @@ function Adminsimage() {
                                         <button
                                             onClick={goToNextPage}
                                             disabled={currentPage === totalPages}
-                                            className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-blue-400 hover:text-white transition disabled:opacity-50"
+                                            className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
                                         >
-                                            Next
+                                            ถัดไป
                                         </button>
                                     </div>
                                 </div>
@@ -298,22 +360,23 @@ function Adminsimage() {
                                                     <input
                                                         type="file"
                                                         accept=".jpg,.png"
-                                                        className="input w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        className="block w-full text-sm p-2 text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none  dark:placeholder-gray-400"
                                                         onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
                                                         required
                                                     />
+                                                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">PNG, JPG (10MB)</p>
                                                 </div>
                                                 <div className="modal-action flex justify-end space-x-4">
                                                     <button
                                                         type="button"
                                                         onClick={() => setShowModal(false)}
-                                                        className="mb-4 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-md transition"
+                                                        className="mb-4 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md transition"
                                                     >
                                                         ยกเลิก
                                                     </button>
                                                     <button
                                                         type="submit"
-                                                        className="mb-4 bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition"
+                                                        className="mb-4 bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-md transition"
                                                     >
                                                         บันทึก
                                                     </button>
@@ -344,21 +407,22 @@ function Adminsimage() {
                                                     <input
                                                         type="file"
                                                         accept=".jpg,.png"
-                                                        className="input w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        className="block w-full text-sm p-2 text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none  dark:placeholder-gray-400"
                                                         onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
                                                     />
+                                                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">PNG, JPG (10MB)</p>
                                                 </div>
                                                 <div className="modal-action flex justify-end space-x-4">
                                                     <button
                                                         type="button"
                                                         onClick={() => setEditModalVisible(false)}
-                                                        className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-all"
+                                                        className="mb-4 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md transition"
                                                     >
                                                         ยกเลิก
                                                     </button>
                                                     <button
                                                         type="submit"
-                                                        className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg transition-all"
+                                                        className="mb-4 bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-md transition"
                                                     >
                                                         บันทึก
                                                     </button>
@@ -382,11 +446,40 @@ function Adminsimage() {
                                         </div>
                                     </div>
                                 )}
-
-
                             </div>
                         </div>
                     </div>
+
+                    {isDeleteConfirmOpen && (
+                        <ConfirmModal
+                            isOpen={isDeleteConfirmOpen}
+                            onClose={() => setIsDeleteConfirmOpen(false)} // ปิด Modal หากยกเลิก
+                            onConfirm={handleDelete} // เรียกฟังก์ชันลบเมื่อยืนยัน
+                            title="คุณต้องการลบข้อมูลนี้หรือไม่?"
+                            iconSrc="/images/alert.png"
+                        />
+                    )}
+
+                    {isEditConfirmOpen && (
+                        <ConfirmEditModal
+                            isOpen={isEditConfirmOpen}
+                            onClose={() => setIsEditConfirmOpen(false)} // ปิด Confirm Modal
+                            onConfirm={handleEditConfirm} // เปิด Modal แก้ไขเมื่อยืนยัน
+                            title="คุณต้องการแก้ไขข้อมูลนี้หรือไม่?"
+                            iconSrc="/images/alert.png"
+                        />
+                    )}
+
+                    {alertMessage && (
+                        <AlertModal
+                            isOpen={!!alertMessage} // แสดงเมื่อมีข้อความ
+                            message={alertMessage}
+                            type={alertType ?? 'error'}
+                            iconSrc={alertType === 'success' ? '/images/check.png' : '/images/close.png'}
+                        />
+                    )}
+
+
                 </div>
             </div>
         </div>

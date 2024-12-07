@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getToken } from "next-auth/jwt"; // ใช้สำหรับตรวจสอบสิทธิ์
+import { getToken } from "next-auth/jwt";
 
 // ฟังก์ชันตรวจสอบสิทธิ์
 async function checkAdminSession(request: Request): Promise<boolean> {

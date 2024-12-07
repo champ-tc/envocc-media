@@ -29,19 +29,20 @@ export default function Home() {
   return (
     <>
       <Navbar />
-      <Link href="/">
+      <Link href="/" className=''>
         <img src="/images/banner_media.png" alt="banner" className="w-full" />
       </Link>
       <div className="flex flex-col items-center justify-center py-16">
-        <h2 className="text-yellow-600 text-4xl font-bold mb-16">ทำไมต้อง <span className="text-orange-600">Media Envocc?</span></h2>
+        <h2 className="text-[#fb8124] text-4xl font-bold mb-16">ทำไมต้อง <span className="text-blue-600">Media Envocc?</span></h2>
         <div className="flex flex-col md:flex-row items-center justify-between w-full max-w-6xl mb-16">
           <div className="w-full md:w-1/2 flex flex-col items-center p-8">
-            <Image src="/images/product.png" alt="check" width={200} height={200} className="mb-4" />
-            <p className="text-2xl font-bold">เบิกสื่อ</p>
+            <Image src="/images/page.png" alt="check" width={600} height={600} className="mb-4" />
           </div>
-          <div className="w-full md:w-1/2 flex flex-col items-center p-8">
-            <Image src="/images/media.png" alt="check" width={200} height={200} className="mb-4" />
+          <div className="w-full md:w-1/2 flex flex-col items-center text-start">
             <p className="text-2xl font-bold">ดาวน์โหลดสื่อ</p>
+            <p>1.dddddddddddddddd</p>
+            <p>2.ssssssssssssssss</p>
+            <p>3.ssssssssssssssss</p>
           </div>
         </div>
 

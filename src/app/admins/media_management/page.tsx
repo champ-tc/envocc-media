@@ -413,7 +413,7 @@ function AdminsMedia_management() {
                 <TopBar />
                 <div className="flex-1 flex items-start justify-center p-4">
                     <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
-                        <h2 className="text-2xl font-semibold text-gray-800 mb-4">จัดการข้อมูล Requisition</h2>
+                        <h2 className="text-2xl font-semibold text-gray-800 mb-4">เบิกสื่อ</h2>
 
                         {successMessage && (
                             <div className="bg-green-50 text-green-500 p-6 mb-10 text-sm rounded-2xl" role="alert">
@@ -429,26 +429,26 @@ function AdminsMedia_management() {
                             </div>
                         )}
 
-                        <button onClick={() => setShowModal(true)} className="mb-4 bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition">เพิ่ม Requisition</button>
+                        <button onClick={() => setShowModal(true)} className="mb-4 bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 transition">+เพิ่มเบิก</button>
 
                         <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden text-sm">
                             <thead>
                                 <tr className="bg-gray-200 text-gray-600 text-left text-sm uppercase font-semibold tracking-wider">
-                                    <th className="px-4 py-2">รูปภาพ</th>
-                                    <th className="px-4 py-2">ชื่อสื่อ</th>
-                                    <th className="px-4 py-2">หน่วยนับ</th>
-                                    <th className="px-4 py-2">ประเภท</th>
-                                    <th className="px-4 py-2">จำนวนคงเหลือ</th>
-                                    <th className="px-4 py-2">จำนวนที่เก็บ</th>
-                                    <th className="px-4 py-2">คำอธิบาย</th>
-                                    <th className="px-4 py-2">เบิก</th>
-                                    <th className="px-4 py-2">จัดการ</th>
+                                    <th className="px-4 py-2" style={{ width: "7%" }}>รูปภาพ</th>
+                                    <th className="px-4 py-2" style={{ width: "13%" }}>ชื่อสื่อ</th>
+                                    <th className="px-4 py-2" style={{ width: "10%" }}>หน่วยนับ</th>
+                                    <th className="px-4 py-2" style={{ width: "15%" }}>ประเภท</th>
+                                    <th className="px-4 py-2" style={{ width: "10%" }}>จำนวนคงเหลือ</th>
+                                    <th className="px-4 py-2" style={{ width: "10%" }}>จำนวนที่เก็บ</th>
+                                    <th className="px-4 py-2" style={{ width: "13%" }}>คำอธิบาย</th>
+                                    <th className="px-4 py-2" style={{ width: "10%" }}>เบิก</th>
+                                    <th className="px-4 py-2" style={{ width: "12%" }}>จัดการ</th>
                                 </tr>
                             </thead>
                             <tbody className="text-gray-700 text-sm">
                                 {paginatedRequisitions.map((req) => (
                                     <tr key={req.id}>
-                                        <td className="px-4 py-2 border">
+                                        <td className="p-2 py-2 border">
                                             {req.requisition_images ? (
                                                 <img
                                                     src={`/requisitions/${req.requisition_images}`}
@@ -460,37 +460,51 @@ function AdminsMedia_management() {
                                                 "ไม่มีรูปภาพ"
                                             )}
                                         </td>
-                                        <td className="px-4 py-2 border">{req.requisition_name}</td>
-                                        <td className="px-4 py-2 border">{req.unit}</td>
-                                        <td className="px-4 py-2 border">
+                                        <td className="p-2 border">{req.requisition_name}</td>
+                                        <td className="p-2 border">{req.unit}</td>
+                                        <td className="p-2 border">
                                             {types.find((type) => type.id === req.type_id)?.name || '-'}
                                         </td>
-                                        <td className="px-4 py-2 border">{req.quantity}</td>
-                                        <td className="px-4 py-2 border">{req.reserved_quantity || 0}</td>
-                                        <td className="px-4 py-2 border">
+                                        <td className="p-2 border">{req.quantity}</td>
+                                        <td className="p-2 border">{req.reserved_quantity || 0}</td>
+                                        <td className="p-2 border">{req.description || '-'}</td>
+                                        <td className="p-2 border">
                                             {req.is_borro_restricted ? "ห้ามเบิก" : "เบิกได้"} {/* แสดงสถานะการเบิก */}
                                         </td>
-                                        <td className="px-4 py-2 border">{req.description || '-'}</td>
-                                        <td className="px-4 py-2 border">
+                                        <td className="p-2 border">
                                             <button
                                                 onClick={() => openEditModal(req)}
-                                                className="bg-yellow-500 text-white px-2 py-1 mr-2 rounded"
+                                                className="mb-4 py-2 px-2 mr-2 rounded-md transition"
                                             >
-                                                แก้ไข
+                                                <img
+                                                    src="/images/edit.png"
+                                                    alt="Edit Icon"
+                                                    className="h-6 w-6"
+                                                />
                                             </button>
                                             {req.status === 1 ? (
                                                 <button
                                                     onClick={() => handleDelete(req.id)}
-                                                    className="bg-red-500 text-white px-2 py-1 rounded"
+                                                    className="mb-4 py-2 px-2 mr-2 rounded-md transition"
+                                                    title='ปิดใช้งาน'
                                                 >
-                                                    ปิดการใช้งาน
+                                                    <img
+                                                        src="/images/turn-on.png"
+                                                        alt="Edit Icon"
+                                                        className="h-6 w-6"
+                                                    />
                                                 </button>
                                             ) : (
                                                 <button
                                                     onClick={() => handleEnable(req.id)}
-                                                    className="bg-green-500 text-white px-2 py-1 rounded"
+                                                    className="mb-4 py-2 px-2 mr-2 rounded-md transition"
+                                                    title='เปิดใช้งาน'
                                                 >
-                                                    เปิดการใช้งาน
+                                                    <img
+                                                        src="/images/turn-off.png"
+                                                        alt="Edit Icon"
+                                                        className="h-6 w-6"
+                                                    />
                                                 </button>
                                             )}
                                         </td>
@@ -574,8 +588,9 @@ function AdminsMedia_management() {
                                             <input
                                                 type="file"
                                                 onChange={(e) => handleImageChange(e, setRequisitionImage)}
-                                                className="w-full border border-gray-300 rounded px-3 py-1 focus:ring focus:ring-blue-400 focus:outline-none"
+                                                className="block w-full text-sm p-2 text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none  dark:placeholder-gray-400"
                                             />
+                                            <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">PNG, JPG (10MB)</p>
                                         </div>
                                         <div className="grid grid-cols-2 gap-3">
                                             <div>
@@ -612,10 +627,11 @@ function AdminsMedia_management() {
                                         </div>
                                         <div className="grid grid-cols-2 gap-3">
                                             <div>
-                                                <label className="block text-gray-700 font-medium mb-1">จำนวนคงเหลือ</label>
+                                                <label className="block text-gray-700 font-medium mb-1">จำนวน</label>
                                                 <input
                                                     type="number"
-                                                    placeholder="จำนวนคงเหลือ"
+                                                    placeholder="จำนวน"
+                                                    minLength={0}
                                                     value={newRequisition.quantity}
                                                     onChange={(e) => handleQuantityChange(Number(e.target.value))}
                                                     className="w-full border border-gray-300 rounded px-3 py-1 focus:ring focus:ring-blue-400 focus:outline-none"
@@ -650,13 +666,13 @@ function AdminsMedia_management() {
                                             <button
                                                 type="button"
                                                 onClick={() => setShowModal(false)}
-                                                className="bg-red-500 text-white py-1 px-4 rounded hover:bg-red-600 transition text-sm"
+                                                className="mb-4 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md transition"
                                             >
                                                 ยกเลิก
                                             </button>
                                             <button
                                                 type="submit"
-                                                className="bg-blue-500 text-white py-1 px-4 rounded hover:bg-blue-600 transition text-sm"
+                                                className="mb-4 bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-md transition"
                                             >
                                                 บันทึก
                                             </button>
@@ -692,8 +708,9 @@ function AdminsMedia_management() {
                                             <input
                                                 type="file"
                                                 onChange={(e) => handleImageChange(e, setEditedImage)}
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                className="block w-full text-sm p-2 text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none  dark:placeholder-gray-400"
                                             />
+                                            <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">PNG, JPG (10MB)</p>
                                             {currentImage && !editedImage && (
                                                 <img src={`/requisitions/${currentImage}`} alt="Current" className="w-16 h-16 mt-2 rounded-md border" />
                                             )}
@@ -775,15 +792,15 @@ function AdminsMedia_management() {
                                             <button
                                                 type="button"
                                                 onClick={() => setEditModal(false)}
-                                                className="bg-red-500 text-white py-1 px-4 rounded-lg hover:bg-red-600 transition text-sm"
+                                                className="mb-4 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md transition"
                                             >
                                                 ยกเลิก
                                             </button>
                                             <button
                                                 type="submit"
-                                                className="bg-blue-500 text-white py-1 px-4 rounded-lg hover:bg-blue-600 transition text-sm"
+                                                className="mb-4 bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-md transition"
                                             >
-                                                บันทึกการแก้ไข
+                                                บันทึก
                                             </button>
                                         </div>
                                     </form>

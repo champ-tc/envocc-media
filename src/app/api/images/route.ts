@@ -3,16 +3,29 @@ import { prisma } from '@/lib/prisma';
 import { v4 as uuidv4 } from 'uuid'; // Import uuidv4
 import fs from 'fs';
 import path from 'path';
+import { getToken } from "next-auth/jwt";
 
-// เพิ่มข้อมูล
-export async function POST(request) {
+async function checkAdminSession(request: Request): Promise<boolean> {
+    const token = await getToken({ req: request as any });
+    return !!(token && token.role === 'admin');
+}
+
+export async function POST(request: Request) {
+    if (!(await checkAdminSession(request))) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     try {
         const formData = await request.formData();
-        const title = formData.get('title');
-        const file = formData.get('file');
+        const title = formData.get('title') as string;
+        const file = formData.get('file') as File;
 
         if (!file || !title) {
             return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
+        }
+
+        if (!(file instanceof File)) {
+            return NextResponse.json({ error: 'Invalid file input' }, { status: 400 });
         }
 
         // สร้างชื่อไฟล์แบบสุ่ม
@@ -26,17 +39,17 @@ export async function POST(request) {
         // บันทึกข้อมูลในฐานข้อมูล
         const newImage = await prisma.image.create({
             data: {
-                title,
+                title: title.toString(),
                 filename,
             },
         });
 
         return NextResponse.json({ message: 'Image added successfully', image: newImage });
     } catch (error) {
-        console.error('Error uploading image:', error);
         return NextResponse.json({ error: 'Error uploading image' }, { status: 500 });
     }
 }
+
 
 // API สำหรับ GET ข้อมูล
 export async function GET() {

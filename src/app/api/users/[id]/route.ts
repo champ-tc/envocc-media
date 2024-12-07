@@ -85,7 +85,14 @@ export async function DELETE(req: Request, { params: { id } }: { params: { id: s
     }
 
     try {
-        const deletedUser = await prisma.user.delete({ where: { id: Number(id) } });
+        const numericId = Number(id); // แปลง id ให้เป็น Number
+        if (isNaN(numericId)) {
+            return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 });
+        }
+
+        const deletedUser = await prisma.user.delete({
+            where: { id: numericId },
+        });
         return NextResponse.json(deletedUser);
     } catch (error) {
         return handleError(error, "Error deleting user");

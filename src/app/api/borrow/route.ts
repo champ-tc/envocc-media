@@ -6,6 +6,11 @@ import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
+interface Token {
+    role?: string;
+    [key: string]: any;
+}
+
 // สร้าง schema สำหรับตรวจสอบข้อมูลด้วย zod
 const borrowSchema = z.object({
     borrow_name: z.string().min(1, "ชื่อสื่อเป็นข้อมูลที่จำเป็น"),
@@ -18,9 +23,43 @@ const borrowSchema = z.object({
 
 // ฟังก์ชันตรวจสอบสิทธิ์
 async function checkAdminSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
-    return !!(token && token.role === 'admin');
+    try {
+        // ดึง token จาก NextAuth.js
+        const token = await getToken({ req: request as any }) as Token;
+
+        if (token && typeof token.role === 'string' && (token.role === 'admin' || token.role === 'user')) {
+            return true;
+        }
+
+        // หากไม่ผ่านเงื่อนไข ให้คืนค่า false
+        return false;
+    } catch (error) {
+        // จัดการข้อผิดพลาดที่เกิดขึ้น เช่น token ไม่มี หรือการตรวจสอบล้มเหลว
+        return false;
+    }
 }
+
+// async function checkAdminSession(request: Request): Promise<boolean> {
+//     try {
+//         // ดึง token จาก NextAuth.js
+//         const token = await getToken({ req: request as any }) as Token;
+
+//         // ตรวจสอบว่า token มี role และ role เป็น admin
+//         if (token && typeof token.role === 'string' && token.role === 'admin') {
+//             return true;
+//         }
+
+//         // if (token && typeof token.role === 'string' && (token.role === 'admin' || token.role === 'user')) {
+//         //     return true;
+//         // }
+
+//         // หากไม่ผ่านเงื่อนไข ให้คืนค่า false
+//         return false;
+//     } catch (error) {
+//         // จัดการข้อผิดพลาดที่เกิดขึ้น เช่น token ไม่มี หรือการตรวจสอบล้มเหลว
+//         return false;
+//     }
+// }
 
 // GET: ดึงข้อมูล Borrow ทั้งหมด
 export async function GET(request: Request) {
@@ -41,6 +80,12 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
+        // ตรวจสอบ CSRF Token
+        const csrfToken = request.headers.get("x-csrf-token");
+        if (!csrfToken || csrfToken !== process.env.CSRF_SECRET) {
+            return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
+        }
+
         const formData = await request.formData();
 
         // ดึงข้อมูลจาก formData
@@ -54,19 +99,30 @@ export async function POST(request: Request) {
 
         // ตรวจสอบข้อมูลที่ได้รับจากฟอร์ม
         const validatedData = borrowSchema.parse({
-            borrow_name: borrowName,
-            unit: unit,
+            borrow_name: sanitizeInput(borrowName),
+            unit: sanitizeInput(unit),
             type_id: typeId,
             quantity: quantity,
             is_borro_restricted: isBorroRestricted,
-            description: description,
+            description: sanitizeInput(description),
         });
 
         // ตรวจสอบและจัดการการอัปโหลดไฟล์
         let imageUrl = "";
         if (file) {
+            const maxFileSize = 5 * 1024 * 1024; // จำกัดขนาดไฟล์ 5MB
+            const allowedFileTypes = ["image/jpeg", "image/png"];
+
+            if (!allowedFileTypes.includes(file.type)) {
+                return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
+            }
+
+            if (file.size > maxFileSize) {
+                return NextResponse.json({ error: "File size exceeds limit" }, { status: 400 });
+            }
+
             const filename = `${uuidv4()}.${file.type.split('/')[1]}`;
-            const filePath = path.join(process.cwd(), 'public', 'borrows', filename); // บันทึกไฟล์ที่ public/borrows
+            const filePath = path.join(process.cwd(), 'public', 'borrows', filename);
             const fileBuffer = Buffer.from(await file.arrayBuffer());
             fs.writeFileSync(filePath, fileBuffer);
             imageUrl = filename; // เก็บเฉพาะชื่อไฟล์ในฐานข้อมูล
@@ -81,18 +137,9 @@ export async function POST(request: Request) {
                 quantity: validatedData.quantity,
                 is_borro_restricted: validatedData.is_borro_restricted,
                 description: validatedData.description || null,
-                borrow_images: imageUrl, // เก็บชื่อไฟล์ในฐานข้อมูล
+                borrow_images: imageUrl,
             },
         });
-
-        await prisma.borrow_updates.create({
-            data: {
-                borrowId: newBorrow.id, // หรือ borrowId ที่คุณใช้อยู่
-                updatedQuantity: validatedData.quantity, // ใช้ validatedData.quantity หรือค่าจากข้อมูลที่ได้รับ
-                updateType: validatedData.quantity > 0 ? "insert" : "reduce", // ถ้าจำนวน > 0 ให้ใช้ "insert", ถ้าน้อยกว่า 0 ให้ใช้ "reduce"
-                remarks: "เพิ่ม Borrow ใหม่", // หมายเหตุหรือเหตุผลในการอัปเดต
-            },
-        });        
 
         return NextResponse.json(newBorrow, { status: 200 });
     } catch (error) {
@@ -103,3 +150,4 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Error adding borrow' }, { status: 500 });
     }
 }
+

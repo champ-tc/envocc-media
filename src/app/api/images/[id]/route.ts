@@ -42,7 +42,6 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 
         return new Response(JSON.stringify({ message: 'Image and file deleted successfully' }), { status: 200 });
     } catch (error) {
-        console.error('Error deleting image:', error);
         return new Response(JSON.stringify({ error: 'Error deleting image or file' }), { status: 500 });
     }
 }
@@ -93,7 +92,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
         return new Response(JSON.stringify({ message: 'Image updated successfully', image: updatedImage }), { status: 200 });
     } catch (error) {
-        console.error('Error updating image:', error);
         return new Response(JSON.stringify({ error: 'Error updating image' }), { status: 500 });
     }
 }
@@ -113,7 +111,6 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
         return new Response(JSON.stringify(image), { status: 200 });
     } catch (error) {
-        console.error('Error fetching image:', error);
         return new Response(JSON.stringify({ error: "Error fetching image" }), { status: 500 });
     }
 }
@@ -159,7 +156,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
         return response;
     } catch (error) {
-        console.error('Error updating view count:', error);
         return new Response(JSON.stringify({ error: "Error updating view count" }), { status: 500 });
     }
 }

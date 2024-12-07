@@ -1,140 +1,169 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from "../../hooks/useAuth";
+import useAuthCheck from "@/hooks/useAuthCheck";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
+import AlertModal from "@/components/AlertModal";
+import axios from "axios";
 
-const PersonalPage: React.FC = () => {
-    const { data: session, status } = useSession();
+interface User {
+    id: string | number;
+    username: string;
+    title: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    tel: string;
+    department: string; // หรือใช้ number ถ้า department เป็นหมายเลข
+    position: string;
+    role: string;
+}
+
+
+
+function PersonalPage() {
+    const { session, isLoading } = useAuthCheck("admin");
     const router = useRouter();
-
-    useAuth('admin'); // Ensure user is authorized as admin
-
+    const { id } = params;
+    const [users, setUsers] = useState([]);
     const [userData, setUserData] = useState({
-        username: '',
-        title: '',
-        firstName: '',
-        lastName: '',
-        tel: '',
-        email: '',
-        department: '',
-        position: '',
-        role: 'user'
+        username: "",
+        password: "", // เพิ่ม password
+        title: "",
+        firstName: "",
+        lastName: "",
+        tel: "",
+        email: "",
+        department: "",
+        position: "",
+        role: "user",
     });
+
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    const [showPassword, setShowPassword] = useState(false); // Initialize showPassword state
+    const [showPassword, setShowPassword] = useState(false);
 
-    useEffect(() => {
-        if (status === "unauthenticated") {
-            router.push("/login");
-        } else if (status === "authenticated") {
-            const fetchUser = async () => {
-                try {
-                    const res = await fetch('/api/users/profile', {
-                        method: 'GET',
-                        credentials: 'include', // Ensure cookies are included
-                    });
+    // การจัดการข้อความแจ้งเตือน
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
+    const [alertType, setAlertType] = useState<"success" | "error" | null>(null);
 
-                    if (!res.ok) {
-                        throw new Error("Failed to fetch user");
-                    }
 
-                    const data = await res.json();
-                    setUserData(data);
-                } catch (err) {
-                    console.error(err);
-                    setError(err.message);
-                } finally {
-                    setLoading(false); // Set loading to false after fetching
-                }
-            };
+    const showAlert = (message: string, type: "success" | "error") => {
+        setAlertMessage(message);
+        setAlertType(type);
+        setTimeout(() => {
+            setAlertMessage(null);
+            setAlertType(null);
+        }, 3000);
+    };
 
-            fetchUser();
+    // ฟังก์ชันดึงข้อมูลผู้ใช้
+    const fetchUserData = async (url: string, setData: Function, errorMessage: string) => {
+        try {
+            const res = await fetch(url, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${session?.token}`,
+                },
+            });
+
+            if (!res.ok) {
+                throw new Error(`API Error: ${res.status} ${res.statusText}`);
+            }
+
+            const data = await res.json();
+            setData(data); // อัปเดตข้อมูลใน state
+        } catch (err) {
+            showAlert(errorMessage, "error");
+        } finally {
+            setLoading(false);
         }
-    }, [status, router]);
+    };
+
+    // ใช้ useEffect เพื่อดึงข้อมูล
+    useEffect(() => {
+        if (session) {
+            fetchUserData(`/api/users/${id}`, setUserData, "ไม่สามารถดึงข้อมูลส่วนตัวได้");
+        }
+    }, [session, id]);
+
+    if (isLoading || loading) {
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <p>กำลังโหลด...</p>
+            </div>
+        );
+    }
+
+
 
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-    
+
         const { username, password, title, firstName, lastName, tel, email, department, position } = userData;
-    
-        // Check for required fields
+
+        // ตรวจสอบฟิลด์ที่จำเป็น
         if (!username || !title || !firstName || !lastName || !tel || !email || !department || !position) {
-            setError("กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน");
-            setTimeout(() => setError(null), 5000);
+            showAlert("กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน", "error");
             return;
         }
-    
-        // Validate email format
+
+        const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/;
+        if (password && !passwordPattern.test(password)) {
+            showAlert("รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัว ประกอบด้วยตัวอักษร A-Z, a-z และตัวเลข", "error");
+            return;
+        }
+
+        // ตรวจสอบรูปแบบอีเมล
         const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailPattern.test(email)) {
-            setError("รูปแบบอีเมลไม่ถูกต้อง");
-            setTimeout(() => setError(null), 5000);
+            showAlert("รูปแบบอีเมลไม่ถูกต้อง", "error");
             return;
         }
-    
-        // Validate phone number (must be 10 digits)
+
+        // ตรวจสอบเบอร์โทร
         if (!/^\d{10}$/.test(tel)) {
-            setError("เบอร์โทรต้องเป็นตัวเลข 10 หลัก");
-            setTimeout(() => setError(null), 5000);
+            showAlert("เบอร์โทรต้องเป็นตัวเลข 10 หลัก", "error");
             return;
         }
-    
-        // Validate name length
+
+        // ตรวจสอบความยาวชื่อ
         if (firstName.length > 20 || lastName.length > 20) {
-            setError("ชื่อและนามสกุลต้องไม่เกิน 20 ตัวอักษร");
-            setTimeout(() => setError(null), 5000);
+            showAlert("ชื่อและนามสกุลต้องไม่เกิน 20 ตัวอักษร", "error");
             return;
         }
-    
-        // Validate position length
+
+        // ตรวจสอบความยาวตำแหน่ง
         if (position.length > 30) {
-            setError("ตำแหน่ง/อาชีพต้องไม่เกิน 30 ตัวอักษร");
-            setTimeout(() => setError(null), 5000);
+            showAlert("ตำแหน่ง/อาชีพต้องไม่เกิน 30 ตัวอักษร", "error");
             return;
         }
-    
+
         try {
-            const res = await fetch('/api/users/profile', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username,
-                    title,
-                    firstName,
-                    lastName,
-                    tel,
-                    email,
-                    department,
-                    position,
-                    ...(password && { password }) // Include password only if it's provided
-                }),
+            const response = await axios.put("/api/users/profile", {
+                username,
+                title,
+                firstName,
+                lastName,
+                tel,
+                email,
+                department,
+                position,
+                ...(password && { password }),
             });
-    
-            if (!res.ok) {
-                throw new Error("Error updating user");
-            }
-    
-            const data = await res.json();
-            setSuccessMessage(data.message);
+
+            showAlert("อัปเดตข้อมูลสำเร็จ", "success");
             setTimeout(() => {
-                setSuccessMessage(null);
-                router.push('/admins/user-management'); // Redirect or update as needed
+                router.push("/admins/user-management");
             }, 3000);
-        } catch (err) {
-            setError((err as Error).message);
-            setTimeout(() => setError(null), 5000);
+        } catch (err: any) {
+            showAlert(err.response?.data?.message || "เกิดข้อผิดพลาดในการอัปเดตข้อมูล", "error");
         }
     };
-    
 
-    if (loading) return <p>Loading...</p>;
 
     return (
         <div className="flex min-h-screen bg-gray-50">
@@ -145,18 +174,13 @@ const PersonalPage: React.FC = () => {
                     <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
                         <h1 className="text-2xl font-bold mb-4">ข้อมูลส่วนตัว</h1>
 
-                        {successMessage && (
-                            <div className="bg-green-50 text-green-500 p-6 mb-10 text-sm rounded-2xl" role="alert">
-                                <span>&#10004; </span>
-                                <span>{successMessage}</span>
-                            </div>
-                        )}
-
-                        {error && (
-                            <div className="bg-red-50 text-red-500 p-6 mb-10 text-sm rounded-2xl" role="alert">
-                                <span>&#10006; </span>
-                                <span>{error}</span>
-                            </div>
+                        {alertMessage && (
+                            <AlertModal
+                                isOpen={!!alertMessage}
+                                message={alertMessage}
+                                type={alertType ?? "error"}
+                                iconSrc={alertType === "success" ? "/images/check.png" : "/images/close.png"}
+                            />
                         )}
 
                         <form onSubmit={handleSubmit}>
@@ -182,7 +206,12 @@ const PersonalPage: React.FC = () => {
                                             maxLength={20}
                                             id="password"
                                             name="password"
-                                            onChange={(e) => setUserData({ ...userData, password: e.target.value })}
+                                            onChange={(e) => {
+                                                setUserData((prev) => ({
+                                                    ...prev,
+                                                    password: e.target.value,
+                                                }));
+                                            }}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
                                         />
                                         <button

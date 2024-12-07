@@ -15,7 +15,7 @@ export async function middleware(req: NextRequest) {
 
     // หากเป็น user และพยายามเข้าถึงหน้า admin
     if (token.role === "user" && url.pathname.startsWith("/admins")) {
-        url.pathname = "/users/dashboard"; // เปลี่ยนเส้นทางไปหน้า /users/dashboard
+        url.pathname = "/users/borrow"; // เปลี่ยนเส้นทางไปหน้า /users/dashboard
         return NextResponse.redirect(url);
     }
 

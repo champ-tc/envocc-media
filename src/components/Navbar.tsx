@@ -22,7 +22,8 @@ function Navbar() {
     }
 
     return (
-        <nav className="bg-white">
+        <nav className="bg-gradient-to-r from-[#fb8124] via-[#f89c2b] to-[#f5b83c]">
+        {/* <nav> */}
             <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
                 <Link href="/"><img src="/images/icon_media.png" alt="icon" className="h-10" /></Link>
                 <button 
@@ -33,12 +34,10 @@ function Navbar() {
                     aria-expanded={isMenuOpen ? "true" : "false"} // แก้ไขสถานะการขยายของเมนู
                 >
                     <span className="sr-only">Open main menu</span>
-                    <svg className="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
-                        <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 1h15M1 7h15M1 13h15" />
-                    </svg>
+                    <img src="/images/hamburger.png" alt="menu" className="h-8 w-8" />
                 </button>
-                <div className={`${isMenuOpen ? 'block' : 'hidden'} w-full md:block md:w-auto`} id="navbar-default">
-                    <ul className="font-medium flex flex-col p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 rtl:space-x-reverse md:mt-0 md:border-0 md:bg-white">
+                <div className={`${isMenuOpen ? 'block' : 'hidden'} w-full md:block md:w-auto  md:bg-white/80 px-4 py-2 border-gray-100 rounded-lg bg-gray-50`} id="navbar-default">
+                    <ul className="font-medium flex flex-col p-4 md:p-0 mt-4 md:flex-row md:space-x-8 rtl:space-x-reverse md:mt-0">
                         <li>
                             <a href="/media" className="font-bold block py-2 px-3 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 md:dark:text-blue-500" aria-current="page">สื่อเผยแพร่</a>
                         </li>

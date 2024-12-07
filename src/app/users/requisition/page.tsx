@@ -1,35 +1,24 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import useAuthCheck from "@/hooks/useAuthCheck";
 import Sidebar from "@/components/Sidebar_User";
-import TopBar from "@/components/TopBar";
+import NavbarUser from "@/components/NavbarUser";
 
 function UsersRequisition() {
-    const { data: session, status } = useSession();
-    const router = useRouter();
+    const { session, isLoading } = useAuthCheck("user");
 
-    useEffect(() => {
-        if (status === "unauthenticated") {
-            router.push("/login");
-        } else if (session && session.user.role !== 'user') {
-            router.push("/admins/dashboard");
-        }
-    }, [status, session]);
-
-    if (status === "loading") {
+    if (isLoading) {
         return <p>Loading...</p>;
     }
 
-    return (
-        <div className="min-h-screen flex bg-gray-50">
-            {/* Sidebar */}
-            <Sidebar />
+    if (!session) {
+        return null;
+    }
 
-            {/* Main Content Container */}
+
+    return (
             <div className="flex-1 flex flex-col">
-                <TopBar />
+                <NavbarUser />
 
                 {/* Main content */}
                 <div className="flex-1 flex items-start justify-center p-6">
@@ -52,7 +41,6 @@ function UsersRequisition() {
                     </div>
                 </div>
             </div>
-        </div>
     );
 }
 

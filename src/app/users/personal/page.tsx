@@ -3,12 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { useSession, getCsrfToken } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/Sidebar_User";
-import TopBar from "@/components/TopBar";
+import useAuthCheck from "@/hooks/useAuthCheck";
+import NavbarUser from "@/components/NavbarUser";
 
 function UsersPersonal() {
-    const { data: session, status } = useSession();
+    const { session, isLoading } = useAuthCheck("user");
     const router = useRouter();
+
+    // ใช้ hooks ทั้งหมดในระดับบนสุด
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [title, setTitle] = useState("");
@@ -22,16 +24,7 @@ function UsersPersonal() {
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [csrfToken, setCsrfToken] = useState<string | null>(null);
 
-    // ตรวจสอบสถานะการ login
-    useEffect(() => {
-        if (status === "unauthenticated") {
-            router.push("/login");
-        } else if (session && session.user.role !== 'user') {
-            router.push("/admins/dashboard");
-        }
-    }, [status, session, router]);
 
-    // ดึงข้อมูล CSRF Token จาก NextAuth
     useEffect(() => {
         const fetchCsrfToken = async () => {
             try {
@@ -42,9 +35,18 @@ function UsersPersonal() {
                 setError("มีข้อผิดพลาดในการดึง CSRF Token");
             }
         };
-
+    
         fetchCsrfToken();
     }, []);
+    
+
+    if (isLoading) {
+        return <p>Loading...</p>;
+    }
+
+    if (!session) {
+        return null;
+    }
 
     const saveToDatabase = async (userData: any) => {
         try {
@@ -108,10 +110,8 @@ function UsersPersonal() {
     };
 
     return (
-        <div className="min-h-screen flex bg-gray-50">
-            <Sidebar />
             <div className="flex-1 flex flex-col">
-                <TopBar />
+                <NavbarUser />
                 <div className="flex-1 flex items-start justify-center p-2">
                     <div className="bg-white rounded-lg shadow-lg max-w-3xl w-full p-8 mt-4">
                         <h2 className="text-2xl font-semibold text-gray-800 mb-4">ข้อมูลส่วนตัว</h2>
@@ -194,7 +194,6 @@ function UsersPersonal() {
                     </div>
                 </div>
             </div>
-        </div>
     );
 }
 

@@ -115,7 +115,6 @@ function AdminsRequisition() {
                 <div className="flex-1 flex items-start justify-center p-2">
                     <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
                         <h2 className="text-2xl font-semibold text-gray-800 mb-4">เบิกสื่อ</h2>
-                        {/* ช่องค้นหาและกรอง */}
                         <div className="flex flex-col md:flex-row justify-between items-center mb-4">
                             <input
                                 type="text"
