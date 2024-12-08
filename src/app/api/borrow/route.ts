@@ -23,18 +23,8 @@ const borrowSchema = z.object({
 
 // ฟังก์ชันตรวจสอบสิทธิ์
 async function checkAdminSession(request: Request): Promise<boolean> {
-    try {
-        const token = await getToken({ req: request as any }) as Token;
-
-        if (token && typeof token.role === 'string' && (token.role === 'admin' || token.role === 'user')) {
-            return true;
-        }
-
-        return false;
-    } catch (error) {
-        console.error("Error checking session:", error);
-        return false;
-    }
+    const token = await getToken({ req: request as any });
+    return !!(token && token.role === 'admin');
 }
 
 // ฟังก์ชัน sanitizeInput สำหรับล้างข้อมูลที่ไม่ปลอดภัย
@@ -47,22 +37,12 @@ export async function POST(request: Request) {
     try {
         console.log("Start POST handler");
 
-        // ตรวจสอบสิทธิ์
         if (!(await checkAdminSession(request))) {
-            console.error("Unauthorized: Admin session check failed");
-            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
-
-        // ลบการตรวจสอบ CSRF Token
-        // const csrfToken = request.headers.get("x-csrf-token");
-        // if (!csrfToken || csrfToken !== process.env.CSRF_SECRET) {
-        //     console.error("Invalid CSRF token");
-        //     return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
-        // }
 
         const formData = await request.formData();
 
-        // ดึงข้อมูลจาก formData
         const borrowName = formData.get("borrow_name")?.toString() || "";
         const unit = formData.get("unit")?.toString() || "";
         const typeId = parseInt(formData.get("type_id")?.toString() || "0");
@@ -143,12 +123,14 @@ export async function POST(request: Request) {
 }
 
 
-
-
-
 // GET: ดึงข้อมูล Borrow ทั้งหมด
 export async function GET(request: Request) {
     try {
+
+        if (!(await checkAdminSession(request))) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        }
+
         const borrows = await prisma.borrow.findMany(); // ดึงข้อมูลทั้งหมด
         return NextResponse.json(borrows); // ส่งคืนข้อมูลทั้งหมด รวมถึง borrow_images
     } catch (error) {

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../../hooks/useAuth";
+import useAuthCheck from "@/hooks/useAuthCheck";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
@@ -22,15 +22,14 @@ interface Requisition {
 }
 
 function AdminsRequisition() {
-    useAuth("admin");
-
-    const { data: session, status } = useSession();
+    const { session, isLoading } = useAuthCheck("admin");
     const router = useRouter();
+
     const [requisitions, setRequisitions] = useState<Requisition[]>([]);
-    const [searchQuery, setSearchQuery] = useState(""); // State สำหรับการค้นหา
-    const [filterType, setFilterType] = useState(""); // State สำหรับการกรองประเภท
-    const [currentPage, setCurrentPage] = useState(1); // หน้าแรก
-    const itemsPerPage = 10; // แสดงข้อมูล 4 รายการต่อหน้า
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filterType, setFilterType] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     const fetchRequisitions = async () => {
         try {
@@ -49,16 +48,13 @@ function AdminsRequisition() {
         }
     };
 
-
+    useEffect(() => {
+        if (!isLoading) {
+            fetchRequisitions();
+        }
+    }, [isLoading]);
 
     useEffect(() => {
-        if (status === "unauthenticated") {
-            router.push("/login");
-        } else if (session && session.user.role !== "admin") {
-            router.push("/admins/dashboard");
-        }
-
-        // Fetch requisitions data from API
         const fetchRequisitions = async () => {
             try {
                 const response = await fetch("/api/requisitions");
@@ -70,7 +66,15 @@ function AdminsRequisition() {
         };
 
         fetchRequisitions();
-    }, [status, session, router]);
+    }, [session, router]);
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <p>กำลังโหลด...</p>
+            </div>
+        );
+    }
 
     const filteredRequisitions = Array.isArray(requisitions)
         ? requisitions.filter((item) => {
@@ -85,8 +89,6 @@ function AdminsRequisition() {
 
 
     const totalPages = Math.ceil(filteredRequisitions.length / itemsPerPage);
-
-    // คำนวณดัชนีเริ่มต้นและสิ้นสุดของข้อมูลในหน้าปัจจุบัน
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const currentRequisitions = filteredRequisitions.slice(startIndex, endIndex);
@@ -102,10 +104,6 @@ function AdminsRequisition() {
     const goToNextPage = () => {
         if (currentPage < totalPages) setCurrentPage(currentPage + 1);
     };
-
-    if (status === "loading") {
-        return <p>Loading...</p>;
-    }
 
     return (
         <div className="min-h-screen flex bg-gray-50">
@@ -143,16 +141,13 @@ function AdminsRequisition() {
 
 
                         </div>
-                        {/* แสดงรายการ */}
-
 
                         <div className="grid grid-cols-1 gap-8 mt-6 sm:grid-cols-2 lg:grid-cols-4">
                             {currentRequisitions.map((item) => (
                                 <div
                                     key={item.id}
-                                    className="bg-white p-4 rounded-xl shadow-lg border border-gray-200 transition-transform transform hover:scale-105"
+                                    className="bg-white p-4 rounded-xl shadow-lg border border-gray-200 transition-transform transform hover:scale-105 flex flex-col"
                                 >
-                                    {/* แสดงรูปภาพ */}
                                     {item.requisition_images ? (
                                         <img
                                             src={`/requisitions/${item.requisition_images}`}
@@ -169,13 +164,13 @@ function AdminsRequisition() {
                                     <p className="text-sm text-gray-500 mb-1">ประเภท: {item.type?.name || 'ไม่มีประเภท'}</p>
                                     <p className="text-sm text-gray-500 mb-2">
                                         คงเหลือ:{" "}
-                                        <span className="text-green-500 font-bold">
+                                        <span className="text-[#fb8124] font-bold">
                                             {item.quantity} {item.unit}
                                         </span>
                                     </p>
 
                                     <button
-                                        className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-lg w-full hover:bg-blue-600 transition-colors"
+                                        className="mt-auto bg-[#fb8124] text-white py-2 px-4 rounded-lg w-full transition-colors"
                                         onClick={() => router.push(`/admins/requisition/${item.id}`)}
                                     >
                                         เลือก
@@ -185,24 +180,23 @@ function AdminsRequisition() {
                         </div>
 
 
-
                         <div className="flex items-center justify-between mt-6">
                             <span className="text-sm text-gray-600">
-                                Showing {startIndex + 1} to {Math.min(endIndex, filteredRequisitions.length)} of {filteredRequisitions.length} entries
+                                รายการที่ {startIndex + 1} ถึง {Math.min(endIndex, filteredRequisitions.length)} จาก {filteredRequisitions.length} รายการ
                             </span>
                             <div className="flex space-x-2">
                                 <button
                                     onClick={goToPreviousPage}
                                     disabled={currentPage === 1}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-blue-400 hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
                                 >
-                                    Previous
+                                    ก่อนหน้า
                                 </button>
                                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                                     <button
                                         key={page}
                                         onClick={() => handlePageChange(page)}
-                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"} hover:bg-blue-400 hover:text-white transition`}
+                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#fb8124] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#fb8124] hover:text-white transition`}
                                     >
                                         {page}
                                     </button>
@@ -210,12 +204,13 @@ function AdminsRequisition() {
                                 <button
                                     onClick={goToNextPage}
                                     disabled={currentPage === totalPages}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-blue-400 hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
                                 >
-                                    Next
+                                    ถัดไป
                                 </button>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>

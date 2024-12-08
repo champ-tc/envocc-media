@@ -190,13 +190,13 @@ function UsersBorrow() {
 
                         <div className="flex items-center justify-between mt-6">
                             <span className="text-sm text-gray-600">
-                                Showing {startIndex + 1} to {Math.min(endIndex, filteredRequisitions.length)} of {filteredRequisitions.length} entries
+                            รายการที่ {startIndex + 1} ถึง {Math.min(endIndex, filteredRequisitions.length)} จาก {filteredRequisitions.length} รายการ
                             </span>
                             <div className="flex space-x-2">
                                 <button
                                     onClick={goToPreviousPage}
                                     disabled={currentPage === 1}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-blue-400 hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
                                 >
                                     ก่อนหน้า
                                 </button>
@@ -204,7 +204,7 @@ function UsersBorrow() {
                                     <button
                                         key={page}
                                         onClick={() => handlePageChange(page)}
-                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#fb8124] text-white" : "bg-gray-200 text-gray-600"} hover:bg-blue-400 hover:text-white transition`}
+                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#fb8124] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#fb8124] hover:text-white transition`}
                                     >
                                         {page}
                                     </button>
@@ -212,7 +212,7 @@ function UsersBorrow() {
                                 <button
                                     onClick={goToNextPage}
                                     disabled={currentPage === totalPages}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-blue-400 hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
                                 >
                                     ถัดไป
                                 </button>

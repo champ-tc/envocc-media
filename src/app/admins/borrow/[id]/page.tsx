@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import useAuthCheck from "@/hooks/useAuthCheck";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
+import AlertModal from "@/components/AlertModal";
 
 interface Borrow {
     id: number;
@@ -21,9 +22,12 @@ interface Borrow {
 
 function AdminsBorrowDetail({ params }: { params: { id: string } }) {
     const { session, isLoading } = useAuthCheck("admin");
-    const [borrow, setBorrow] = useState<Borrow | null>(null);
-    const [borrowQuantity, setBorrowQuantity] = useState<number>(1); // ค่าเริ่มต้นของจำนวนที่ยืม
     const router = useRouter();
+    const [borrow, setBorrow] = useState<Borrow | null>(null);
+    const [borrowQuantity, setBorrowQuantity] = useState<number>(1);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
+    const [alertType, setAlertType] = useState<"success" | "error" | null>(null);
+
 
     useEffect(() => {
         const fetchBorrow = async () => {
@@ -45,12 +49,22 @@ function AdminsBorrowDetail({ params }: { params: { id: string } }) {
     }, [session, params.id]);
 
     if (isLoading) {
-        return <p>Loading...</p>;
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <p>กำลังโหลด...</p>
+            </div>
+        );
     }
 
-    if (!session) {
-        return null;
-    }
+    const showAlert = (message: string, type: "success" | "error") => {
+        setAlertMessage(message);
+        setAlertType(type);
+
+        setTimeout(() => {
+            setAlertMessage(null);
+        }, 3000);
+    };
+
 
     if (!borrow) {
         return <p>Loading borrow details...</p>;
@@ -58,15 +72,23 @@ function AdminsBorrowDetail({ params }: { params: { id: string } }) {
 
     const handleBorrow = async () => {
         if (borrowQuantity <= 0) {
-            alert("จำนวนต้องมากกว่า 0");
+            setAlertMessage("จำนวนต้องมากกว่า 0");
+            setAlertType("error");
             return;
         }
         if (borrowQuantity > borrow.quantity) {
-            alert(`ไม่สามารถยืมเกิน ${borrow.quantity} ได้`);
+            setAlertMessage(`ไม่สามารถยืมเกิน ${borrow.quantity} ได้`);
+            setAlertType("error");
             return;
         }
 
         try {
+            if (!session || !session.user) {
+                setAlertMessage("คุณต้องเข้าสู่ระบบก่อนดำเนินการ");
+                setAlertType("error");
+                return;
+            }
+        
             const response = await fetch("/api/order", {
                 method: "POST",
                 headers: {
@@ -79,96 +101,110 @@ function AdminsBorrowDetail({ params }: { params: { id: string } }) {
                     quantity: borrowQuantity,
                 }),
             });
-
+        
             if (!response.ok) {
                 const errorData = await response.json();
-                alert(`Error: ${errorData.message}`);
+                setAlertMessage(`Error: ${errorData.message}`);
+                setAlertType("error");
                 return;
             }
-
-            const order = await response.json();
-            alert(`เพิ่มรายการสำเร็จ: ${borrowQuantity} ${borrow.unit}`);
-            router.push("/admins/borrow"); // เปลี่ยนเส้นทางหลังจากเพิ่มสำเร็จ
+        
+            setAlertMessage(`เพิ่มรายการสำเร็จ: ${borrowQuantity} ${borrow.unit}`);
+            setAlertType("success");
+            setTimeout(() => {
+                router.push("/admins/borrow");
+            }, 3000);
         } catch (error) {
-            console.error("Error creating order:", error);
-            alert("เกิดข้อผิดพลาดในการเพิ่มรายการ");
+            setAlertMessage("เกิดข้อผิดพลาดในการเพิ่มรายการ");
+            setAlertType("error");
         }
+        
     };
+
 
     return (
         <div className="min-h-screen flex bg-gray-50">
             <Sidebar />
             <div className="flex-1 flex flex-col">
                 <TopBar />
-                <div className="flex-1 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-lg shadow-lg max-w-lg w-full">
-                        {/* ส่วนหัว */}
-                        <h2 className="text-center text-xl font-bold mt-4">{borrow.borrow_name}</h2>
-                        {/* รูปภาพ */}
-                        <div className="relative w-full h-64 bg-gray-200 overflow-hidden mt-4">
-                            {borrow.borrow_images ? (
-                                <img
-                                    src={`/borrows/${borrow.borrow_images}`}
-                                    alt={borrow.borrow_name}
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center text-gray-600">
-                                    ไม่มีรูปภาพ
-                                </div>
-                            )}
+                <div className="flex-1 flex items-start justify-center p-2">
+                    <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 flex">
+                        <div className="w-1/2 pr-4">
+                            <div className="relative overflow-hidden rounded-lg shadow-md h-full">
+                                {borrow.borrow_images ? (
+                                    <img
+                                        src={`/borrows/${borrow.borrow_images}`}
+                                        alt={borrow.borrow_name}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-gray-600">
+                                        ไม่มีรูปภาพ
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                        {/* รายละเอียด */}
-                        <div className="p-6">
-                            <p className="text-sm text-gray-600 mb-2">
-                                <strong>ประเภท:</strong> {borrow.type?.name || "ไม่มีประเภท"}
-                            </p>
-                            <p className="text-sm text-gray-600 mb-2">
-                                <strong>คงเหลือ:</strong>{" "}
-                                <span className="text-green-600 font-bold">
-                                    {borrow.quantity}
-                                </span>
-                            </p>
-                            <p className="text-sm text-gray-600 mb-4">
-                                <strong>คำอธิบาย:</strong>{" "}
-                                {borrow.description || "ไม่มีคำอธิบาย"}
-                            </p>
 
-                            {/* ช่องกรอกจำนวน */}
-                            <div className="flex items-center space-x-4 mb-4">
-                                <input
-                                    type="number"
-                                    className="border rounded-md w-16 p-2 text-center text-sm"
-                                    min="1"
-                                    max={borrow.quantity}
-                                    value={borrowQuantity}
-                                    onChange={(e) =>
-                                        setBorrowQuantity(Number(e.target.value))
-                                    }
-                                />
-                                <span>{borrow.unit}</span>
+                        <div className="w-1/2 pl-4 flex flex-col justify-start">
+                            <h1 className="text-2xl font-bold text-gray-800 mb-4">{borrow.borrow_name}</h1>
+
+                            {/* Details */}
+                            <div className="space-y-4">
+                                <p className="text-gray-600">
+                                    ประเภท: <span>{borrow.type?.name || "ไม่มีประเภท"}</span>
+                                </p>
+                                <p className="text-gray-600">
+                                    คงเหลือ:{" "}
+                                    <span className="text-[#fb8124] font-bold">{borrow.quantity}</span>
+                                </p>
+                                <div>
+                                    <p className="text-gray-600 font-medium mb-2">คำอธิบาย:</p>
+                                    <p className="text-gray-700">{borrow.description || "ไม่มีคำอธิบาย"}</p>
+                                </div>
                             </div>
 
-                            {/* ปุ่ม */}
-                            <div className="flex items-center justify-between">
+                            {/* Input and Buttons */}
+                            <div className="mt-6 flex items-center space-x-4">
+                                <input
+                                    type="number"
+                                    min={1}
+                                    max={borrow.quantity}
+                                    value={borrowQuantity}
+                                    onChange={(e) => setBorrowQuantity(Number(e.target.value))}
+                                    className="w-2/4 px-4 py-2 border rounded-md text-center focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                    placeholder="จำนวน"
+                                />
+                            </div>
+                            <div className="mt-6 flex items-center space-x-4">
                                 <button
-                                    className="bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
-                                    onClick={() => router.push("/admins/borrow")}
-                                >
-                                    ย้อนกลับ
-                                </button>
-                                <button
-                                    className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
+                                    className="bg-[#fb8124] text-white px-4 py-2 rounded-md hover:bg-[#fb8124]"
                                     onClick={handleBorrow}
                                 >
                                     เพิ่มรายการ
+                                </button>
+                                <button
+                                    className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
+                                    onClick={() => router.push("/admins/borrow")}
+                                >
+                                    ย้อนกลับ
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                {alertMessage && (
+                    <AlertModal
+                        isOpen={!!alertMessage}
+                        message={alertMessage}
+                        type={alertType ?? 'error'}
+                        iconSrc={alertType === 'success' ? '/images/check.png' : '/images/close.png'}
+                    />
+                )}
+
             </div>
         </div>
+
     );
 }
 

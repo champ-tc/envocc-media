@@ -82,7 +82,6 @@ function AdminsType_management() {
         }
     };
 
-    // หากกำลังโหลด ให้แสดงหน้าจอ Loading
     if (isLoading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
@@ -210,7 +209,6 @@ function AdminsType_management() {
         setAlertMessage(message);
         setAlertType(type);
 
-        // ปิดแสดง AlertModal หลังจาก 3 วินาที
         setTimeout(() => {
             setAlertMessage(null);
             setShowModal(false);

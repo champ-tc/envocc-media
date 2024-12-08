@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 
@@ -19,6 +20,7 @@ interface Borrow {
 
 function AdminsBorrow() {
     const { session, isLoading } = useAuthCheck("admin");
+    const router = useRouter();
     const [borrows, setBorrows] = useState<Borrow[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [filterType, setFilterType] = useState("");
@@ -48,6 +50,14 @@ function AdminsBorrow() {
         }
     }, [session]);
 
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <p>กำลังโหลด...</p>
+            </div>
+        );
+    }
+
     const updateQuantity = async (id: number, newQuantity: number) => {
         try {
             const response = await fetch(`/api/borrows/${id}`, {
@@ -75,13 +85,6 @@ function AdminsBorrow() {
         }
     };
 
-    if (isLoading) {
-        return <p>Loading...</p>;
-    }
-
-    if (!session) {
-        return null;
-    }
 
     const filteredBorrows = Array.isArray(borrows)
         ? borrows.filter((item) => {
@@ -98,7 +101,18 @@ function AdminsBorrow() {
     const endIndex = startIndex + itemsPerPage;
     const currentBorrows = filteredBorrows.slice(startIndex, endIndex);
 
-    const handlePageChange = (page: number) => setCurrentPage(page);
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    const goToPreviousPage = () => {
+        if (currentPage > 1) setCurrentPage(currentPage - 1);
+    };
+
+    const goToNextPage = () => {
+        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+    };
+
 
     return (
         <div className="min-h-screen flex bg-gray-50">
@@ -136,9 +150,8 @@ function AdminsBorrow() {
                             {currentBorrows.map((item) => (
                                 <div
                                     key={item.id}
-                                    className="bg-white p-4 rounded-xl shadow-lg border transition-transform transform hover:scale-105"
+                                    className="bg-white p-4 rounded-xl shadow-lg border transition-transform transform hover:scale-105 flex flex-col"
                                 >
-                                    {/* แสดงรูปภาพ */}
                                     {item.borrow_images ? (
                                         <img
                                             src={`/borrows/${item.borrow_images}`}
@@ -150,24 +163,21 @@ function AdminsBorrow() {
                                             <span className="text-gray-600">ไม่มีรูปภาพ</span>
                                         </div>
                                     )}
-                                    {/* แสดงชื่อ */}
                                     <h3 className="text-lg font-bold text-gray-800 mb-2">
                                         {item.borrow_name}
                                     </h3>
-                                    {/* แสดงประเภท */}
                                     <p className="text-sm text-gray-500 mb-2">
                                         ประเภท: {item.type?.name || "ไม่มีประเภท"}
                                     </p>
-                                    {/* แสดงจำนวน */}
                                     <p className="text-sm text-gray-500">
                                         คงเหลือ:{" "}
-                                        <span className="text-green-500 font-bold">
+                                        <span className="text-[#fb8124] font-bold">
                                             {item.quantity - (item.reserved_quantity || 0)} {item.unit}
                                         </span>
                                     </p>
-                                    {/* ปุ่มเลือก */}
+
                                     <button
-                                        className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 w-full"
+                                        className="mt-auto bg-[#fb8124] text-white py-2 px-4 rounded-lg w-full transition-colors"
                                         onClick={() => {
                                             window.location.assign(`/admins/borrow/${item.id}`);
                                         }}
@@ -178,27 +188,36 @@ function AdminsBorrow() {
                             ))}
                         </div>
 
+
+
                         <div className="flex items-center justify-between mt-6">
                             <span className="text-sm text-gray-600">
-                                Showing {startIndex + 1} to{" "}
-                                {Math.min(endIndex, filteredBorrows.length)} of{" "}
-                                {filteredBorrows.length} entries
+                                รายการที่ {startIndex + 1} ถึง {Math.min(endIndex, filteredBorrows.length)} จาก {filteredBorrows.length} รายการ
                             </span>
                             <div className="flex space-x-2">
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                                    (page) => (
-                                        <button
-                                            key={page}
-                                            onClick={() => handlePageChange(page)}
-                                            className={`px-4 py-2 rounded-md ${currentPage === page
-                                                    ? "bg-blue-500 text-white"
-                                                    : "bg-gray-200 text-gray-600"
-                                                }`}
-                                        >
-                                            {page}
-                                        </button>
-                                    )
-                                )}
+                                <button
+                                    onClick={goToPreviousPage}
+                                    disabled={currentPage === 1}
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                >
+                                    ก่อนหน้า
+                                </button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                    <button
+                                        key={page}
+                                        onClick={() => handlePageChange(page)}
+                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#fb8124] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#fb8124] hover:text-white transition`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={goToNextPage}
+                                    disabled={currentPage === totalPages}
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                >
+                                    ถัดไป
+                                </button>
                             </div>
                         </div>
                     </div>
