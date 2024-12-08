@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { v4 as uuidv4 } from 'uuid';
+import { getToken } from "next-auth/jwt";
+
+async function checkAdminSession(request: Request): Promise<boolean> {
+    const token = await getToken({ req: request as any });
+    return !!(token && token.role === 'admin');
+}
 
 // ใช้สำหรับ requisition_summary
 export async function POST(req: Request) {
     try {
-        const { userId, orders, deliveryMethod, address, requestedGroupId } = await req.json();
-        console.log("Received data:", { userId, orders, deliveryMethod, address, requestedGroupId });
+        const { userId, orders, deliveryMethod, address } = await req.json();
 
         // ตรวจสอบ userId
         const userExists = await prisma.user.findUnique({ where: { id: userId } });
@@ -14,7 +20,7 @@ export async function POST(req: Request) {
         }
 
         // ตรวจสอบ requisitionId ทั้งหมดใน orders
-        const requisitionIds = orders.map((order) => order.requisitionId);
+        const requisitionIds = orders.map((order: { requisitionId: number }) => order.requisitionId);
         const existingRequisitions = await prisma.requisition.findMany({
             where: { id: { in: requisitionIds } },
         });
@@ -23,26 +29,45 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: "Invalid requisition IDs", requisitionIds }, { status: 400 });
         }
 
+        // สร้าง group ID ใหม่
+        const newGroupId = uuidv4();
+
         // สร้าง requisition logs
-        const requisitionLogs = orders.map((order) => ({
+        const requisitionLogs = orders.map((order: { requisitionId: number; quantity: number }) => ({
             requisition_id: order.requisitionId,
             user_id: userId,
             requested_quantity: order.quantity,
-            requested_groupid: requestedGroupId,
+            approved_quantity: null,
+            stock_after_requisition: null,
             requisition_date: new Date(),
             status: "Pending",
             delivery_method: deliveryMethod,
             delivery_address: deliveryMethod === "delivery" ? address : null,
+            requested_groupid: newGroupId,
         }));
 
-        await prisma.requisitionLog.createMany({ data: requisitionLogs });
+        // ใช้ transaction เพื่อสร้าง requisition log และลบ order
+        await prisma.$transaction([
+            prisma.requisitionLog.createMany({ data: requisitionLogs }),
+            prisma.order.deleteMany({
+                where: {
+                    userId: userId,
+                    requisitionId: { in: requisitionIds },
+                },
+            }),
+        ]);
 
-        return NextResponse.json({ message: "Requisition logs created successfully" });
+        return NextResponse.json({
+            message: "Requisition logs created successfully",
+            groupId: newGroupId,
+        });
+
     } catch (error) {
-        console.error("Error in POST /api/requisition_log:", error);
-        return NextResponse.json({ message: "Internal Server Error", error: error.message }, { status: 500 });
+        return NextResponse.json({ message: "Internal Server Error", error: (error as Error).message }, { status: 500 });
     }
 }
+
+
 
 // ดึงข้อมูล requisition log
 export async function GET(req: Request) {
@@ -79,7 +104,6 @@ export async function GET(req: Request) {
         // แสดงข้อมูลโดยไม่ใช้การแมปสถานะ
         return NextResponse.json(requisitionLogs);
     } catch (error) {
-        console.error("Error fetching requisition logs:", error);
         return NextResponse.json({ error: "Failed to fetch requisition logs" }, { status: 500 });
     }
 }

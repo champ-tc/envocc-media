@@ -25,6 +25,11 @@ async function checkAdminSession(request: Request): Promise<boolean> {
 // GET: ดึงข้อมูล Borrow ตาม ID
 export async function GET(request: Request, { params }: { params: { id: string } }) {
     try {
+
+        if (!(await checkAdminSession(request))) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
+
         const borrow = await prisma.borrow.findUnique({
             where: { id: parseInt(params.id) },
             include: {
@@ -38,7 +43,6 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
         return NextResponse.json(borrow);
     } catch (error) {
-        console.error("Error fetching borrow data:", error);
         return NextResponse.json({ error: "Error fetching borrow data" }, { status: 500 });
     }
 }
@@ -117,7 +121,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
         return NextResponse.json(updatedBorrow);
     } catch (error) {
-        console.error("Error updating borrow:", error);
         return NextResponse.json({ error: "Error updating borrow data" }, { status: 500 });
     }
 }
@@ -142,7 +145,6 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
         return NextResponse.json({ message: "Borrow status updated successfully", data: updatedBorrow });
     } catch (error) {
-        console.error("Error updating borrow status:", error);
         return NextResponse.json({ error: "Error updating borrow status" }, { status: 500 });
     }
 }
@@ -151,7 +153,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 // DELETE: ลบข้อมูล Borrow
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
     try {
-        // ตรวจสอบสิทธิ์
+
         if (!(await checkAdminSession(request))) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }

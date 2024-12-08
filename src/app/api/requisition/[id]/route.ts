@@ -105,14 +105,17 @@ async function updateRequisitionStatus(id: number, request: Request) {
 
 // ตัวควบคุมหลัก
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
+    
+    if (!(await checkAdminSession(request))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
     const id = parseInt(params.id);
     if (isNaN(id)) {
         return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
     }
 
-    if (!(await checkAdminSession(request))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    
 
     const url = new URL(request.url);
     const action = url.searchParams.get('action');

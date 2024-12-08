@@ -35,7 +35,6 @@ function sanitizeInput(input: string): string {
 // POST: เพิ่มข้อมูล Borrow ใหม่
 export async function POST(request: Request) {
     try {
-        console.log("Start POST handler");
 
         if (!(await checkAdminSession(request))) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
@@ -51,14 +50,14 @@ export async function POST(request: Request) {
         const description = formData.get("description")?.toString() || "";
         const file = formData.get("file") as File | null;
 
-        console.log("Data extracted from FormData:", {
-            borrowName,
-            unit,
-            typeId,
-            quantity,
-            isBorroRestricted,
-            description,
-        });
+        // console.log("Data extracted from FormData:", {
+        //     borrowName,
+        //     unit,
+        //     typeId,
+        //     quantity,
+        //     isBorroRestricted,
+        //     description,
+        // });
 
         // ตรวจสอบข้อมูลด้วย schema
         const validatedData = borrowSchema.parse({
@@ -69,23 +68,20 @@ export async function POST(request: Request) {
             is_borro_restricted: isBorroRestricted,
             description: sanitizeInput(description),
         });
-        console.log("Validated data:", validatedData);
+
 
         // จัดการอัปโหลดไฟล์
         let imageUrl = "";
         if (file) {
-            console.log("File received:", file);
 
             const maxFileSize = 5 * 1024 * 1024; // ขนาดไฟล์สูงสุด 5MB
             const allowedFileTypes = ["image/jpeg", "image/png"];
 
             if (!allowedFileTypes.includes(file.type)) {
-                console.error("Invalid file type:", file.type);
                 return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
             }
 
             if (file.size > maxFileSize) {
-                console.error("File size exceeds limit:", file.size);
                 return NextResponse.json({ error: "File size exceeds limit" }, { status: 400 });
             }
 
@@ -94,7 +90,6 @@ export async function POST(request: Request) {
             const fileBuffer = Buffer.from(await file.arrayBuffer());
             fs.writeFileSync(filePath, fileBuffer);
             imageUrl = filename;
-            console.log("File saved:", imageUrl);
         }
 
         // บันทึกข้อมูลลงในฐานข้อมูล
@@ -109,15 +104,12 @@ export async function POST(request: Request) {
                 borrow_images: imageUrl,
             },
         });
-        console.log("New borrow created:", newBorrow);
 
         return NextResponse.json(newBorrow, { status: 200 });
     } catch (error) {
         if (error instanceof z.ZodError) {
-            console.error("Validation error:", error.errors);
             return NextResponse.json({ error: "Invalid input data", details: error.errors }, { status: 400 });
         }
-        console.error("Error adding borrow:", error);
         return NextResponse.json({ error: "Error adding borrow" }, { status: 500 });
     }
 }

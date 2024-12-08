@@ -1,11 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import useAuthCheck from "@/hooks/useAuthCheck";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import React from "react";
 import axios from "axios";
+import ConfirmModal from "@/components/ConfirmModal";
+import AlertModal from "@/components/AlertModal";
+import dynamic from "next/dynamic";
+import { registerLocale } from "react-datepicker";
+import { th } from "date-fns/locale/th";
+import "react-datepicker/dist/react-datepicker.css";
+import type { ReactDatePickerCustomHeaderProps } from "react-datepicker";
+
+registerLocale("th", th);
+
+interface CustomInputProps {
+    value?: string;
+    onClick?: () => void;
+    id: string;
+    name: string;
+}
 
 interface Order {
     id: number;
@@ -20,16 +38,32 @@ interface Order {
     };
 }
 
+interface Requisition {
+    id: number;
+    requisition_name: string;
+}
+
+interface Order {
+    requisition?: Requisition;
+    quantity: number;
+}
+
+
 
 function RequisitionSummary() {
-    const { data: session } = useSession();
+    const { session, isLoading } = useAuthCheck("admin");
     const router = useRouter();
-    const [selectedAction, setSelectedAction] = useState(""); // สำหรับแยก Requisition และ Borrow
-    const [returnDate, setReturnDate] = useState(""); // วันที่คืนสำหรับ borrow
-    const [deliveryMethod, setDeliveryMethod] = useState("self"); // วิธีการจัดส่ง
-    const [address, setAddress] = useState(""); // ที่อยู่สำหรับการจัดส่ง
-    const [orders, setOrders] = useState<Order[]>([]); // กำหนด Type เป็น Order[]
 
+    const [selectedAction, setSelectedAction] = useState("");
+    const [returnDate, setReturnDate] = useState("");
+    const [deliveryMethod, setDeliveryMethod] = useState("self");
+    const [address, setAddress] = useState("");
+    const [orders, setOrders] = useState<Order[]>([]);
+
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
+    const [alertType, setAlertType] = useState<"success" | "error" | null>(null);
+    const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null); // เก็บ ID ที่จะลบ
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -39,7 +73,7 @@ function RequisitionSummary() {
                 const data = await response.json();
                 setOrders(data);
             } catch (error) {
-                console.error("Error fetching orders:", error);
+                showAlert("เกิดข้อผิดพลาดในการลบรายการ", "error");
             }
         };
 
@@ -48,78 +82,253 @@ function RequisitionSummary() {
         }
     }, [session?.user?.id]);
 
-    const handleDeleteOrder = async (orderId: number) => { // กำหนดชนิดข้อมูลเป็น number
-        const confirmDelete = window.confirm("คุณต้องการลบรายการนี้หรือไม่?");
-        if (!confirmDelete) return;
+    const fetchOrders = async () => {
+        try {
+            const response = await fetch(`/api/order?userId=${session?.user?.id}`);
+            if (!response.ok) throw new Error("Error fetching orders");
+            const data = await response.json();
+            setOrders(data); // อัปเดต state ของ orders
+        } catch (error) {
+            showAlert("เกิดข้อผิดพลาดในการลบรายการ", "error");
+        }
+    };
+
+
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <p>กำลังโหลด...</p>
+            </div>
+        );
+    }
+
+
+
+    const DynamicDatePicker = dynamic<any>(() => import("react-datepicker"), {
+        ssr: false,
+        loading: () => <p>Loading...</p>,
+    });
+
+    function formatDisplayDate(date: Date): string {
+        return date.toLocaleDateString("th-TH", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+        });
+    }
+
+
+    function formatSubmitDate(date: Date): string {
+        const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+        return offsetDate.toISOString().split('T')[0]; // Format as yyyy-mm-dd
+    }
+
+    const CustomInput = React.forwardRef<HTMLInputElement, CustomInputProps>(
+        ({ value, onClick, id, name }, ref) => (
+            <input
+                type="text"
+                className="input input-bordered w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                onClick={onClick} // เปิดปฏิทินเมื่อคลิก
+                value={value || ""} // กำหนดค่าให้ input
+                readOnly
+                autoComplete="off"
+                ref={ref}
+                id={id}
+                name={name}
+            />
+        )
+    );
+
+    CustomInput.displayName = "CustomInput";
+
+
+    const years = Array.from({ length: 2 }, (_, i) => new Date().getFullYear() + i);
+
+    const renderCustomHeader = ({
+        date,
+        changeYear,
+        changeMonth,
+        decreaseMonth,
+        increaseMonth,
+        prevMonthButtonDisabled,
+        nextMonthButtonDisabled,
+    }: ReactDatePickerCustomHeaderProps) => {
+        const months = [
+            "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+            "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
+        ];
+
+        return (
+            <div className="flex items-center gap-2 p-2">
+                <button
+                    onClick={decreaseMonth}
+                    disabled={prevMonthButtonDisabled}
+                    className="p-1 rounded bg-gray-200 hover:bg-gray-300 focus:outline-none"
+                >
+                    ⬅️
+                </button>
+                <select
+                    value={date.getFullYear()}
+                    onChange={({ target: { value } }) => changeYear(parseInt(value))}
+                    className="p-1 border rounded-md"
+                >
+                    {years.map((year) => (
+                        <option key={year} value={year}>
+                            {year + 543}
+                        </option>
+                    ))}
+                </select>
+                <select
+                    value={date.getMonth()}
+                    onChange={({ target: { value } }) => changeMonth(parseInt(value))}
+                    className="p-1 border rounded-md"
+                >
+                    {months.map((month, index) => (
+                        <option key={index} value={index}>
+                            {month}
+                        </option>
+                    ))}
+                </select>
+                <button
+                    onClick={increaseMonth}
+                    disabled={nextMonthButtonDisabled}
+                    className="p-1 rounded bg-gray-200 hover:bg-gray-300 focus:outline-none"
+                >
+                    ➡️
+                </button>
+            </div>
+        );
+    };
+
+
+
+
+
+
+    const showAlert = (message: string, type: "success" | "error") => {
+        setAlertMessage(message);
+        setAlertType(type);
+
+        setTimeout(() => {
+            setAlertMessage(null);
+        }, 3000);
+    };
+
+    const handleDeleteOrder = (orderId: number) => {
+        setSelectedOrderId(orderId);
+        setIsDeleteConfirmOpen(true);
+    };
+
+
+
+
+    const handleConfirmDelete = async () => {
+        if (!selectedOrderId) return;
 
         try {
-            const response = await fetch(`/api/order/${orderId}`, {
+            const response = await fetch(`/api/order/${selectedOrderId}`, {
                 method: "DELETE",
             });
 
             if (!response.ok) throw new Error("Failed to delete order");
 
-            setOrders((prev) => prev.filter((order) => order.id !== orderId));
-            alert("ลบรายการสำเร็จ");
+            setOrders((prev) => prev.filter((order) => order.id !== selectedOrderId));
+            showAlert("ลบรายการสำเร็จ", "success");
         } catch (error) {
-            console.error("Error deleting order:", error);
-            alert("เกิดข้อผิดพลาดในการลบรายการ");
+            showAlert("เกิดข้อผิดพลาดในการลบรายการ", "error");
+        } finally {
+            setIsDeleteConfirmOpen(false);
+            setSelectedOrderId(null);
         }
     };
 
 
-    const handleSubmitRequisition = async () => {
-        try {
-            const response = await axios.post("/api/requisition_log/${id}", {
-                userId: session?.user?.id,
-                orders: orders
-                    .filter((order) => order.requisition) // ตรวจสอบเฉพาะรายการที่มี requisition
-                    .map((order) => ({
-                        requisitionId: order.requisition?.id, // ใช้ optional chaining
-                        quantity: order.quantity,
-                    })),
-                deliveryMethod,
-                address: deliveryMethod === "delivery" ? address : null,
-            });
 
-            alert("บันทึกการเบิกสำเร็จ!");
-            setOrders([]);
-            router.push("/admins/requisition_summary");
-        } catch (error) {
-            console.error("Error submitting requisition:", error);
-            alert("เกิดข้อผิดพลาดในการเบิกของ");
-        }
-    };
+    const handleSubmitRequisition = async (e: React.FormEvent) => {
+        e.preventDefault();
 
-
-    const handleSubmitBorrow = async () => {
-        if (!returnDate) {
-            alert("กรุณากรอกวันที่คืน");
+        if (!orders || orders.length === 0) {
+            showAlert("ไม่มีรายการเบิก", "error");
             return;
         }
 
         try {
-            const response = await axios.post("/api/borrow_log/${id}", {
+            const formattedOrders = orders
+                .filter((order: Order) => order.requisition?.id && order.quantity > 0)
+                .map((order: Order) => ({
+                    requisitionId: order.requisition!.id,
+                    quantity: order.quantity,
+                }));
+
+            if (formattedOrders.length === 0) {
+                showAlert("ไม่มีรายการเบิกที่ถูกต้อง", "error");
+                return;
+            }
+
+            const response = await axios.post("/api/requisition_log", {
                 userId: session?.user?.id,
-                orders: orders
-                    .filter((order) => order.borrow) // กรองเฉพาะที่มี borrow
-                    .map((order) => ({
-                        borrowId: order.borrow?.id, // ใช้ optional chaining
-                        quantity: order.quantity,
-                    })),
+                orders: formattedOrders,
                 deliveryMethod,
                 address: deliveryMethod === "delivery" ? address : null,
-                returnDate, // ส่งวันที่คืน
             });
 
-            alert("บันทึกการยืมสำเร็จ!");
-            setOrders([]);
-            router.push("/admins/requisition_summary");
+            showAlert("บันทึกการเบิกสำเร็จ!", "success");
+            setOrders([]); // ล้างรายการใน state
+            setAddress(""); // รีเซ็ตที่อยู่การจัดส่ง
+            await fetchOrders(); // ดึงข้อมูลใหม่เพื่อรีเฟรชตาราง
         } catch (error) {
-            console.error("Error submitting borrow:", error);
-            alert("เกิดข้อผิดพลาดในการยืมของ");
+            showAlert("เกิดข้อผิดพลาดในการเบิกของ", "error");
         }
     };
+
+
+
+
+    const handleSubmitBorrow = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!returnDate) {
+            showAlert("กรุณากรอกวันที่คืน", "error");
+            return;
+        }
+
+        if (deliveryMethod === "delivery" && !address.trim()) {
+            showAlert("กรุณากรอกข้อมูลที่อยู่สำหรับการจัดส่ง", "error");
+            return;
+        }
+
+        try {
+            const formattedOrders = orders
+                .filter((order: Order) => order.borrow?.id && order.quantity > 0)
+                .map((order: Order) => ({
+                    borrowId: order.borrow!.id,
+                    quantity: order.quantity,
+                }));
+
+            if (formattedOrders.length === 0) {
+                showAlert("ไม่มีรายการยืมที่ถูกต้อง", "error");
+                return;
+            }
+
+            const response = await axios.post("/api/borrowlog", {
+                userId: session?.user?.id,
+                orders: formattedOrders,
+                deliveryMethod,
+                address: deliveryMethod === "delivery" ? address : null,
+                returnDate,
+            });
+
+            showAlert("บันทึกการยืมสำเร็จ!", "success");
+
+            setOrders([]); // ล้างรายการ
+            setAddress(""); // รีเซ็ตที่อยู่การจัดส่ง
+            await fetchOrders(); // ดึงข้อมูลใหม่เพื่อรีเฟรชตาราง
+        } catch (error) {
+            showAlert("เกิดข้อผิดพลาดในการยืมของ", "error");
+        }
+    };
+
 
 
 
@@ -136,6 +345,7 @@ function RequisitionSummary() {
             <Sidebar />
             <div className="flex-1">
                 <TopBar />
+
                 <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
                     <h1 className="text-2xl font-bold mb-4">รายการ</h1>
 
@@ -144,20 +354,20 @@ function RequisitionSummary() {
                         <button
                             onClick={() => setSelectedAction("requisition")}
                             className={`py-2 px-4 rounded-md text-white ${selectedAction === "requisition"
-                                    ? "bg-blue-500"
-                                    : "bg-gray-300 hover:bg-gray-400"
+                                ? "bg-orange-500"
+                                : "bg-gray-300 hover:bg-gray-400"
                                 }`}
                         >
-                            เบิกของ (Requisition)
+                            เบิกสื่อ
                         </button>
                         <button
                             onClick={() => setSelectedAction("borrow")}
                             className={`py-2 px-4 rounded-md text-white ${selectedAction === "borrow"
-                                    ? "bg-blue-500"
-                                    : "bg-gray-300 hover:bg-gray-400"
+                                ? "bg-orange-500"
+                                : "bg-gray-300 hover:bg-gray-400"
                                 }`}
                         >
-                            ยืมของ (Borrow)
+                            ยืมสื่อ
                         </button>
                     </div>
 
@@ -183,12 +393,14 @@ function RequisitionSummary() {
                                                 <td className="py-3 px-4">{order.quantity}</td>
                                                 <td className="py-3 px-4">
                                                     <button
-                                                        onClick={() =>
-                                                            handleDeleteOrder(order.id)
-                                                        }
-                                                        className="text-red-500 hover:text-red-700"
+                                                        onClick={() => handleDeleteOrder(order.id)}
+                                                        className="mb-4 py-2 px-2 rounded-md transition"
                                                     >
-                                                        ลบ
+                                                        <img
+                                                            src="/images/delete.png"
+                                                            alt="Delete Icon"
+                                                            className="h-6 w-6"
+                                                        />
                                                     </button>
                                                 </td>
                                             </tr>
@@ -208,15 +420,40 @@ function RequisitionSummary() {
                                     <label className="block text-gray-700 font-semibold mb-2">
                                         วันที่คืน:
                                     </label>
-                                    <input
-                                        type="date"
-                                        value={returnDate}
-                                        onChange={(e) => setReturnDate(e.target.value)}
-                                        className="w-full px-4 py-2 border rounded-md"
-                                        required
+                                    <DynamicDatePicker
+                                        selected={returnDate ? new Date(returnDate) : null}
+                                        onChange={(date: Date | null) => {
+                                            if (date) {
+                                                const today = new Date();
+                                                const selectedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                                                const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+                                                if (selectedDate < currentDate) {
+                                                    showAlert("ไม่สามารถเลือกวันที่น้อยกว่าวันปัจจุบัน", "error");
+                                                    return;
+                                                }
+                                                setReturnDate(formatSubmitDate(date));
+                                            }
+                                        }}
+                                        locale="th" // ใช้ภาษาไทย
+                                        dateFormat="dd/MM/yyyy" // รูปแบบการแสดงผล
+                                        renderCustomHeader={renderCustomHeader} // ใช้ header ที่ปรับแต่ง
+                                        customInput={
+                                            <CustomInput
+                                                id="returnDate"
+                                                name="returnDate"
+                                                value={returnDate ? formatDisplayDate(new Date(returnDate)) : ""}
+                                            />
+                                        }
+                                        className="datepicker-input" // เพิ่ม className สำหรับปรับแต่ง
+                                        withPortal
+                                        minDate={new Date()} // ห้ามเลือกวันที่น้อยกว่าวันปัจจุบัน
                                     />
+
                                 </div>
                             )}
+
+
 
                             {/* ตัวเลือกจัดส่ง */}
                             <div className="mt-6">
@@ -256,29 +493,48 @@ function RequisitionSummary() {
 
                             {/* ปุ่มบันทึก */}
                             <button
-                                onClick={
+                                onClick={(e) =>
                                     selectedAction === "requisition"
-                                        ? handleSubmitRequisition
-                                        : handleSubmitBorrow
+                                        ? handleSubmitRequisition(e)
+                                        : handleSubmitBorrow(e)
                                 }
-                                disabled={filteredOrders.length === 0} // ปิดปุ่มถ้าไม่มีรายการ
+                                disabled={filteredOrders.length === 0}
                                 className={`mt-6 py-2 px-4 rounded-md transition ${filteredOrders.length === 0
-                                        ? "bg-gray-300 cursor-not-allowed text-gray-500" // สไตล์ปุ่มถูกปิด
-                                        : "bg-green-500 text-white hover:bg-green-600" // สไตล์ปุ่มปกติ
+                                    ? "bg-gray-300 cursor-not-allowed text-gray-500"
+                                    : "bg-green-500 text-white hover:bg-green-600"
                                     }`}
                             >
-                                {selectedAction === "requisition"
-                                    ? "บันทึกการเบิก"
-                                    : "บันทึกการยืม"}
+                                {selectedAction === "requisition" ? "บันทึกการเบิก" : "บันทึกการยืม"}
                             </button>
+
 
                         </>
                     ) : (
                         <p className="text-center text-gray-500 mt-4">
-                            กรุณาเลือกระหว่างเบิกของหรือยืมของ
+                            กรุณาเลือกระหว่างเบิกสื่อ หรือ ยืมสื่อ
                         </p>
                     )}
                 </div>
+
+                {isDeleteConfirmOpen && (
+                    <ConfirmModal
+                        isOpen={isDeleteConfirmOpen}
+                        onClose={() => setIsDeleteConfirmOpen(false)} // ปิด Modal หากยกเลิก
+                        onConfirm={handleConfirmDelete} // เรียกฟังก์ชันลบเมื่อยืนยัน
+                        title="คุณต้องการลบข้อมูลนี้หรือไม่?"
+                        iconSrc="/images/alert.png"
+                    />
+                )}
+
+                {alertMessage && (
+                    <AlertModal
+                        isOpen={!!alertMessage}
+                        message={alertMessage}
+                        type={alertType ?? "error"}
+                        iconSrc={alertType === "success" ? "/images/check.png" : "/images/close.png"}
+                    />
+                )}
+
             </div>
         </div>
     );

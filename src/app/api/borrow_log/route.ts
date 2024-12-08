@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 
+
 // POST: เพิ่มข้อมูลการยืม
 export async function POST(req: Request) {
     try {
@@ -44,9 +45,6 @@ export async function POST(req: Request) {
 }
 
 // GET: ดึงข้อมูล BorrowLog
-
-
-
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
