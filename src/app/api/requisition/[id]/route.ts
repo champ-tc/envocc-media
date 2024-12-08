@@ -27,6 +27,11 @@ const requisitionUpdateSchema = z.object({
 
 // ฟังก์ชันแก้ไขรายละเอียด requisition
 async function updateRequisitionDetails(id: number, request: Request) {
+
+    if (!(await checkAdminSession(request))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
     const formData = await request.formData();
     const requisition_name = formData.get("requisition_name")?.toString() || "";
     const unit = formData.get("unit")?.toString() || "";
@@ -79,6 +84,11 @@ async function updateRequisitionDetails(id: number, request: Request) {
 
 // ฟังก์ชันเปลี่ยนสถานะ requisition
 async function updateRequisitionStatus(id: number, request: Request) {
+
+    if (!(await checkAdminSession(request))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+    
     const { status } = await request.json();
 
     if (![0, 1].includes(status)) {
