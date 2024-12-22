@@ -253,7 +253,7 @@ function AdminsType_management() {
                                     <tbody className="text-gray-700 text-sm">
                                         {currentTypes.length > 0 ? (
                                             currentTypes.map(type => (
-                                                <tr key={type.id} className="hover:bg-gray-100 text-xs">
+                                                <tr key={type.id} className="hover:bg-gray-100 text-sm">
                                                     <td className="px-4 py-2 border-b">{type.name}</td>
                                                     <td className="px-4 py-2 border-b">{type.description}</td>
                                                     <td className="px-4 py-2 border-b">

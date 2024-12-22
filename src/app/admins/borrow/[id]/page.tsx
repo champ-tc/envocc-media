@@ -74,12 +74,16 @@ function AdminsBorrowDetail({ params }: { params: { id: string } }) {
         if (borrowQuantity <= 0) {
             setAlertMessage("จำนวนต้องมากกว่า 0");
             setAlertType("error");
-            return;
+            setTimeout(() => {
+                router.push("/admins/borrow");
+            }, 3000);
         }
         if (borrowQuantity > borrow.quantity) {
             setAlertMessage(`ไม่สามารถยืมเกิน ${borrow.quantity} ได้`);
             setAlertType("error");
-            return;
+            setTimeout(() => {
+                router.push("/admins/borrow");
+            }, 3000);
         }
 
         try {
@@ -109,7 +113,7 @@ function AdminsBorrowDetail({ params }: { params: { id: string } }) {
                 return;
             }
         
-            setAlertMessage(`เพิ่มรายการสำเร็จ: ${borrowQuantity} ${borrow.unit}`);
+            setAlertMessage(`เพิ่มรายการสำเร็จ ${borrowQuantity} รายการ`);
             setAlertType("success");
             setTimeout(() => {
                 router.push("/admins/borrow");

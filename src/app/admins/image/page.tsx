@@ -262,10 +262,10 @@ function Adminsimage() {
                                             <th className="px-4 py-2 border-b-2 border-gray-200">การจัดการ</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="text-gray-700 text-sm">
+                                    <tbody className="text-gray-700">
                                         {currentImages.length > 0 ? (
                                             currentImages.map(image => (
-                                                <tr key={image.id} className="hover:bg-gray-100 text-xs">
+                                                <tr key={image.id} className="hover:bg-gray-100 text-sm">
                                                     <td className="px-4 py-2 border-b">
                                                         <img
                                                             src={`/uploads/${image.filename}`}

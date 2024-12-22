@@ -1,9 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import useAuthCheck from "@/hooks/useAuthCheck";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
-import useAuthCheck from "@/hooks/useAuthCheck";
+import axios from "axios";
+import AlertModal from "@/components/AlertModal";
+import ConfirmEditModal from "@/components/ConfirmEditModal";
+import dynamic from "next/dynamic";
+import { registerLocale } from "react-datepicker";
+import { th } from "date-fns/locale/th";
+import "react-datepicker/dist/react-datepicker.css";
+import type { ReactDatePickerCustomHeaderProps } from "react-datepicker";
+
+registerLocale("th", th);
 
 
 interface BorrowGroup {
@@ -29,39 +40,182 @@ interface BorrowLog {
     status: string;
 }
 
+interface CustomInputProps {
+    value?: string;
+    onClick?: () => void;
+    id: string;
+    name: string;
+}
+
 
 function AdminsConfirmBorrow() {
     const { session, isLoading } = useAuthCheck("admin");
+    const router = useRouter();
+    const [returnDate, setReturnDate] = useState("");
+
+    const [statusFilter, setStatusFilter] = useState("");
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
+    const [alertType, setAlertType] = useState<"success" | "error" | null>(null);
+    const [isEditConfirmOpen, setIsEditConfirmOpen] = useState(false);
+
     const [borrowGroups, setBorrowGroups] = useState<BorrowGroup[]>([]);
     const [selectedGroup, setSelectedGroup] = useState<BorrowGroup | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
-    const [statusFilter, setStatusFilter] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
+
+    // Pagination logic
     const itemsPerPage = 10;
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const totalPages = Math.ceil(borrowGroups.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentBorrows = borrowGroups.slice(startIndex, endIndex);
+
+    const [returnModalOpen, setReturnModalOpen] = useState(false);
+    const [detailModalOpen, setDetailModalOpen] = useState(false);
+    const [selectedReturnGroup, setSelectedReturnGroup] = useState<BorrowGroup | null>(null);
 
     useEffect(() => {
-        if (session) {
-            const fetchBorrowLogs = async () => {
-                try {
-                    const url = statusFilter
-                        ? `/api/borrow_log?status=${statusFilter}`
-                        : '/api/borrow_log';
-                    const response = await fetch(url);
-                    const data = await response.json();
+        const fetchBorrowLogs = async () => {
+            try {
+                if (!session || !statusFilter) return; // ย้ายเงื่อนไขการตรวจสอบเข้ามาในฟังก์ชัน
+                const url =
+                    statusFilter === "all"
+                        ? "/api/borrow_log"
+                        : `/api/borrow_log?status=${statusFilter}`;
+                const response = await fetch(url);
+                const data = await response.json();
 
-                    if (Array.isArray(data)) {
-                        setBorrowGroups(data); // เก็บข้อมูลใน state
-                    }
-                } catch (error) {
-                    console.error('Error fetching borrow logs:', error);
+                if (Array.isArray(data)) {
+                    setBorrowGroups(data); // เก็บข้อมูลใน state
                 }
-            };
+            } catch (error) {
+                console.error("Error fetching borrow logs:", error);
+            }
+        };
 
+        fetchBorrowLogs(); // เรียกใช้ฟังก์ชันนี้โดยไม่มีเงื่อนไขใน useEffect
+    }, [session, statusFilter]);
+
+    useEffect(() => {
+        if (session && statusFilter) {
             fetchBorrowLogs();
         }
     }, [session, statusFilter]);
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <p>กำลังโหลด...</p>
+            </div>
+        );
+    }
+
+
+
+    const DynamicDatePicker = dynamic<any>(() => import("react-datepicker"), {
+        ssr: false,
+        loading: () => <p>Loading...</p>,
+    });
+
+    function formatDisplayDate(date: Date): string {
+        return date.toLocaleDateString("th-TH", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+        });
+    }
+
+
+    function formatSubmitDate(date: Date): string {
+        const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+        return offsetDate.toISOString().split('T')[0]; // Format as yyyy-mm-dd
+    }
+
+    const CustomInput = React.forwardRef<HTMLInputElement, CustomInputProps>(
+        ({ value, onClick, id, name }, ref) => (
+            <input
+                type="text"
+                className="input input-bordered w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                onClick={onClick} // เปิดปฏิทินเมื่อคลิก
+                value={value || ""} // กำหนดค่าให้ input
+                readOnly
+                autoComplete="off"
+                ref={ref}
+                id={id}
+                name={name}
+            />
+        )
+    );
+
+    CustomInput.displayName = "CustomInput";
+
+
+    const years = Array.from({ length: 2 }, (_, i) => new Date().getFullYear() + i);
+
+    const renderCustomHeader = ({
+        date,
+        changeYear,
+        changeMonth,
+        decreaseMonth,
+        increaseMonth,
+        prevMonthButtonDisabled,
+        nextMonthButtonDisabled,
+    }: ReactDatePickerCustomHeaderProps) => {
+        const months = [
+            "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+            "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
+        ];
+
+        return (
+            <div className="flex items-center gap-2 p-2">
+                <button
+                    onClick={decreaseMonth}
+                    disabled={prevMonthButtonDisabled}
+                    className="p-1 rounded bg-gray-200 hover:bg-gray-300 focus:outline-none"
+                >
+                    ⬅️
+                </button>
+                <select
+                    value={date.getFullYear()}
+                    onChange={({ target: { value } }) => changeYear(parseInt(value))}
+                    className="p-1 border rounded-md"
+                >
+                    {years.map((year) => (
+                        <option key={year} value={year}>
+                            {year + 543}
+                        </option>
+                    ))}
+                </select>
+                <select
+                    value={date.getMonth()}
+                    onChange={({ target: { value } }) => changeMonth(parseInt(value))}
+                    className="p-1 border rounded-md"
+                >
+                    {months.map((month, index) => (
+                        <option key={index} value={index}>
+                            {month}
+                        </option>
+                    ))}
+                </select>
+                <button
+                    onClick={increaseMonth}
+                    disabled={nextMonthButtonDisabled}
+                    className="p-1 rounded bg-gray-200 hover:bg-gray-300 focus:outline-none"
+                >
+                    ➡️
+                </button>
+            </div>
+        );
+    };
+
+    const showAlert = (message: string, type: "success" | "error") => {
+        setAlertMessage(message);
+        setAlertType(type);
+
+        setTimeout(() => {
+            setAlertMessage(null);
+        }, 3000);
+    };
 
 
 
@@ -81,22 +235,12 @@ function AdminsConfirmBorrow() {
         }
     };
 
-
     // Close modal
     const closeModal = () => {
         setSelectedGroup(null);
         setModalOpen(false);
     };
 
-    // Pagination logic
-    const totalPages = Math.ceil(borrowGroups.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentBorrows = borrowGroups.slice(startIndex, endIndex);
-
-    const handlePageChange = (page: number) => {
-        setCurrentPage(page);
-    };
 
     const handleQuantityChange = (index: number, value: number) => {
         setSelectedGroup((prevGroup) => {
@@ -106,10 +250,6 @@ function AdminsConfirmBorrow() {
             return { ...prevGroup, logs: updatedLogs };
         });
     };
-
-    const [returnModalOpen, setReturnModalOpen] = useState(false);
-    const [detailModalOpen, setDetailModalOpen] = useState(false);
-    const [selectedReturnGroup, setSelectedReturnGroup] = useState<BorrowGroup | null>(null);
 
     // เปิด Modal คืนของ
     const openReturnModal = async (group: BorrowGroup) => {
@@ -154,11 +294,7 @@ function AdminsConfirmBorrow() {
         setDetailModalOpen(false);
     };
 
-    useEffect(() => {
-        if (session && statusFilter) {
-            fetchBorrowLogs();
-        }
-    }, [session, statusFilter]);
+
 
 
     const fetchBorrowLogs = async () => {
@@ -170,7 +306,7 @@ function AdminsConfirmBorrow() {
                     : `/api/borrow_log?status=${statusFilter}`;
             const response = await fetch(url);
             const data = await response.json();
-    
+
             if (Array.isArray(data)) {
                 setBorrowGroups(data); // เก็บข้อมูลใน state
             }
@@ -178,76 +314,107 @@ function AdminsConfirmBorrow() {
             console.error("Error fetching borrow logs:", error);
         }
     };
-    
+
 
 
     const handleApprove = async () => {
         if (!selectedGroup) {
-            alert("ไม่พบคำขอที่เลือก");
+            setAlertMessage("ไม่พบคำขอที่เลือก");
+            setAlertType("error");
+            autoCloseAlert();
             return;
         }
 
-        try {
-            const response = await fetch("/api/borrow_log/approve", {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
+        // ตรวจสอบจำนวนที่อนุมัติในทุก log
+        const isValid = selectedGroup.logs.every(
+            (log) =>
+                log.approved_quantity !== undefined && log.approved_quantity >= 1 // ต้องไม่น้อยกว่า 1
+        );
+
+        if (!isValid) {
+            setAlertMessage("จำนวนที่อนุมัติในแต่ละรายการต้องไม่น้อยกว่า 1");
+            setAlertType("error");
+            autoCloseAlert();
+            return;
+        }
+
+        const confirmApprove = async () => {
+            try {
+                const response = await axios.put("/api/borrow_log/approve", {
                     groupId: selectedGroup.borrow_groupid,
                     logs: selectedGroup.logs.map((log) => ({
                         id: log.id,
                         approved_quantity: log.approved_quantity ?? log.quantity,
                     })),
-                }),
-            });
+                });
 
-            if (response.ok) {
-                alert("อนุมัติสำเร็จ!");
-                closeModal();
-                await fetchBorrowLogs();
-            } else {
-                alert("เกิดข้อผิดพลาดในการอนุมัติ");
+                if (response.status === 200) {
+                    setAlertMessage("อนุมัติสำเร็จ!");
+                    setAlertType("success");
+                    closeModal();
+                    await fetchBorrowLogs();
+                } else {
+                    setAlertMessage("เกิดข้อผิดพลาดในการอนุมัติ");
+                    setAlertType("error");
+                }
+            } catch (error) {
+                console.error("Error approving borrow logs:", error);
+                setAlertMessage("ไม่สามารถอนุมัติคำขอได้ในขณะนี้!");
+                setAlertType("error");
+            } finally {
+                autoCloseAlert();
+                setIsEditConfirmOpen(false); // ปิด Modal ยืนยัน
             }
-        } catch (error) {
-            console.error("Error approving borrow logs:", error);
-            alert("ไม่สามารถอนุมัติคำขอได้ในขณะนี้!");
-        }
+        };
+
+        confirmApprove();
     };
 
-
-
-    const handleReject = async () => {
+    const handleReject = () => {
         if (!selectedGroup) return;
 
+        // เปิด Modal ยืนยัน
+        setIsEditConfirmOpen(true);
+    };
+
+    const confirmReject = async () => {
         try {
-            const response = await fetch("/api/borrow_log/reject", {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ groupId: selectedGroup.borrow_groupid }),
+            const response = await axios.put("/api/borrow_log/reject", {
+                groupId: selectedGroup.borrow_groupid,
             });
 
-            if (response.ok) {
-                alert("ปฏิเสธคำขอสำเร็จ!");
+            if (response.status === 200) {
+                setAlertMessage("ปฏิเสธคำขอสำเร็จ!");
+                setAlertType("success");
                 closeModal();
                 await fetchBorrowLogs();
             } else {
-                alert("เกิดข้อผิดพลาดในการปฏิเสธคำขอ");
+                setAlertMessage("เกิดข้อผิดพลาดในการปฏิเสธคำขอ");
+                setAlertType("error");
             }
         } catch (error) {
             console.error("Error rejecting borrow:", error);
-            alert("ไม่สามารถปฏิเสธคำขอได้ในขณะนี้");
+            setAlertMessage("ไม่สามารถปฏิเสธคำขอได้ในขณะนี้");
+            setAlertType("error");
+        } finally {
+            autoCloseAlert();
+            setIsEditConfirmOpen(false); // ปิด Modal ยืนยัน
         }
     };
+
+
 
 
     const handleReturn = async () => {
         if (!selectedReturnGroup?.actual_return_date) {
-            alert("กรุณาเลือกวันที่คืน");
+            setAlertMessage("กรุณาเลือกวันที่คืน");
+            setAlertType("error");
+            autoCloseAlert();
             return;
         }
 
-        // ตัดเวลาออก ให้เหลือเฉพาะวันที่
         const date = new Date(selectedReturnGroup.actual_return_date);
-        const formattedDate = date.toISOString().split("T")[0]; // ตัดเวลา เหลือเฉพาะวันที่ (YYYY-MM-DD)
+        const formattedDate = date.toISOString().split("T")[0];
 
         const isValid = selectedReturnGroup.logs.every(
             (log) =>
@@ -256,37 +423,49 @@ function AdminsConfirmBorrow() {
         );
 
         if (!isValid) {
-            alert("กรุณาระบุจำนวนที่คืนให้ถูกต้องในทุกรายการ");
+            setAlertMessage("กรุณาระบุจำนวนที่คืนให้ถูกต้องในทุกรายการ");
+            setAlertType("error");
+            autoCloseAlert();
             return;
         }
 
         try {
-            // ส่งข้อมูลไปยัง API
-            const response = await fetch("/api/borrow_log/return", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    borrow_groupid: selectedReturnGroup.borrow_groupid,
-                    actual_return_date: formattedDate, // ส่งเฉพาะวันที่
-                    logs: selectedReturnGroup.logs.map((log) => ({
-                        id: log.id,
-                        returned_quantity: log.returned_quantity,
-                    })),
-                }),
+            const response = await axios.post("/api/borrow_log/return", {
+                borrow_groupid: selectedReturnGroup.borrow_groupid,
+                actual_return_date: formattedDate,
+                logs: selectedReturnGroup.logs.map((log) => ({
+                    id: log.id,
+                    returned_quantity: log.returned_quantity,
+                })),
             });
 
-            if (response.ok) {
-                alert("บันทึกข้อมูลการคืนสำเร็จ");
+            if (response.status === 200) {
+                setAlertMessage("บันทึกข้อมูลการคืนสำเร็จ");
+                setAlertType("success");
                 closeReturnModal();
                 await fetchBorrowLogs();
             } else {
-                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+                setAlertMessage("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+                setAlertType("error");
             }
         } catch (error) {
             console.error("Error saving return data:", error);
-            alert("ไม่สามารถบันทึกข้อมูลการคืนได้");
+            setAlertMessage("ไม่สามารถบันทึกข้อมูลการคืนได้");
+            setAlertType("error");
+        } finally {
+            autoCloseAlert();
         }
     };
+
+    // ฟังก์ชันปิดแจ้งเตือนอัตโนมัติใน 3 วินาที
+    const autoCloseAlert = () => {
+        setTimeout(() => {
+            setAlertMessage(null);
+            setAlertType(null);
+        }, 3000); // 3 วินาที
+    };
+
+
 
 
 
@@ -307,9 +486,17 @@ function AdminsConfirmBorrow() {
     };
 
 
-    // Avoid conditional rendering that causes hooks mismatch
-    if (isLoading) return <p>Loading...</p>;
-    if (!session) return <p>Unauthorized</p>;
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    const goToPreviousPage = () => {
+        if (currentPage > 1) setCurrentPage(currentPage - 1);
+    };
+
+    const goToNextPage = () => {
+        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+    };
 
     return (
         <div className="min-h-screen flex bg-gray-50">
@@ -318,47 +505,23 @@ function AdminsConfirmBorrow() {
                 <TopBar />
                 <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
                     <h1 className="text-2xl font-bold mb-6">ยืนยันการยืม-คืน</h1>
-
-                    {successMessage && (
-                        <div className="bg-green-50 text-green-500 p-6 mb-10 text-sm rounded-2xl" role="alert">
-                            <span>&#10004; </span>
-                            <span>{successMessage}</span>
-                        </div>
-                    )}
-
-                    {error && (
-                        <div className="bg-red-50 text-red-500 p-6 mb-10 text-sm rounded-2xl" role="alert">
-                            <span>&#10006; </span>
-                            <span>{error}</span>
-                        </div>
-                    )}
-
-<div className="mb-4 flex space-x-4">
-    {[
-        { key: "all", label: "ทั้งหมด" },
-        { key: "Pending", label: "รอพิจารณา" },
-        { key: "Approved", label: "รับคืน" },
-        { key: "ApprovedReturned", label: "อนุมัติ" },
-        { key: "NotApproved", label: "ไม่อนุมัติ" },
-    ].map(({ key, label }) => (
-        <button
-            key={key}
-            onClick={() => setStatusFilter(key)}
-            className={`py-2 px-4 rounded ${statusFilter === key ? "bg-blue-500 text-white" : "bg-gray-200"}`}
-        >
-            {label}
-        </button>
-    ))}
-</div>
-
-{!statusFilter ? (
-    <p className="text-center text-gray-500">กรุณาเลือกสถานะเพื่อตรวจสอบข้อมูล</p>
-) : (
-    <table className="w-full border-collapse bg-white shadow rounded-lg overflow-hidden">
-        {/* เนื้อหาตาราง */}
-    </table>
-)}
-
+                    <div className="mb-4 flex space-x-4">
+                        {[
+                            { key: "all", label: "ทั้งหมด" },
+                            { key: "Pending", label: "รอพิจารณา" },
+                            { key: "Approved", label: "รับคืน" },
+                            { key: "ApprovedReturned", label: "อนุมัติ" },
+                            { key: "NotApproved", label: "ไม่อนุมัติ" },
+                        ].map(({ key, label }) => (
+                            <button
+                                key={key}
+                                onClick={() => setStatusFilter(key)}
+                                className={`py-2 px-4 rounded ${statusFilter === key ? "bg-[#fb8124] text-white" : "bg-gray-200"}`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
 
 
                     {!statusFilter ? (
@@ -368,7 +531,7 @@ function AdminsConfirmBorrow() {
                         <table className="w-full border-collapse bg-white shadow rounded-lg overflow-hidden">
                             <thead>
                                 <tr className="bg-gray-200 text-gray-700">
-                                    <th className="py-3 px-4 text-left">รหัสคำขอ</th>
+                                    <th className="py-3 px-4 text-left">คำขอ</th>
                                     <th className="py-3 px-4 text-left">ชื่อผู้ขอ</th>
                                     <th className="py-3 px-4 text-left">สถานะ</th>
                                     <th className="py-3 px-4 text-left">การจัดการ</th>
@@ -376,10 +539,11 @@ function AdminsConfirmBorrow() {
                             </thead>
                             <tbody>
                                 {currentBorrows.length > 0 ? (
-                                    currentBorrows.map((group) => {
+                                    currentBorrows.map((group, index) => {
                                         return (
-                                            <tr key={group.borrow_groupid} className="border-b">
-                                                <td className="py-3 px-4">{group.borrow_groupid}</td>
+                                            <tr key={group.borrow_groupid} className="border-b text-xs">
+                                                {/* เปลี่ยนจาก group.borrow_groupid เป็นการแสดงลำดับ */}
+                                                <td className="py-3 px-4">คำขอที่ {startIndex + index + 1}</td>
                                                 <td className="py-3 px-4">
                                                     {group.user
                                                         ? `${group.user.title}${group.user.firstName} ${group.user.lastName}`
@@ -390,29 +554,26 @@ function AdminsConfirmBorrow() {
                                                     {group.status === "Pending" ? (
                                                         <button
                                                             onClick={() => openModal(group)}
-                                                            className="px-4 py-2 rounded bg-blue-500 text-white"
+                                                            className="px-4 py-2 rounded bg-[#fb8124] text-white"
                                                         >
                                                             ดูคำขอ
                                                         </button>
                                                     ) : group.status === "Approved" ? (
-                                                        // แสดงปุ่ม "คืนของ" ถ้าไม่มีวันที่คืน
                                                         <button
                                                             onClick={() => openReturnModal(group)}
-                                                            className="px-4 py-2 rounded bg-green-500 text-white"
+                                                            className="px-4 py-2 rounded bg-[#fb8124] text-white"
                                                         >
                                                             คืนของ
                                                         </button>
                                                     ) : group.status === "ApprovedReturned" ? (
-                                                        // แสดงปุ่ม "ดูรายละเอียด" ถ้ามีวันที่คืน
                                                         <button
                                                             onClick={() => openDetailModal(group)}
-                                                            className="px-4 py-2 rounded bg-blue-500 text-white"
+                                                            className="px-4 py-2 rounded bg-green-500 text-white"
                                                         >
                                                             ดูรายละเอียด
                                                         </button>
                                                     ) : null}
                                                 </td>
-
                                             </tr>
                                         );
                                     })
@@ -425,198 +586,199 @@ function AdminsConfirmBorrow() {
                                 )}
                             </tbody>
 
+
                         </table>
                     )}
 
-                    <div className="flex items-center justify-between mt-6">
-                        <button
-                            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="px-4 py-2 rounded bg-gray-200 text-gray-600"
-                        >
-                            Previous
-                        </button>
-                        <span>
-                            Page {currentPage} of {totalPages}
-                        </span>
-                        <button
-                            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className="px-4 py-2 rounded bg-gray-200 text-gray-600"
-                        >
-                            Next
-                        </button>
-                    </div>
-
-                    {modalOpen && selectedGroup && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                            <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
-                                <h2 className="text-2xl font-bold mb-4 text-center">รายละเอียดคำขอ</h2>
-                                <ul className="divide-y divide-gray-200">
-                                    {selectedGroup.logs.map((log, index) => (
-                                        <li key={log.id} className="py-4">
-                                            <div className="flex justify-between items-center">
-                                                <div>
-                                                    <p className="font-semibold">
-                                                        ชื่อ: {log.borrow.borrow_name} (จำนวนที่ขอ:{" "}
-                                                        {log.quantity})
-                                                    </p>
-                                                    <p className="text-sm text-gray-600">
-                                                        คืนแล้ว: {log.returned_quantity ?? "ยังไม่ได้คืน"}
-                                                    </p>
-                                                </div>
-                                                <div className="ml-4">
-                                                    <label className="block text-sm font-medium text-gray-600">
-                                                        จำนวนที่อนุมัติ:
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        max={log.quantity}
-                                                        value={log.approved_quantity ?? log.quantity} // Default to requested quantity
-                                                        onChange={(e) =>
-                                                            handleQuantityChange(index, Number(e.target.value))
-                                                        }
-                                                        className="mt-1 block w-24 px-2 py-1 border rounded-md text-sm"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
-                                <div className="mt-6 flex justify-between items-center space-x-4">
+                    {statusFilter && (
+                        <div className="flex items-center justify-between mt-6">
+                            <span className="text-sm text-gray-600">
+                                รายการที่ {startIndex + 1} ถึง {Math.min(startIndex + 10, borrowGroups.length)} จาก {" "}
+                                {borrowGroups.length} รายการ
+                            </span>
+                            <div className="flex space-x-2">
+                                <button
+                                    onClick={goToPreviousPage}
+                                    disabled={currentPage === 1}
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                >
+                                    ก่อนหน้า
+                                </button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                                     <button
-                                        onClick={handleApprove}
-                                        className="bg-green-500 text-white py-2 px-4 rounded"
+                                        key={page}
+                                        onClick={() => handlePageChange(page)}
+                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#fb8124] text-white" : "bg-gray-200 text-gray-600"
+                                            } hover:bg-[#fb8124] hover:text-white transition`}
                                     >
-                                        อนุมัติ
+                                        {page}
                                     </button>
-                                    <button
-                                        onClick={handleReject}
-                                        className="bg-red-500 text-white py-2 px-4 rounded"
-                                    >
-                                        ปฏิเสธ
-                                    </button>
-                                    <button
-                                        onClick={closeModal}
-                                        className="bg-gray-300 text-black py-2 px-4 rounded"
-                                    >
-                                        ปิด
-                                    </button>
-                                </div>
+                                ))}
+                                <button
+                                    onClick={goToNextPage}
+                                    disabled={currentPage === totalPages}
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                >
+                                    ถัดไป
+                                </button>
                             </div>
                         </div>
                     )}
 
+                </div>
 
-                    {returnModalOpen && selectedReturnGroup && (
-                        <>
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                                <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
-                                    <h2 className="text-2xl font-bold mb-4 text-center">คืนของ</h2>
-
-                                    <div className="mb-4">
-                                        <label className="block text-sm font-medium text-gray-600">วันที่คืน:</label>
-                                        <input
-                                            type="date"
-                                            className="mt-1 block w-full px-2 py-1 border rounded-md text-sm"
-                                            onChange={(e) =>
-                                                setSelectedReturnGroup((prev) =>
-                                                    prev ? { ...prev, actual_return_date: e.target.value } : null
-                                                )
-                                            }
-                                        />
-                                    </div>
-
-                                    <ul className="divide-y divide-gray-200">
-                                        {selectedReturnGroup.logs?.length > 0 ? (
-                                            selectedReturnGroup.logs.map((log, index) => (
-                                                <li key={log.id} className="py-4">
-                                                    <div className="flex flex-col space-y-2">
-                                                        <p className="font-semibold text-gray-700">
-                                                            ชื่อ: {log.borrow.borrow_name}
-                                                        </p>
-                                                        <p className="text-sm text-gray-600">
-                                                            จำนวนที่ให้ยืม: {log.quantity}
-                                                        </p>
-                                                        <div className="flex items-center justify-between">
-                                                            <label className="block text-sm font-medium text-gray-600">
-                                                                จำนวนที่คืน:
-                                                            </label>
-                                                            <input
-                                                                type="number"
-                                                                min="0"
-                                                                max={log.quantity}
-                                                                value={log.returned_quantity || ""}
-                                                                placeholder="กรอกจำนวนที่คืน"
-                                                                onChange={(e) =>
-                                                                    setSelectedReturnGroup((prev) => {
-                                                                        if (!prev) return null;
-                                                                        const updatedLogs = [...prev.logs];
-                                                                        updatedLogs[index].returned_quantity = Number(e.target.value);
-                                                                        return { ...prev, logs: updatedLogs };
-                                                                    })
-                                                                }
-                                                                className="block w-24 px-2 py-1 border rounded-md text-sm"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </li>
-                                            ))
-                                        ) : (
-                                            <p className="text-gray-600 text-sm text-center">ไม่มีข้อมูลรายการที่ยืม</p>
-                                        )}
-                                    </ul>
-
-                                    <div className="mt-6 flex justify-end items-center space-x-4">
-                                        {/* ปุ่มบันทึก */}
-                                        <button
-                                            onClick={handleReturn}
-                                            className="bg-green-500 text-white py-2 px-4 rounded"
-                                        >
-                                            บันทึก
-                                        </button>
-
-                                        {/* ปุ่มปิด */}
-                                        <button
-                                            onClick={closeReturnModal}
-                                            className="bg-gray-300 text-black py-2 px-4 rounded"
-                                        >
-                                            ปิด
-                                        </button>
-                                    </div>
-                                </div>
+                {modalOpen && selectedGroup && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
+                            <h2 className="text-2xl font-bold mb-4 text-center">รายละเอียดคำขอ</h2>
+                            <ul className="divide-y divide-gray-200">
+                                {selectedGroup.logs.map((log, index) => (
+                                    <li key={log.id} className="py-4">
+                                        <p className="font-semibold">
+                                            ชื่อ: {log.borrow.borrow_name}
+                                        </p>
+                                        <p className="text-sm text-gray-600">
+                                            จำนวนที่ขอ:{" "}{log.quantity}
+                                        </p>
+                                        <div className="flex items-center space-x-2">
+                                            <label className="block text-sm font-medium text-gray-600">
+                                                จำนวนที่อนุมัติ:
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max={log.quantity}
+                                                value={log.approved_quantity ?? 0} // Default to requested quantity
+                                                onChange={(e) =>
+                                                    handleQuantityChange(index, Number(e.target.value))
+                                                }
+                                                className="mt-1 block w-24 px-2 py-1 border rounded-md text-sm"
+                                            />
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                            <div className="mt-6 flex justify-between items-center space-x-4">
+                                <button
+                                    onClick={handleApprove}
+                                    className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg font-semibold"
+                                >
+                                    อนุมัติ
+                                </button>
+                                <button
+                                    onClick={handleReject}
+                                    className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-semibold"
+                                >
+                                    ไม่อนุมัติ
+                                </button>
+                                <button
+                                    onClick={closeModal}
+                                    className="flex-1 bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded-lg font-semibold"
+                                >
+                                    ปิด
+                                </button>
                             </div>
-                        </>
-                    )}
+                        </div>
+                    </div>
+                )}
 
-
-
-                    {detailModalOpen && selectedReturnGroup && (
+                {returnModalOpen && selectedReturnGroup && (
+                    <>
                         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                             <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
-                                <h2 className="text-2xl font-bold mb-4 text-center">รายละเอียดการคืนของ</h2>
-                                <ul className="divide-y divide-gray-200">
-                                    {selectedReturnGroup.logs && selectedReturnGroup.logs.length > 0 ? (
-                                        selectedReturnGroup.logs.map((log) => (
-                                            <li key={log.id} className="py-4">
-                                                <p className="font-semibold">ชื่อ: {log.borrow.borrow_name}</p>
-                                                <p className="text-sm text-gray-600">
-                                                    จำนวนที่คืน: {log.approved_quantity !== null && log.approved_quantity !== undefined ? log.approved_quantity : "ยังไม่ได้คืน"}
-                                                </p>
-                                                <p className="text-sm text-gray-600">
-                                                    วันที่คืน: {selectedReturnGroup.actual_return_date ? new Date(selectedReturnGroup.actual_return_date).toLocaleDateString() : "ยังไม่มี"}
-                                                </p>
+                                <h2 className="text-2xl font-bold mb-4 text-center">คืนของ</h2>
 
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-600">วันที่คืน:</label>
+                                    <DynamicDatePicker
+                                        selected={returnDate ? new Date(returnDate) : null} // ค่าเริ่มต้น
+                                        onChange={(date: Date | null) => {
+                                            if (date) {
+                                                const today = new Date();
+                                                const selectedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                                                const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+                                                if (selectedDate < currentDate) {
+                                                    showAlert("ไม่สามารถเลือกวันที่น้อยกว่าวันปัจจุบัน", "error");
+                                                    return;
+                                                }
+
+                                                // กำหนดค่าที่ได้จาก DatePicker
+                                                setSelectedReturnGroup((prev) =>
+                                                    prev ? { ...prev, actual_return_date: formatSubmitDate(date) } : null
+                                                );
+
+                                                setReturnDate(formatSubmitDate(date)); // อัพเดทค่าที่ส่งไปยัง API
+                                            }
+                                        }}
+                                        locale="th" // ใช้ภาษาไทย
+                                        dateFormat="dd/MM/yyyy" // รูปแบบการแสดงผล
+                                        renderCustomHeader={renderCustomHeader} // ใช้ header ที่ปรับแต่ง
+                                        customInput={
+                                            <CustomInput
+                                                id="actual_return_date" // ระบุ id
+                                                name="actual_return_date" // ส่ง name ไปยัง API
+                                                value={returnDate ? formatDisplayDate(new Date(returnDate)) : ""} // แสดงค่าที่เลือก
+                                            />
+                                        }
+                                        className="datepicker-input" // เพิ่ม className สำหรับปรับแต่ง
+                                        minDate={new Date()} // ห้ามเลือกวันที่น้อยกว่าวันปัจจุบัน
+                                    />
+
+                                </div>
+
+                                <ul className="divide-y divide-gray-200">
+                                    {selectedReturnGroup.logs?.length > 0 ? (
+                                        selectedReturnGroup.logs.map((log, index) => (
+                                            <li key={log.id} className="py-4">
+                                                <div className="flex flex-col space-y-2">
+                                                    <p className="font-semibold text-gray-700">
+                                                        ชื่อ: {log.borrow.borrow_name}
+                                                    </p>
+                                                    <p className="text-sm text-gray-600">
+                                                        จำนวนที่ให้ยืม: {log.quantity}
+                                                    </p>
+                                                    <div className="flex items-center justify-between">
+                                                        <label className="block text-sm font-medium text-gray-600">
+                                                            จำนวนที่คืน:
+                                                        </label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            max={log.quantity}
+                                                            value={log.returned_quantity || ""}
+                                                            placeholder="กรอกจำนวนที่คืน"
+                                                            onChange={(e) =>
+                                                                setSelectedReturnGroup((prev) => {
+                                                                    if (!prev) return null;
+                                                                    const updatedLogs = [...prev.logs];
+                                                                    updatedLogs[index].returned_quantity = Number(e.target.value);
+                                                                    return { ...prev, logs: updatedLogs };
+                                                                })
+                                                            }
+                                                            className="block w-24 px-2 py-1 border rounded-md text-sm"
+                                                        />
+                                                    </div>
+                                                </div>
                                             </li>
                                         ))
                                     ) : (
-                                        <p className="text-gray-600 text-center">ไม่มีข้อมูลการคืนของ</p>
+                                        <p className="text-gray-600 text-sm text-center">ไม่มีข้อมูลรายการที่ยืม</p>
                                     )}
                                 </ul>
+
                                 <div className="mt-6 flex justify-end items-center space-x-4">
+                                    {/* ปุ่มบันทึก */}
                                     <button
-                                        onClick={closeDetailModal}
+                                        onClick={handleReturn}
+                                        className="bg-green-500 text-white py-2 px-4 rounded"
+                                    >
+                                        บันทึก
+                                    </button>
+
+                                    {/* ปุ่มปิด */}
+                                    <button
+                                        onClick={closeReturnModal}
                                         className="bg-gray-300 text-black py-2 px-4 rounded"
                                     >
                                         ปิด
@@ -624,12 +786,63 @@ function AdminsConfirmBorrow() {
                                 </div>
                             </div>
                         </div>
-                    )}
+                    </>
+                )}
+
+                {detailModalOpen && selectedReturnGroup && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
+                            <h2 className="text-2xl font-bold mb-4 text-center">รายละเอียดการคืนของ</h2>
+                            <ul className="divide-y divide-gray-200">
+                                {selectedReturnGroup.logs && selectedReturnGroup.logs.length > 0 ? (
+                                    selectedReturnGroup.logs.map((log) => (
+                                        <li key={log.id} className="py-4">
+                                            <p className="font-semibold">ชื่อ: {log.borrow.borrow_name}</p>
+                                            <p className="text-sm text-gray-600">
+                                                จำนวนที่คืน: {log.approved_quantity !== null && log.approved_quantity !== undefined ? log.approved_quantity : "ยังไม่ได้คืน"}
+                                            </p>
+                                            <p className="text-sm text-gray-600">
+                                                วันที่คืน: {selectedReturnGroup.actual_return_date ? new Date(selectedReturnGroup.actual_return_date).toLocaleDateString() : "ยังไม่มี"}
+                                            </p>
+
+                                        </li>
+                                    ))
+                                ) : (
+                                    <p className="text-gray-600 text-center">ไม่มีข้อมูลการคืนของ</p>
+                                )}
+                            </ul>
+                            <div className="mt-6 flex justify-end items-center space-x-4">
+                                <button
+                                    onClick={closeDetailModal}
+                                    className="bg-gray-300 text-black py-2 px-4 rounded"
+                                >
+                                    ปิด
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {isEditConfirmOpen && (
+                    <ConfirmEditModal
+                        isOpen={isEditConfirmOpen}
+                        onClose={() => setIsEditConfirmOpen(false)} // ปิด Modal
+                        onConfirm={confirmReject} // ดำเนินการปฏิเสธคำขอเมื่อยืนยัน
+                        title="ยืนยันการปฏิเสธคำขอนี้หรือไม่?"
+                        iconSrc="/images/alert.png"
+                    />
+                )}
 
 
+                {alertMessage && (
+                    <AlertModal
+                        isOpen={!!alertMessage}
+                        message={alertMessage}
+                        type={alertType ?? "error"}
+                        iconSrc={alertType === "success" ? "/images/check.png" : "/images/close.png"}
+                    />
+                )}
 
-
-                </div>
             </div>
         </div>
     );
