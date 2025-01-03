@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
+import Link from 'next/link';
 
 function LoginPage() {
   const [username, setUsername] = useState("");
@@ -41,21 +41,14 @@ function LoginPage() {
 
   return (
     <>
-      <Navbar />
-      <div className="flex items-center justify-center min-h-screen bg-orange-300/30 px-4">
-        <div className="flex w-full max-w-3xl bg-white shadow-lg min-h-[70vh] rounded-lg overflow-hidden">
-          {/* Left Section */}
-          <div className="w-1/3 bg-orange-500 m-2 rounded-lg text-white flex flex-col justify-center items-center px-8 py-12">
-            <h1 className="text-3xl font-bold mb-6">ยินดีต้อนรับ</h1>
-            <p className="text-center text-lg leading-relaxed">
-              เว็บนี้ใช้เพื่อการเบิกของ ยืมคืนของจากกองโรคจากการประกอบอาชีพและสิ่งแวดล้อม
-            </p>
+      <div className="flex items-center justify-center min-h-screen bg-orange-500/10 px-2">
+        <div className="flex w-full max-w-3xl bg-white shadow-lg min-h-[0vh] rounded-lg overflow-hidden">
+          <div className="w-2/4 px-4 py-2  m-2 rounded-lg text-white flex flex-col justify-center items-center">
+            <img src="/images/login.png" alt="banner" className="w-80" />
           </div>
 
-          {/* Right Section */}
-          <div className="w-2/3 p-10">
-            <div className="mb-8 text-center">
-              <h1 className="text-3xl font-bold text-orange-500">เข้าสู่ระบบ</h1>
+          <div className="w-2/4 p-10">
+            <div className="mb-20 text-center">
             </div>
 
             {successMessage && (
@@ -89,7 +82,7 @@ function LoginPage() {
                   required
                 />
               </div>
-              <div className="mb-6">
+              <div>
                 <input
                   type="password"
                   value={password}
@@ -99,21 +92,30 @@ function LoginPage() {
                   required
                 />
               </div>
-              <div className="flex mb-6">
+              <div className="flex justify-between text-orange-600 text-sm mt-2 mb-6">
+                <Link href="#">
+                  ลืมรหัสผ่าน
+                </Link>
+                <Link href="/">
+                  หน้าแรก
+                </Link>
+              </div>
+              <div className="flex">
                 <button
                   type="submit"
-                  className="bg-orange-500 text-white px-6 py-3 rounded-md hover:bg-orange-600 transition"
+                  className="bg-orange-500 text-white px-6 py-3 flex w-full justify-center items-center text-center rounded-md hover:bg-orange-600 transition"
                 >
                   เข้าสู่ระบบ
                 </button>
               </div>
             </form>
 
-            <div className="flex justify-between text-orange-600 mt-4">
-              <a href="#" className="hover:underline">
-                ลืมรหัสผ่าน
-              </a>
+            <div className="flex justify-center text-sm mt-4">
+              <Link href="/register">
+                ยังไม่เป็นสมาชิก  <span className="text-orange-600">คลิกเพื่อลงทะเบียน</span>
+              </Link>
             </div>
+
           </div>
         </div>
       </div>

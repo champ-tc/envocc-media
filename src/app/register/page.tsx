@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+import Link from 'next/link';
 
 function RegisterPage() {
   const router = useRouter();
+
+  // State สำหรับจัดการข้อมูลฟิลด์
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [title, setTitle] = useState("");
@@ -18,63 +20,16 @@ function RegisterPage() {
   const [position, setPosition] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [csrfToken, setCsrfToken] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchCsrfToken = async () => {
-      const response = await fetch('/api/csrf-token');
-      const data = await response.json();
-      setCsrfToken(data.csrfToken);
-    };
-    fetchCsrfToken();
-  }, []);
-
-  const saveToDatabase = async (userData: any) => {
-    try {
-      const response = await fetch("/api/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken || "",
-        },
-        body: JSON.stringify(userData),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "การบันทึกข้อมูลล้มเหลว");
-      }
-
-      setSuccessMessage("ลงทะเบียนสำเร็จ! กำลังไปที่หน้าเข้าสู่ระบบ...");
-      setTimeout(() => {
-        router.push("/login");
-      }, 1000);
-    } catch (error: any) {
-      setError(error.message || "มีข้อผิดพลาดในการบันทึกข้อมูล");
-      setTimeout(() => setError(null), 5000);
-    }
-  };
-
-  const resetForm = () => {
-    setUsername("");
-    setPassword("");
-    setTitle("");
-    setFirstName("");
-    setLastName("");
-    setPhoneNumber("");
-    setEmail("");
-    setDepartment("");
-    setPosition("");
-    setError(null);
-    setSuccessMessage(null);
-  };
-
+  // การส่งข้อมูลไปยัง Backend
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccessMessage(null);
 
+    
+
+    // การตรวจสอบข้อมูล
     if (!username || !password || !title || !firstName || !lastName || !phoneNumber || !email || !department || !position) {
       setError("กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน");
       return;
@@ -112,48 +67,53 @@ function RegisterPage() {
     }
 
     try {
-      const checkResponse = await fetch("/api/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken || "",
-        },
-        body: JSON.stringify({ username, email, checkOnly: true }),
+
+      const checkResponse = await axios.post("/api/register", {
+        username,
+        email,
+        checkOnly: true,
       });
 
-      const checkResult = await checkResponse.json();
-      if (!checkResponse.ok) {
-        setError(checkResult.error);
-        if (checkResult.error.includes("Username")) setUsername("");
-        if (checkResult.error.includes("Email")) setEmail("");
+      if (checkResponse.status === 400) {
+        setError(checkResponse.data.error);
         return;
       }
-    } catch (error) {
-      setError("มีข้อผิดพลาดในการตรวจสอบข้อมูล");
-      return;
+
+      // ส่งข้อมูลไปยัง Backend ผ่าน Axios
+      const response = await axios.post("/api/register", {
+        username,
+        email,
+        password,
+        title,
+        firstName,
+        lastName,
+        phoneNumber,
+        department,
+        position,
+      });
+      
+
+      if (response.status === 201) {
+        setSuccessMessage("ลงทะเบียนสำเร็จ! กำลังไปที่หน้าเข้าสู่ระบบ...");
+        setTimeout(() => {
+          router.push("/login");
+        }, 1000);
+      }
+    } catch (error: any) {
+      if (error.response && error.response.status === 400) {
+        setError(error.response.data.error); // แสดงข้อความ Error สำหรับผู้ใช้
+      } else {
+        setError("เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่ภายหลัง"); // ข้อความทั่วไป
+      }
     }
-
-    const userData = {
-      username,
-      password,
-      title,
-      firstName,
-      lastName,
-      phoneNumber,
-      email,
-      department,
-      position,
-    };
-
-    await saveToDatabase(userData);
   };
+
 
   return (
     <>
-      <Navbar />
-      <div className="flex items-center justify-center min-h-screen bg-pink-200 my-2 px-4">
+      <div className="flex items-center justify-center min-h-screen bg-orange-500/10 px-2">
         <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-3xl shadow-lg w-full max-w-2xl">
-          <h2 className="text-orange-600 text-3xl font-bold text-center mb-4">ลงทะเบียน</h2>
+          <h2 className="text-orange-500 text-3xl font-bold text-center mb-4">ลงทะเบียน</h2>
 
           {successMessage && (
             <div className="bg-green-50 text-green-500 p-6 mb-10 text-sm rounded-2xl" role="alert">
@@ -230,12 +190,14 @@ function RegisterPage() {
 
             <div className="flex justify-center mt-6 gap-2">
               <button type="submit" className="bg-orange-500 text-white px-4 py-2 rounded-xl hover:bg-orange-600 transition">ยืนยัน</button>
-              <button type="button" onClick={resetForm} className="bg-orange-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-orange-300 transition">ยกเลิก</button>
+              {/* <button type="button" onClick={resetForm} className="bg-orange-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-orange-300 transition">ยกเลิก</button> */}
+              <Link href="/" className="bg-orange-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-orange-300 transition">
+                ย้อนกลับ
+              </Link>
             </div>
           </form>
         </div>
       </div>
-      <Footer />
     </>
   );
 }

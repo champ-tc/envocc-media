@@ -169,13 +169,13 @@ model user {
   id                   Int              @id @default(autoincrement())
   username             String           @unique(map: "User_username_key")
   password             String
-  title                String?
-  firstName            String?
-  lastName             String?
-  tel                  String?
+  title                String
+  firstName            String
+  lastName             String
+  tel                  String
   email                String           @unique(map: "User_email_key")
-  department           String?
-  position             String?
+  department           String
+  position             String
   role                 String           @default("user")
   createdAt            DateTime         @default(now())
   approvedBorrows      BorrowLog[]      @relation("AdminBorrowApproval")
