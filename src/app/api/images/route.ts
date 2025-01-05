@@ -11,6 +11,7 @@ async function checkAdminSession(request: Request): Promise<boolean> {
 }
 
 export async function POST(request: Request) {
+
     if (!(await checkAdminSession(request))) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
@@ -53,6 +54,7 @@ export async function POST(request: Request) {
 
 // API สำหรับ GET ข้อมูล
 export async function GET() {
+
     try {
         const images = await prisma.image.findMany();
         return NextResponse.json(images);

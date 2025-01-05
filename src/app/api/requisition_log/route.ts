@@ -3,18 +3,24 @@ import { prisma } from "@/lib/prisma";
 import { v4 as uuidv4 } from 'uuid';
 import { getToken } from "next-auth/jwt";
 
-async function checkAdminSession(request: Request): Promise<boolean> {
+async function checkAdminOrUserSession(request: Request): Promise<boolean> {
     const token = await getToken({ req: request as any });
-    return !!(token && token.role === 'admin');
+    return !!(token && (token.role === 'admin' || token.role === 'user'));
 }
 
 // ใช้สำหรับ requisition_summary
 export async function POST(req: Request) {
+
+    if (!(await checkAdminOrUserSession(req))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
     try {
         const { userId, orders, deliveryMethod, address } = await req.json();
 
         // ตรวจสอบ userId
         const userExists = await prisma.user.findUnique({ where: { id: userId } });
+        
         if (!userExists) {
             return NextResponse.json({ message: "User does not exist" }, { status: 400 });
         }
@@ -67,10 +73,13 @@ export async function POST(req: Request) {
     }
 }
 
-
-
 // ดึงข้อมูล requisition log
 export async function GET(req: Request) {
+
+    if (!(await checkAdminOrUserSession(req))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
     try {
         const { searchParams } = new URL(req.url);
         const status = searchParams.get("status");
@@ -110,6 +119,11 @@ export async function GET(req: Request) {
 
 // อัปเดตสถานะ requisition log
 export async function PUT(req: Request) {
+
+    if (!(await checkAdminOrUserSession(req))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+    
     try {
         const { id, status } = await req.json();
 

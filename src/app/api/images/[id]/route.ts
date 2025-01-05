@@ -15,6 +15,7 @@ async function checkAdminSession(request: Request): Promise<boolean> {
 
 // API สำหรับลบข้อมูล
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+
     if (!(await checkAdminSession(request))) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403 });
     }
@@ -48,6 +49,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 
 // API สำหรับแก้ไขข้อมูลภาพ
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
+    
     if (!(await checkAdminSession(request))) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403 });
     }

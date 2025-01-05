@@ -6,36 +6,38 @@ function Navbar() {
     const { data: session } = useSession();
     const [isOpen, setIsOpen] = useState(false); // ควบคุมเมนูมือถือ
     const [userMenuOpen, setUserMenuOpen] = useState(false); // ควบคุม dropdown ของผู้ใช้งาน
+    const user = session?.user;
 
     return (
         <div className="relative bg-gradient-to-r from-[#f5b83c] via-[#f89c2b] to-[#fb8124] text-white shadow-md">
-            {/* Navbar Container */}
             <div className="flex justify-between items-center py-4 px-8 h-16 z-20 relative">
-                {/* Logo Section */}
                 <div className="flex items-center space-x-8">
                     <img src="/images/icon_media.png" alt="Media Icon" className="h-10" />
                 </div>
 
-                {/* Desktop Menu */}
                 <div className="hidden lg:flex space-x-8 text-lg">
-                    <Link href="/users/requisition">
-                        <span className="text-white hover:bg-white/50 hover:rounded-md px-6 py-2 cursor-pointer">
-                            เบิกสื่อ
-                        </span>
+                    <Link href="/users/requisition"
+                        className="text-white hover:bg-white/50 hover:rounded-md px-6 py-2 cursor-pointer flex items-center">
+                        <img src="/images/requisition.png" alt="เบิกสื่อ" className="h-5 mr-2" />
+                        <span>เบิกสื่อ</span>
                     </Link>
-                    <Link href="/users/borrow">
-                        <span className="text-white hover:bg-white/50 hover:rounded-md px-6 py-2 cursor-pointer">
-                            ยืม/คืน สื่อ
-                        </span>
+                    <Link href="/users/borrow"
+                        className="text-white hover:bg-white/50 hover:rounded-md px-6 py-2 cursor-pointer flex items-center">
+                        <img src="/images/borrow.png" alt="เบิกสื่อ" className="h-5 mr-2" />
+                        <span>ยืม/คืน สื่อ</span>
                     </Link>
-                    <Link href="/users/summary">
-                        <span className="text-white hover:bg-white/50 hover:rounded-md px-6 py-2 cursor-pointer">
-                            ตะกร้า
-                        </span>
+                    <Link href="/users/summary"
+                        className="text-white hover:bg-white/50 hover:rounded-md px-6 py-2 cursor-pointer flex items-center">
+                        <img src="/images/Usersbasket.png" alt="เบิกสื่อ" className="h-5 mr-2" />
+                        <span>ตะกร้า</span>
+                    </Link>
+                    <Link href="/users/status"
+                        className="text-white hover:bg-white/50 hover:rounded-md px-6 py-2 cursor-pointer flex items-center">
+                        <img src="/images/status.png" alt="เบิกสื่อ" className="h-5 mr-2" />
+                        <span>ตรวจสอบสถานะ</span>
                     </Link>
                 </div>
 
-                {/* User Section */}
                 <div className="hidden lg:flex relative items-center bg-white/50 px-6 py-2 rounded-md shadow-md">
                     <button
                         onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -47,7 +49,7 @@ function Navbar() {
                         <ul className="absolute right-0 mt-36 w-48 bg-white text-gray-800 rounded-lg shadow-lg p-2 z-50">
                             <li>
                                 <Link
-                                    href="/users/personal"
+                                    href={`/users/personal/${user?.id}`}
                                     className="block px-4 py-2 hover:bg-gray-200 rounded-md"
                                     onClick={() => setUserMenuOpen(false)}
                                 >
@@ -56,7 +58,7 @@ function Navbar() {
                             </li>
                             <li>
                                 <button
-                                    className="block w-full text-left px-4 py-2 hover:bg-gray-200 rounded-md"
+                                    className="block w-full text-red-500 text-left px-4 py-2 hover:bg-gray-200 rounded-md"
                                     onClick={() => {
                                         setUserMenuOpen(false);
                                         signOut({ callbackUrl: "/login" });
@@ -106,15 +108,23 @@ function Navbar() {
                             ตะกร้า
                         </span>
                     </Link>
+                    <Link href="/users/status">
+                        <span
+                            className="block text-gray-800 hover:bg-gray-200 px-4 py-2 rounded-md cursor-pointer"
+                            onClick={() => setIsOpen(false)}
+                        >
+                            ตรวจสอบสถานะ
+                        </span>
+                    </Link>
                     <Link
-                        href="/users/personal"
+                        href={`/users/personal/${user?.id}`}
                         className="block px-4 py-2 hover:bg-gray-200 rounded-md"
                         onClick={() => setUserMenuOpen(false)}
                     >
                         ข้อมูลส่วนตัว
                     </Link>
                     <button
-                        className="block text-left text-gray-800 hover:bg-gray-200 px-4 py-2 rounded-md w-full mt-4"
+                        className="block text-left text-red-500 hover:bg-gray-200 px-4 py-2 rounded-md w-full mt-4"
                         onClick={() => {
                             setIsOpen(false);
                             signOut({ callbackUrl: "/login" });

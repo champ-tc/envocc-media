@@ -182,4 +182,5 @@ model user {
   borrowLogs           BorrowLog[]
   approvedRequisitions RequisitionLog[] @relation("AdminRequisitionApproval")
   requisitions         RequisitionLog[]
+  currentToken         String?          // Token ของเซสชันปัจจุบัน
 }

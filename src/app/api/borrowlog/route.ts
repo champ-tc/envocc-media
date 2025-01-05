@@ -3,15 +3,15 @@ import { v4 as uuidv4 } from "uuid";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 
-async function checkAdminSession(request: Request): Promise<boolean> {
+async function checkAdminOrUserSession(request: Request): Promise<boolean> {
     const token = await getToken({ req: request as any });
-    return !!(token && token.role === 'admin');
+    return !!(token && (token.role === 'admin' || token.role === 'user'));
 }
 
 export async function POST(request: Request) {
 
-    if (!(await checkAdminSession(request))) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    if (!(await checkAdminOrUserSession(request))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     try {

@@ -93,7 +93,7 @@ function AdminsConfirmBorrow() {
             }
         };
 
-        fetchBorrowLogs(); // เรียกใช้ฟังก์ชันนี้โดยไม่มีเงื่อนไขใน useEffect
+        fetchBorrowLogs();
     }, [session, statusFilter]);
 
     useEffect(() => {

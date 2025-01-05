@@ -50,15 +50,6 @@ export async function POST(request: Request) {
         const description = formData.get("description")?.toString() || "";
         const file = formData.get("file") as File | null;
 
-        // console.log("Data extracted from FormData:", {
-        //     borrowName,
-        //     unit,
-        //     typeId,
-        //     quantity,
-        //     isBorroRestricted,
-        //     description,
-        // });
-
         // ตรวจสอบข้อมูลด้วย schema
         const validatedData = borrowSchema.parse({
             borrow_name: sanitizeInput(borrowName),
@@ -126,7 +117,6 @@ export async function GET(request: Request) {
         const borrows = await prisma.borrow.findMany(); // ดึงข้อมูลทั้งหมด
         return NextResponse.json(borrows); // ส่งคืนข้อมูลทั้งหมด รวมถึง borrow_images
     } catch (error) {
-        console.error("Error fetching borrows:", error);
         return NextResponse.json({ error: "Error fetching borrows" }, { status: 500 });
     }
 }

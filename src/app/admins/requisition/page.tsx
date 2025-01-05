@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 
-// กำหนด interface สำหรับข้อมูล requisition
 interface Requisition {
     id: number;
     requisitions: string;
@@ -36,9 +35,8 @@ function AdminsRequisition() {
             const response = await fetch("/api/requisitions");
             const data = await response.json();
 
-            // ตรวจสอบว่า data เป็นอาเรย์
             if (Array.isArray(data)) {
-                console.log(data); // ดูข้อมูลที่ได้รับมา
+                console.log(data);
                 setRequisitions(data);
             } else {
                 console.error("ข้อมูลที่ดึงมาไม่ใช่อาเรย์:", data);
@@ -58,7 +56,7 @@ function AdminsRequisition() {
         const fetchRequisitions = async () => {
             try {
                 const response = await fetch("/api/requisitions");
-                const data: Requisition[] = await response.json(); // ใช้ชนิดข้อมูลที่กำหนดไว้
+                const data: Requisition[] = await response.json();
                 setRequisitions(data);
             } catch (error) {
                 console.error("Error fetching requisitions:", error);

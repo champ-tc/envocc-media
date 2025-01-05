@@ -6,6 +6,7 @@ function TopBar() {
     const { data: session } = useSession();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement | null>(null); // กำหนดประเภทของ ref
+    const user = session?.user; // ดึงข้อมูลผู้ใช้จาก session
 
     const toggleDropdown = () => {
         setDropdownOpen((prev) => !prev);
@@ -46,7 +47,7 @@ function TopBar() {
                     {dropdownOpen && (
                         <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-md shadow-lg w-48">
                             <div className="p-2">
-                                <Link href="/admins/personal">
+                                <Link href={`/admins/personal/${user?.id}`}>
                                     <button className="w-full text-left px-4 py-2 hover:bg-slate-200">
                                         ข้อมูลส่วนตัว
                                     </button>

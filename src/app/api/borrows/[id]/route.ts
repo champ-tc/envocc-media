@@ -1,7 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getToken } from "next-auth/jwt";
+
+async function checkAdminOrUserSession(request: Request): Promise<boolean> {
+    const token = await getToken({ req: request as any });
+    return !!(token && (token.role === 'admin' || token.role === 'user'));
+}
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
+
+    if (!(await checkAdminOrUserSession(request))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
     try {
         const id = parseInt(params.id, 10);
         if (isNaN(id)) {
@@ -19,11 +30,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
             return NextResponse.json({ message: "Borrow not found" }, { status: 404 });
         }
 
-        console.log("Borrow detail:", borrow); // Debug ข้อมูล
-
         return NextResponse.json(borrow, { status: 200 });
     } catch (error) {
-        console.error("Error fetching borrow:", error);
         return NextResponse.json({ message: "Error fetching borrow" }, { status: 500 });
     }
 }

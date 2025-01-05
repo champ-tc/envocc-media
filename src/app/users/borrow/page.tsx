@@ -1,73 +1,93 @@
 "use client";
 
-
-import Navbar from "@/components/NavbarUser";
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../../hooks/useAuth";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import useAuthCheck from "@/hooks/useAuthCheck";
+import { useRouter } from "next/navigation";
+import Navbar from "@/components/NavbarUser";
 
-interface Requisition {
+interface Borrow {
     id: number;
-    requisitions: string;
-    requisition_name: string;
-    unit: string;
+    borrow_name: string;
     type: {
         name: string;
     };
     quantity: number;
     reserved_quantity: number;
-    requisition_images?: string;
+    borrow_images?: string;
+    unit: string;
 }
 
 function UsersBorrow() {
-    const { data: status } = useSession();
+    const { session, isLoading } = useAuthCheck("user");
     const router = useRouter();
-    const [requisitions, setRequisitions] = useState<Requisition[]>([]);
-    const [searchQuery, setSearchQuery] = useState(""); // State สำหรับการค้นหา
-    const [filterType, setFilterType] = useState(""); // State สำหรับการกรองประเภท
-    const [currentPage, setCurrentPage] = useState(1); // หน้าแรก
-    const itemsPerPage = 10; // แสดงข้อมูล 4 รายการต่อหน้า
+    const [borrows, setBorrows] = useState<Borrow[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filterType, setFilterType] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
-    const fetchRequisitions = async () => {
-        try {
-            const response = await fetch("/api/requisitions");
-            const data = await response.json();
+    useEffect(() => {
+        const fetchBorrows = async () => {
+            try {
+                const response = await fetch("/api/borrows");
+                const data = await response.json();
 
-            // ตรวจสอบว่า data เป็นอาเรย์
-            if (Array.isArray(data)) {
-                console.log(data); // ดูข้อมูลที่ได้รับมา
-                setRequisitions(data);
-            } else {
-                console.error("ข้อมูลที่ดึงมาไม่ใช่อาเรย์:", data);
+                if (Array.isArray(data)) {
+                    setBorrows(data);
+                } else {
+                    console.error("API did not return an array:", data);
+                    setBorrows([]);
+                }
+            } catch (error) {
+                console.error("Error fetching borrows:", error);
+                setBorrows([]);
             }
+        };
+
+        if (session) {
+            fetchBorrows();
+        }
+    }, [session]);
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <p>กำลังโหลด...</p>
+            </div>
+        );
+    }
+
+    const updateQuantity = async (id: number, newQuantity: number) => {
+        try {
+            const response = await fetch(`/api/borrows/${id}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ quantity: newQuantity }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to update quantity");
+            }
+
+            const updatedBorrow = await response.json();
+
+            setBorrows((prev) =>
+                prev.map((borrow) =>
+                    borrow.id === id ? { ...borrow, quantity: updatedBorrow.quantity } : borrow
+                )
+            );
         } catch (error) {
-            console.error("เกิดข้อผิดพลาดในการดึงข้อมูล requisitions:", error);
+            console.error("Error updating quantity:", error);
+            alert("ไม่สามารถเพิ่มจำนวนได้");
         }
     };
 
 
-
-    useEffect(() => {
-
-        // Fetch requisitions data from API
-        const fetchRequisitions = async () => {
-            try {
-                const response = await fetch("/api/requisitions");
-                const data: Requisition[] = await response.json(); // ใช้ชนิดข้อมูลที่กำหนดไว้
-                setRequisitions(data);
-            } catch (error) {
-                console.error("Error fetching requisitions:", error);
-            }
-        };
-
-        fetchRequisitions();
-    }, [status, router]);
-
-    const filteredRequisitions = Array.isArray(requisitions)
-        ? requisitions.filter((item) => {
-            const matchesSearch = item.requisition_name
+    const filteredBorrows = Array.isArray(borrows)
+        ? borrows.filter((item) => {
+            const matchesSearch = item.borrow_name
                 .toLowerCase()
                 .includes(searchQuery.toLowerCase());
             const matchesType = filterType ? item.type.name === filterType : true;
@@ -75,22 +95,10 @@ function UsersBorrow() {
         })
         : [];
 
-        const { session, isLoading } = useAuthCheck("user");
-
-        if (isLoading) {
-            return <p>Loading...</p>;
-        }
-    
-        if (!session) {
-            return null;
-        }
-
-    const totalPages = Math.ceil(filteredRequisitions.length / itemsPerPage);
-
-    // คำนวณดัชนีเริ่มต้นและสิ้นสุดของข้อมูลในหน้าปัจจุบัน
+    const totalPages = Math.ceil(filteredBorrows.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const currentRequisitions = filteredRequisitions.slice(startIndex, endIndex);
+    const currentBorrows = filteredBorrows.slice(startIndex, endIndex);
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
@@ -107,58 +115,45 @@ function UsersBorrow() {
 
     return (
         <div className="min-h-screen bg-gray-100">
-            {/* Navbar */}
             <Navbar />
-
-            {/* Main Content */}
-            <div className="relative -mt-16 flex flex-col items-center">
-
-
-            <div className="flex-1 flex items-start justify-center p-2">
+            <div className="relative -mt-24 flex flex-col items-center">
+                <div className="flex-1 flex items-start justify-center p-2">
                     <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4">
-                        <h2 className="text-2xl font-semibold text-gray-800 mb-4">เบิกสื่อ</h2>
+                        <h2 className="text-2xl font-semibold text-gray-800 mb-4">ยืม</h2>
                         <div className="flex flex-col md:flex-row justify-between items-center mb-4">
                             <input
                                 type="text"
                                 placeholder="ค้นหาจากชื่อ..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="px-4 py-2 border border-gray-300 rounded-md w-full md:w-1/2 mb-2 md:mb-0"
+                                className="px-4 py-2 border rounded-md w-full md:w-1/2 mb-2 md:mb-0"
                             />
                             <select
                                 value={filterType}
                                 onChange={(e) => setFilterType(e.target.value)}
-                                className="px-4 py-2 border border-gray-300 rounded-md w-full md:w-1/4"
+                                className="px-4 py-2 border rounded-md w-full md:w-1/4"
                             >
                                 <option value="">ทั้งหมด</option>
-                                {Array.isArray(requisitions) && requisitions.length > 0 ? (
-                                    Array.from(new Set(requisitions.map((item) => item.type?.name))) // ใช้ optional chaining
-                                        .map((type) => (
-                                            <option key={type} value={type}>
-                                                {type}
-                                            </option>
-                                        ))
-                                ) : (
-                                    <option disabled>ไม่พบข้อมูล</option>
-                                )}
+                                {Array.isArray(borrows) &&
+                                    Array.from(
+                                        new Set(borrows.map((item) => item.type?.name))
+                                    ).map((type) => (
+                                        <option key={type} value={type}>
+                                            {type}
+                                        </option>
+                                    ))}
                             </select>
-
-
                         </div>
-                        {/* แสดงรายการ */}
-
-
                         <div className="grid grid-cols-1 gap-8 mt-6 sm:grid-cols-2 lg:grid-cols-4">
-                            {currentRequisitions.map((item) => (
+                            {currentBorrows.map((item) => (
                                 <div
                                     key={item.id}
-                                    className="bg-white p-4 rounded-xl shadow-lg border border-gray-200 transition-transform transform hover:scale-105"
+                                    className="bg-white p-4 rounded-xl shadow-lg border transition-transform transform hover:scale-105 flex flex-col"
                                 >
-                                    {/* แสดงรูปภาพ */}
-                                    {item.requisition_images ? (
+                                    {item.borrow_images ? (
                                         <img
-                                            src={`/requisitions/${item.requisition_images}`}
-                                            alt={item.requisition_name}
+                                            src={`/borrows/${item.borrow_images}`}
+                                            alt={item.borrow_name}
                                             className="w-full h-60 object-cover rounded-lg mb-4"
                                         />
                                     ) : (
@@ -166,19 +161,24 @@ function UsersBorrow() {
                                             <span className="text-gray-600">ไม่มีรูปภาพ</span>
                                         </div>
                                     )}
-                                    {/* รายละเอียด */}
-                                    <h3 className="text-lg font-bold text-gray-800 mb-2">{item.requisition_name}</h3>
-                                    <p className="text-sm text-gray-500 mb-1">ประเภท: {item.type?.name || 'ไม่มีประเภท'}</p>
+                                    <h3 className="text-lg font-bold text-gray-800 mb-2">
+                                        {item.borrow_name}
+                                    </h3>
                                     <p className="text-sm text-gray-500 mb-2">
+                                        ประเภท: {item.type?.name || "ไม่มีประเภท"}
+                                    </p>
+                                    <p className="text-sm text-gray-500">
                                         คงเหลือ:{" "}
                                         <span className="text-[#fb8124] font-bold">
-                                            {item.quantity} {item.unit}
+                                            {item.quantity - (item.reserved_quantity || 0)} {item.unit}
                                         </span>
                                     </p>
 
                                     <button
-                                        className="mt-4 bg-[#fb8124] text-white py-2 px-4 rounded-lg w-full transition-colors"
-                                        onClick={() => router.push(`/admins/requisition/${item.id}`)}
+                                        className="mt-auto bg-[#fb8124] text-white py-2 px-4 rounded-lg w-full transition-colors"
+                                        onClick={() => {
+                                            window.location.assign(`/users/borrow/${item.id}`);
+                                        }}
                                     >
                                         เลือก
                                     </button>
@@ -190,7 +190,7 @@ function UsersBorrow() {
 
                         <div className="flex items-center justify-between mt-6">
                             <span className="text-sm text-gray-600">
-                            รายการที่ {startIndex + 1} ถึง {Math.min(endIndex, filteredRequisitions.length)} จาก {filteredRequisitions.length} รายการ
+                                รายการที่ {startIndex + 1} ถึง {Math.min(endIndex, filteredBorrows.length)} จาก {filteredBorrows.length} รายการ
                             </span>
                             <div className="flex space-x-2">
                                 <button
@@ -220,47 +220,6 @@ function UsersBorrow() {
                         </div>
                     </div>
                 </div>
-
-                {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl w-full px-4">
-
-                    <div className="bg-white rounded-lg shadow-lg p-6">
-                        <h2 className="text-xl font-bold text-gray-800 mb-4">Turnover</h2>
-                        <p className="text-4xl font-bold text-orange-500">$7,133.4</p>
-                        <p className="text-gray-600">Estimated weekly profit</p>
-                        <div className="mt-4">
-                            <img src="/images/graph-example.png" alt="Graph" className="w-full h-32" />
-                        </div>
-                        <button className="mt-4 bg-orange-500 text-white px-4 py-2 rounded-lg shadow hover:bg-orange-600">
-                            View All
-                        </button>
-                    </div>
-
-
-                    <div className="bg-white rounded-lg shadow-lg p-6">
-                        <h2 className="text-xl font-bold text-gray-800 mb-4">User Activity</h2>
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr>
-                                    <th className="px-4 py-2 border-b">Name</th>
-                                    <th className="px-4 py-2 border-b">Role</th>
-                                    <th className="px-4 py-2 border-b">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td className="px-4 py-2">M. Jonathan</td>
-                                    <td className="px-4 py-2">Business Analyst</td>
-                                    <td className="px-4 py-2">Active</td>
-                                </tr>
-                                <tr>
-                                    <td className="px-4 py-2">Jenny Mills</td>
-                                    <td className="px-4 py-2">Software Engineer</td>
-                                    <td className="px-4 py-2">Offline</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div> */}
             </div>
         </div>
     );

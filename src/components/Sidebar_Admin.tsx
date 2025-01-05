@@ -7,7 +7,6 @@ const Sidebar = () => {
     const [activePath, setActivePath] = useState('');
 
     useEffect(() => {
-        // ตรวจสอบว่ากำลังทำงานในฝั่งไคลเอนต์และตั้งค่าเส้นทางปัจจุบัน
         if (typeof window !== 'undefined') {
             setActivePath(window.location.pathname);
         }

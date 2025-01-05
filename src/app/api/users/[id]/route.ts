@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 
+
+
 // ฟังก์ชันจัดการข้อผิดพลาด
 const handleError = (error: any, message = "An error occurred", status = 500) => {
     console.error(message, error);
@@ -13,6 +15,16 @@ const handleError = (error: any, message = "An error occurred", status = 500) =>
 async function checkAdminSession(request: Request): Promise<boolean> {
     const token = await getToken({ req: request as any });
     return !!(token && token.role === 'admin');
+}
+
+async function checkAdminOrUserSession(request: Request): Promise<boolean> {
+    try {
+        const token = await getToken({ req: request as any, secret: process.env.NEXTAUTH_SECRET });
+        return !!(token && (token.role === "admin" || token.role === "user"));
+    } catch (error) {
+        console.error("Error in checkAdminOrUserSession:", error);
+        return false; // หากมีข้อผิดพลาด ให้ถือว่าไม่มีสิทธิ์
+    }
 }
 
 // Schema สำหรับตรวจสอบข้อมูลในฟังก์ชัน PUT
@@ -28,11 +40,10 @@ const userUpdateSchema = z.object({
     role: z.string().optional(), // role เป็น optional
 });
 
-// ฟังก์ชัน GET สำหรับดึงข้อมูลผู้ใช้ตาม id
 export async function GET(req: Request, { params: { id } }: { params: { id: string } }) {
-    // ตรวจสอบสิทธิ์การเข้าถึง
-    if (!(await checkAdminSession(req))) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+
+    if (!(await checkAdminOrUserSession(req))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     try {
@@ -45,9 +56,15 @@ export async function GET(req: Request, { params: { id } }: { params: { id: stri
 
 // ฟังก์ชัน PUT สำหรับอัปเดตข้อมูลผู้ใช้ตาม id
 export async function PUT(req: Request, { params: { id } }: { params: { id: string } }) {
+
     // ตรวจสอบสิทธิ์การเข้าถึง
-    if (!(await checkAdminSession(req))) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    if (!(await checkAdminOrUserSession(req))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    // ตรวจสอบความถูกต้องของ ID
+    if (isNaN(Number(id))) {
+        return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
     try {
@@ -71,11 +88,16 @@ export async function PUT(req: Request, { params: { id } }: { params: { id: stri
         return NextResponse.json(updatedUser);
     } catch (error) {
         if (error instanceof z.ZodError) {
-            return NextResponse.json({ error: 'Invalid input data', details: error.errors }, { status: 400 });
+            return NextResponse.json(
+                { error: "Invalid input data", details: error.errors },
+                { status: 400 }
+            );
         }
-        return handleError(error, "Update failed");
+        console.error("Error in PUT API:", error);
+        return NextResponse.json({ error: "Update failed" }, { status: 500 });
     }
 }
+
 
 // ฟังก์ชัน DELETE สำหรับลบข้อมูลผู้ใช้ตาม id
 export async function DELETE(req: Request, { params: { id } }: { params: { id: string } }) {

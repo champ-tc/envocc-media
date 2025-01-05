@@ -50,7 +50,7 @@ function MediaPage() {
   return (
     <>
       <Navbar />
-      <div className="flex flex-col items-center bg-gray-100 p-10 min-h-screen">
+      <div className="flex flex-col items-center bg-white p-10 min-h-screen">
         <h1 className="text-4xl font-bold mb-8 text-gray-700">Media Gallery</h1>
         <div className="w-full max-w-7xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-4 justify-center">
           {currentImages.map((image) => (
@@ -60,19 +60,17 @@ function MediaPage() {
               onClick={() => handleImageClick(image.filename)}
               style={{ width: '280px' }}
             >
-              {/* Image Full Size with Auto Height */}
               <div className="relative w-full h-auto">
                 <Image
                   src={`/uploads/${image.filename}`}
                   alt={image.title}
                   width={280}
                   height={400}
-                  layout="responsive"
-                  objectFit="cover"
-                  className="rounded-t-lg"
+                  className="rounded-t-lg object-cover w-full h-full"
+                  priority
                 />
               </div>
-              {/* Date and Title */}
+
               <div className="p-4">
                 <p className="text-gray-600 text-sm mb-2">
                   {new Date(image.addedDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -90,17 +88,17 @@ function MediaPage() {
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className={`px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`px-4 py-2 rounded-md bg-[#fb8124] text-white hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50" ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            Previous
+            ก่อนหน้า
           </button>
-          <span className="text-gray-700 font-medium">Page {currentPage}</span>
+          <span className="text-gray-700 font-medium">หน้า {currentPage}</span>
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={indexOfLastImage >= images.length}
-            className={`px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition ${indexOfLastImage >= images.length ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`px-4 py-2 rounded-md bg-[#fb8124] text-white hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50" ${indexOfLastImage >= images.length ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            Next
+            ถัดไป
           </button>
         </div>
       </div>

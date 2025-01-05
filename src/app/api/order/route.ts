@@ -1,8 +1,20 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { getToken } from 'next-auth/jwt';
+
+
+async function checkAdminOrUserSession(request: Request): Promise<boolean> {
+    const token = await getToken({ req: request as any });
+    return !!(token && (token.role === 'admin' || token.role === 'user'));
+}
 
 // เพิ่มคำสั่งซื้อ
 export async function POST(req: Request) {
+
+    if (!(await checkAdminOrUserSession(req))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
     try {
         const { userId, requisitionId, borrowId, requisition_type, quantity } = await req.json();
         const date = new Date();
@@ -48,9 +60,14 @@ export async function POST(req: Request) {
 
 
 // ดึงรายการคำสั่งซื้อ
-export async function GET(req: NextRequest) {
+export async function GET(req: Request) {
+    
+    if (!(await checkAdminOrUserSession(req))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
     try {
-        const { searchParams } = new URL(req.url);
+        const searchParams = new URL(req.url).searchParams;
         const userId = searchParams.get("userId");
 
         if (!userId) {
@@ -71,3 +88,4 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });
     }
 }
+

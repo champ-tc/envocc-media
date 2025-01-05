@@ -1,48 +1,91 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { getToken } from 'next-auth/jwt';
 
+interface Order {
+    borrowId: string; // Borrow IDs are strings in the request
+    quantity: number;
+}
 
+async function checkAdminSession(request: Request): Promise<boolean> {
+    const token = await getToken({ req: request as any });
+    return !!(token && token.role === "admin");
+}
 
-// POST: เพิ่มข้อมูลการยืม
-export async function POST(req: Request) {
+export async function POST(request: Request) {
+
+    if (!(await checkAdminSession(request))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
     try {
-        const { userId, orders, deliveryMethod, address, borrowGroupId, returnDate } = await req.json();
+        const {
+            userId,
+            orders,
+            deliveryMethod,
+            address,
+            borrowGroupId,
+            returnDate,
+        }: {
+            userId: string | number;
+            orders: Order[];
+            deliveryMethod: string;
+            address: string;
+            borrowGroupId: string;
+            returnDate: string;
+        } = await request.json();
 
         if (!userId || !orders || orders.length === 0 || !returnDate) {
-            return NextResponse.json({ message: "Invalid data" }, { status: 400 });
+            return NextResponse.json(
+                { message: "Invalid data" },
+                { status: 400 }
+            );
         }
 
-        // ตรวจสอบ borrowId ใน orders
-        const borrowIds = orders.map((order) => order.borrowId);
+        // Convert borrowIds to numbers
+        const borrowIds = orders.map((order) => Number(order.borrowId));
         const existingBorrows = await prisma.borrow.findMany({
             where: { id: { in: borrowIds } },
         });
 
         if (existingBorrows.length !== borrowIds.length) {
-            return NextResponse.json({ message: "Invalid borrow IDs", borrowIds }, { status: 400 });
+            return NextResponse.json(
+                { message: "Invalid borrow IDs", borrowIds },
+                { status: 400 }
+            );
         }
 
-        // สร้าง borrow logs
+        // Create borrow logs
         const borrowLogs = orders.map((order) => ({
-            borrow_id: order.borrowId,
-            user_id: userId,
+            borrow_id: Number(order.borrowId), // Ensure it's a number
+            user_id: typeof userId === "string" ? parseInt(userId) : userId, // Ensure it's a number
             quantity: order.quantity,
-            borrow_groupid: borrowGroupId,
-            return_due_date: new Date(returnDate),
-            borrow_date: new Date(),
-            status: "Pending",
+            borrow_groupid: borrowGroupId, // Non-null string
+            return_due_date: new Date(returnDate), // Valid Date object
+            borrow_date: new Date(), // Current date
+            status: "pending", // Default value
             delivery_method: deliveryMethod,
-            delivery_address: deliveryMethod === "delivery" ? address : null,
+            delivery_address: deliveryMethod === "delivery" ? address : null, // Nullable
         }));
 
+        // Insert logs into the database
         await prisma.borrowLog.createMany({ data: borrowLogs });
 
-        return NextResponse.json({ message: "Borrow logs created successfully" });
-    } catch (error) {
+        return NextResponse.json({
+            message: "Borrow logs created successfully",
+        });
+    } catch (error: unknown) {
         console.error("Error in POST /api/borrow_log:", error);
-        return NextResponse.json({ message: "Internal Server Error", error: error.message }, { status: 500 });
+        return NextResponse.json(
+            {
+                message: "Internal Server Error",
+                error: error instanceof Error ? error.message : "Unknown error",
+            },
+            { status: 500 }
+        );
     }
 }
+
 
 // GET: ดึงข้อมูล BorrowLog
 export async function GET(req: Request) {

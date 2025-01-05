@@ -1,13 +1,22 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getToken } from 'next-auth/jwt';
 
-// POST method to add data to Order table
+async function checkAdminOrUserSession(request: Request): Promise<boolean> {
+    const token = await getToken({ req: request as any });
+    return !!(token && (token.role === 'admin' || token.role === 'user'));
+}
+
+
 export async function POST(req: Request) {
+    if (!(await checkAdminOrUserSession(req))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
     try {
         const body = await req.json();
         const { userId, requisitionId, requisition_type, quantity } = body;
 
-        // Add data to Order table
         const newOrder = await prisma.order.create({
             data: {
                 userId,
@@ -19,18 +28,22 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ message: "Order created successfully", order: newOrder });
     } catch (error) {
-        console.error("Error adding order:", error);
+        console.error("Error adding order:");
         return NextResponse.json(
-            { error: "Failed to create order", details: error.message },
+            { message: "Internal Server Error" }, 
             { status: 500 }
         );
     }
 }
 
 
-
 // ลบ Order
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+
+    if (!(await checkAdminOrUserSession(req))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+    
     try {
         const orderId = parseInt(params.id);
 
@@ -38,7 +51,6 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
             return NextResponse.json({ error: "Invalid order ID" }, { status: 400 });
         }
 
-        // ลบ Order จากฐานข้อมูล
         const deletedOrder = await prisma.order.delete({
             where: { id: orderId },
         });

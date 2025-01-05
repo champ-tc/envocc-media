@@ -7,17 +7,24 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 
+type ImageData = {
+  id: string;
+  filename: string;
+  title: string;
+  addedDate: string;
+};
+
+
 export default function Home() {
   const pathname = usePathname();
-  const [images, setImages] = useState([]);
+  const [images, setImages] = useState<ImageData[]>([]);
 
   useEffect(() => {
-    // Fetch the latest 3 images from the backend API, sorted by addedDate in descending order
     const fetchImages = async () => {
       try {
         const response = await fetch('/api/images');
-        const data = await response.json();
-        const sortedData = data.sort((a, b) => new Date(b.addedDate) - new Date(a.addedDate));
+        const data: ImageData[] = await response.json();
+        const sortedData = data.sort((a, b) => new Date(b.addedDate).getTime() - new Date(a.addedDate).getTime());
         setImages(sortedData.slice(0, 3));
       } catch (error) {
         console.error('Error fetching images:', error);
@@ -54,6 +61,7 @@ export default function Home() {
                 alt={image.title}
                 width={400}
                 height={600}
+                priority
                 className="rounded-lg shadow-md w-auto h-[400px] object-cover"
               />
 

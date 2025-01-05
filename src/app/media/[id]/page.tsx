@@ -80,24 +80,25 @@ function MediaDetailPage() {
   return (
     <>
       <Navbar />
-      <div className="flex flex-col items-center justify-center py-16 min-h-screen bg-pink-100">
+      <div className="flex flex-col items-center justify-center py-16 min-h-screen bg-white">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-4xl">
           <Image
             src={`/uploads/${image.filename}`}
             alt={image.title}
-            width={600}
-            height={800}
-            className="rounded-lg mb-6"
+            width={280}
+            height={400}
+            className="rounded-t-lg object-cover w-full h-full"
+            priority
           />
           <div className="mb-4">
             <p className="text-gray-600 text-sm">
               วันที่เพิ่ม:{' '}
               {image.addedDate
                 ? new Date(image.addedDate).toLocaleDateString('th-TH', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  })
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })
                 : 'วันที่ไม่ถูกต้อง'}
             </p>
             <h3 className="text-2xl font-bold mt-2 mb-2">{image.title}</h3>

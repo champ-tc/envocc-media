@@ -16,17 +16,23 @@ function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
+  
+    // เรียก API signIn
     const res = await signIn("credentials", {
       redirect: false,
       username,
       password,
     });
-
+  
     if (res?.error) {
-      setError("การเข้าสู่ระบบล้มเหลว กรุณาลองใหม่อีกครั้ง");
+      if (res.error === "userisalreadylogged") {
+        setError("มีผู้ใช้นี้กำลังเข้าสู่ระบบอยู่ในขณะนี้");
+      } else {
+        setError("การเข้าสู่ระบบล้มเหลว กรุณาลองใหม่อีกครั้ง");
+      }
     }
   };
+  
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -34,7 +40,7 @@ function LoginPage() {
       if (userRole === "admin") {
         router.push("/admins/dashboard");
       } else {
-        router.push("/users/borrow");
+        router.push("/users/requisition");
       }
     }
   }, [status, session, router]);

@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import useAuthCheck from "@/hooks/useAuthCheck";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import Sidebar from "@/components/Sidebar_Admin";
-import TopBar from "@/components/TopBar";
+import NavbarUser from "@/components/NavbarUser";
 import AlertModal from "@/components/AlertModal";
 import axios from "axios";
+import { useParams, useRouter } from "next/navigation";
+import Navbar from "@/components/NavbarUser"
 
 interface User {
     id: string | number;
@@ -25,13 +25,15 @@ interface User {
 
 
 function PersonalPage() {
-    const { session, isLoading } = useAuthCheck("admin");
+    const { session, isLoading } = useAuthCheck("user");
     const router = useRouter();
-    const { id } = params;
+    const params = useParams();
+    const id = params?.id || "default-id";
     const [users, setUsers] = useState([]);
     const [userData, setUserData] = useState({
         username: "",
-        password: "", // เพิ่ม password
+        password: "",
+        confirm_password: "", // เพิ่ม confirm_password
         title: "",
         firstName: "",
         lastName: "",
@@ -42,6 +44,9 @@ function PersonalPage() {
         role: "user",
     });
 
+    const [showPasswordInput, setShowPasswordInput] = useState(false); // ซ่อน/แสดง password input
+
+    const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
     const [loading, setLoading] = useState(true);
     const [showPassword, setShowPassword] = useState(false);
 
@@ -99,11 +104,26 @@ function PersonalPage() {
 
 
 
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const { username, password, title, firstName, lastName, tel, email, department, position } = userData;
+        const { username, title, firstName, lastName, tel, email, department, position } = userData;
+
+        if (showPasswordInput) {
+            if (userData.password !== userData.confirm_password) {
+                showAlert("รหัสผ่านไม่ตรงกัน", "error");
+                return;
+            }
+
+            const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/;
+            if (!passwordPattern.test(userData.password)) {
+                showAlert(
+                    "รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัว ประกอบด้วยตัวอักษร A-Z, a-z และตัวเลข",
+                    "error"
+                );
+                return;
+            }
+        }
 
         // ตรวจสอบฟิลด์ที่จำเป็น
         if (!username || !title || !firstName || !lastName || !tel || !email || !department || !position) {
@@ -111,53 +131,43 @@ function PersonalPage() {
             return;
         }
 
-        const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/;
-        if (password && !passwordPattern.test(password)) {
-            showAlert("รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัว ประกอบด้วยตัวอักษร A-Z, a-z และตัวเลข", "error");
-            return;
-        }
-
-        // ตรวจสอบรูปแบบอีเมล
         const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailPattern.test(email)) {
             showAlert("รูปแบบอีเมลไม่ถูกต้อง", "error");
             return;
         }
 
-        // ตรวจสอบเบอร์โทร
         if (!/^\d{10}$/.test(tel)) {
             showAlert("เบอร์โทรต้องเป็นตัวเลข 10 หลัก", "error");
             return;
         }
 
-        // ตรวจสอบความยาวชื่อ
-        if (firstName.length > 20 || lastName.length > 20) {
-            showAlert("ชื่อและนามสกุลต้องไม่เกิน 20 ตัวอักษร", "error");
-            return;
-        }
-
-        // ตรวจสอบความยาวตำแหน่ง
-        if (position.length > 30) {
-            showAlert("ตำแหน่ง/อาชีพต้องไม่เกิน 30 ตัวอักษร", "error");
-            return;
-        }
-
         try {
-            const response = await axios.put("/api/users/profile", {
-                username,
-                title,
-                firstName,
-                lastName,
-                tel,
-                email,
-                department,
-                position,
-                ...(password && { password }),
-            });
-
+            const response = await axios.put(
+                `/api/users/${id}`,
+                {
+                    username,
+                    title,
+                    firstName,
+                    lastName,
+                    tel,
+                    email,
+                    department,
+                    position,
+                    ...(showPasswordInput && { password: userData.password }),
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${session?.token}`, // เพิ่ม Header Authorization
+                    },
+                }
+            );
+    
             showAlert("อัปเดตข้อมูลสำเร็จ", "success");
             setTimeout(() => {
-                router.push("/admins/user-management");
+                if (router) {
+                    router.push("/admins/user-management");
+                }
             }, 3000);
         } catch (err: any) {
             showAlert(err.response?.data?.message || "เกิดข้อผิดพลาดในการอัปเดตข้อมูล", "error");
@@ -166,12 +176,11 @@ function PersonalPage() {
 
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            <Sidebar />
-            <div className="flex-1 flex flex-col">
-                <TopBar />
-                <div className="flex-1 flex items-start justify-center p-4">
-                    <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
+        <div className="min-h-screen bg-gray-100">
+            <Navbar />
+            <div className="relative -mt-24 flex flex-col items-center">
+                <div className="flex-1 flex items-start justify-center p-2">
+                    <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4">
                         <h1 className="text-2xl font-bold mb-4">ข้อมูลส่วนตัว</h1>
 
                         {alertMessage && (
@@ -198,36 +207,83 @@ function PersonalPage() {
                                         required
                                     />
                                 </div>
-                                <div className="w-full">
-                                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                                    <div className="relative">
-                                        <input
-                                            type={showPassword ? "text" : "password"}
-                                            maxLength={20}
-                                            id="password"
-                                            name="password"
-                                            onChange={(e) => {
-                                                setUserData((prev) => ({
-                                                    ...prev,
-                                                    password: e.target.value,
-                                                }));
-                                            }}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute inset-y-0 right-0 px-3 py-2"
-                                        >
-                                            <img
-                                                src={showPassword ? "/images/hide.png" : "/images/eye.png"}
-                                                alt={showPassword ? "Hide Password" : "Show Password"}
-                                                className="h-5 w-5"
-                                            />
-                                        </button>
-                                    </div>
-                                    <p className="text-xs text-gray-500 mt-1">ต้องมีความยาวอย่างน้อย 8 ตัว A-Z, a-z และตัวเลข</p>
-                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPasswordInput(!showPasswordInput)}
+                                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-300 transition mt-4"
+                                >
+                                    {showPasswordInput ? "ยกเลิกเปลี่ยนรหัสผ่าน" : "เปลี่ยนรหัสผ่าน"}
+                                </button>
+
+                                
+                            </div>
+
+                            <div>
+                            {showPasswordInput && (
+                                    <>
+                                        <div className="grid grid-cols-1 gap-4 mt-2 sm:grid-cols-3">
+                                            {/* Input for Password */}
+                                            <div className="w-full">
+                                                <label
+                                                    htmlFor="password"
+                                                    className="block text-sm font-medium text-gray-700 mb-1"
+                                                >
+                                                    Password
+                                                </label>
+                                                <input
+                                                    type={showPassword ? "text" : "password"} // แสดงหรือซ่อนรหัสผ่าน
+                                                    maxLength={20}
+                                                    id="password"
+                                                    name="password"
+                                                    onChange={(e) =>
+                                                        setUserData((prev) => ({ ...prev, password: e.target.value }))
+                                                    }
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                                />
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    ต้องมีความยาวอย่างน้อย 8 ตัว A-Z, a-z และตัวเลข
+                                                </p>
+                                            </div>
+
+                                            <div className="w-full">
+                                                <label
+                                                    htmlFor="confirm_password"
+                                                    className="block text-sm font-medium text-gray-700 mb-1"
+                                                >
+                                                    Confirm Password
+                                                </label>
+                                                <input
+                                                    type={showPassword ? "text" : "password"} // แสดงหรือซ่อนรหัสผ่าน
+                                                    maxLength={20}
+                                                    id="confirm_password"
+                                                    name="confirm_password"
+                                                    onChange={(e) =>
+                                                        setUserData((prev) => ({
+                                                            ...prev,
+                                                            confirm_password: e.target.value,
+                                                        }))
+                                                    }
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                                />
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    ต้องกรอกรหัสผ่านอีกครั้งให้ตรงกับ Password
+                                                </p>
+                                            </div>
+
+                                            {/* Button to Show/Hide Password */}
+                                            <div className="w-full">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword(!showPassword)} // สลับสถานะการแสดง/ซ่อนรหัสผ่าน
+                                                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-300 transition mt-4"
+                                                >
+                                                    {showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-5">
