@@ -1,6 +1,10 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -17,11 +21,21 @@
         "name": "next"
       }
     ],
-    "baseUrl": "src",  // ตั้งค่า baseUrl เป็น src เพื่อให้เส้นทางเริ่มต้นจาก src
+    "baseUrl": "src", // ตั้งค่า baseUrl เป็น src เพื่อให้เส้นทางเริ่มต้นจาก src
     "paths": {
-      "@/*": ["*"]  // ตั้งค่า alias สำหรับ @ ที่จะชี้ไปยัง src/*
-    }
+      "@/*": [
+        "*"
+      ] // ตั้งค่า alias สำหรับ @ ที่จะชี้ไปยัง src/*
+    },
+    "target": "ES2017"
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

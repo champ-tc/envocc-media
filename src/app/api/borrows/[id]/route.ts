@@ -14,7 +14,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
 
     try {
-        const id = parseInt(params.id, 10);
+        // รอให้ params ถูก resolve ก่อน
+        const resolvedParams = await params;
+        const id = parseInt(resolvedParams.id, 10);
         if (isNaN(id)) {
             return NextResponse.json({ message: "Invalid ID" }, { status: 400 });
         }

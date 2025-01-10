@@ -113,7 +113,7 @@ function RequisitionDetail({ params }: { params: { id: string } }) {
                 <TopBar />
 
                 <div className="flex-1 flex items-start justify-center p-2">
-                    <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 flex">
+                    <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 flex lg:ml-52">
                         {/* Image Section */}
                         <div className="w-1/2 pr-4">
                             <div className="relative overflow-hidden rounded-lg shadow-md h-full">

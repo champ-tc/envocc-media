@@ -3,7 +3,6 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import type { NextApiHandler } from "next";
 
 const prisma = new PrismaClient();
 
@@ -25,14 +24,17 @@ declare module "next-auth" {
   }
 
   interface JWT {
-    id: number;
-    role: string;
-    name: string;
-    currentToken?: string;
+    id?: number | null; // เพิ่ม null หากต้องการ
+    role?: string | null; // เพิ่ม null หากต้องการ
+    name?: string | null; // เพิ่ม null หากต้องการ
+    currentToken?: string | null; // เพิ่ม null หากต้องการ
   }
 }
 
-// กำหนดค่า authOptions สำหรับการตั้งค่าการเข้าสู่ระบบ
+
+
+
+
 const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -48,50 +50,43 @@ const authOptions: NextAuthOptions = {
 
         const { username, password } = credentials;
 
-        try {
-          const user = await prisma.user.findUnique({
-            where: { username },
-          });
+        const user = await prisma.user.findUnique({
+          where: { username },
+        });
 
-          if (!user) {
-            throw new Error("Invalid username or password");
-          }
-
-          const isPasswordValid = await bcrypt.compare(password, user.password);
-          if (!isPasswordValid) {
-            throw new Error("Invalid username or password");
-          }
-
-          if (user.currentToken) {
-            throw new Error(
-              "userisalreadylogged"
-            );
-          }
-
-          const token = Math.random().toString(36).substring(2);
-
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { currentToken: token },
-          });
-
-          return {
-            id: user.id,
-            name: user.username,
-            role: user.role,
-            token,
-          };
-        } catch (error) {
-          console.error("Authorization Error:", error);
-          throw new Error(error instanceof Error ? error.message : "Unknown error");
+        if (!user) {
+          throw new Error("Invalid username or password");
         }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+          throw new Error("Invalid username or password");
+        }
+
+        if (user.currentToken) {
+          throw new Error("User is already logged in.");
+        }
+
+        const token = Math.random().toString(36).substring(2);
+
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { currentToken: token },
+        });
+
+        return {
+          id: user.id,
+          name: user.username,
+          role: user.role,
+          token,
+        };
       },
     }),
   ],
   session: {
     strategy: "jwt",
-    maxAge: 60 * 60, // 1 hour
-    updateAge: 60 * 15, // 15 minutes
+    maxAge: 60, // 1 hour
+    updateAge: 30, // 15 minutes
   },
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
@@ -100,44 +95,62 @@ const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.role = user.role as string;  // Type assertion
-        token.name = user.name;
-        token.currentToken = user.token as string;  // Type assertion
+        token.id = user.id ?? 0;
+        token.role = user.role ?? "user";
+        token.name = user.name ?? "Anonymous";
+        token.currentToken = user.token ?? "";
       }
-
+    
+      if (!token.currentToken) {
+        return {}; // Invalid token if currentToken is missing
+      }
+    
       const dbUser = await prisma.user.findUnique({
-        where: { id: token.id as number },  // Type assertion
+        where: { id: token.id as number },
       });
-
+    
       if (!dbUser || dbUser.currentToken !== token.currentToken) {
-        throw new Error("Session invalidated. Please log in again.");
+        // Invalidate the token if currentToken does not match or the user is not found
+        await prisma.user.update({
+          where: { id: token.id as number },
+          data: { currentToken: null },
+        });
+        return {}; // Return an empty token to invalidate it
       }
-
+    
       return token;
-    },
+    }
+    
+    
+    ,
     async session({ session, token }) {
       session.user = {
-        id: token.id as number, // Type assertion
-        role: token.role as string,
-        name: token.name as string,
+        id: token.id as number, // บังคับว่าเป็น number
+        role: token.role as string, // บังคับว่าเป็น string
+        name: token.name as string, // บังคับว่าเป็น string
       };
 
-      session.token = token.currentToken as string;  // Type assertion
+      session.token = token.currentToken as string; // บังคับว่าเป็น string
+
       return session;
     },
   },
   events: {
     async signOut({ token }) {
-      if (token?.id) {
+      if (typeof token.id === "number") {
         await prisma.user.update({
-          where: { id: token.id as number }, // Type assertion
+          where: { id: token.id },
           data: { currentToken: null },
         });
       }
     },
   },
 };
+
+export default async function auth(req: NextApiRequest, res: NextApiResponse) {
+  return NextAuth(req, res, authOptions);
+}
+
 
 // Named exports for each HTTP method (GET and POST)
 export const GET = async (req: NextApiRequest, res: NextApiResponse) => {
