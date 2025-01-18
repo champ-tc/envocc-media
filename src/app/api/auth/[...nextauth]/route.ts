@@ -1,92 +1,82 @@
-import { NextApiRequest, NextApiResponse } from "next";
-import NextAuth, { NextAuthOptions } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
+// src/api/auth/[...nextauth].ts
+
+import NextAuth, { NextAuthOptions, User as NextAuthUser } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-declare module "next-auth" {
+interface User {
+  id: number;
+  name: string;
+  role: string;
+}
+
+declare module 'next-auth' {
   interface Session {
     user: {
       id: number;
       role: string;
       name: string;
     };
-    token?: string;
+    token?: any; // เพิ่ม token ลงใน Session
   }
 
   interface User {
     id: number;
-    name: string;
     role: string;
-    token?: string;
+    name: string;
   }
 
   interface JWT {
-    id?: number | null; // เพิ่ม null หากต้องการ
-    role?: string | null; // เพิ่ม null หากต้องการ
-    name?: string | null; // เพิ่ม null หากต้องการ
-    currentToken?: string | null; // เพิ่ม null หากต้องการ
+    id: number;
+    role: string;
+    name: string;
   }
 }
-
-
-
-
 
 const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      name: "Credentials",
+      name: 'credentials',
       credentials: {
         username: { label: "Username", type: "text" },
-        password: { label: "Password", type: "password" },
+        password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
+      async authorize(credentials): Promise<User | null> {
         if (!credentials?.username || !credentials?.password) {
-          throw new Error("Missing username or password");
+          return null;
         }
 
         const { username, password } = credentials;
 
-        const user = await prisma.user.findUnique({
-          where: { username },
-        });
+        try {
+          const user = await prisma.user.findUnique({
+            where: { username },
+          });
 
-        if (!user) {
-          throw new Error("Invalid username or password");
+          if (!user) return null;
+
+          const passwordMatch = await bcrypt.compare(password, user.password);
+          if (!passwordMatch) return null;
+
+          return {
+            id: user.id,
+            name: user.username,
+            role: user.role,
+          };
+        } catch (error) {
+          console.error("Authorization Error:", error);
+          return null;
         }
-
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) {
-          throw new Error("Invalid username or password");
-        }
-
-        if (user.currentToken) {
-          throw new Error("User is already logged in.");
-        }
-
-        const token = Math.random().toString(36).substring(2);
-
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { currentToken: token },
-        });
-
-        return {
-          id: user.id,
-          name: user.username,
-          role: user.role,
-          token,
-        };
       },
     }),
   ],
   session: {
     strategy: "jwt",
-    maxAge: 60, // 1 hour
-    updateAge: 30, // 15 minutes
+    maxAge: 60 * 60,
+    updateAge: 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
@@ -95,68 +85,24 @@ const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id ?? 0;
-        token.role = user.role ?? "user";
-        token.name = user.name ?? "Anonymous";
-        token.currentToken = user.token ?? "";
+        token.id = user.id;
+        token.role = user.role;
+        token.name = user.name;
       }
-    
-      if (!token.currentToken) {
-        return {}; // Invalid token if currentToken is missing
-      }
-    
-      const dbUser = await prisma.user.findUnique({
-        where: { id: token.id as number },
-      });
-    
-      if (!dbUser || dbUser.currentToken !== token.currentToken) {
-        // Invalidate the token if currentToken does not match or the user is not found
-        await prisma.user.update({
-          where: { id: token.id as number },
-          data: { currentToken: null },
-        });
-        return {}; // Return an empty token to invalidate it
-      }
-    
       return token;
-    }
-    
-    
-    ,
+    },
     async session({ session, token }) {
       session.user = {
-        id: token.id as number, // บังคับว่าเป็น number
-        role: token.role as string, // บังคับว่าเป็น string
-        name: token.name as string, // บังคับว่าเป็น string
+        id: token.id as number,
+        role: token.role as string,
+        name: token.name as string,
       };
-
-      session.token = token.currentToken as string; // บังคับว่าเป็น string
-
+      session.token = token;
       return session;
     },
   },
-  events: {
-    async signOut({ token }) {
-      if (typeof token.id === "number") {
-        await prisma.user.update({
-          where: { id: token.id },
-          data: { currentToken: null },
-        });
-      }
-    },
-  },
 };
 
-export default async function auth(req: NextApiRequest, res: NextApiResponse) {
-  return NextAuth(req, res, authOptions);
-}
+const handler = NextAuth(authOptions);
 
-
-// Named exports for each HTTP method (GET and POST)
-export const GET = async (req: NextApiRequest, res: NextApiResponse) => {
-  return NextAuth(req, res, authOptions);
-};
-
-export const POST = async (req: NextApiRequest, res: NextApiResponse) => {
-  return NextAuth(req, res, authOptions);
-};
+export { handler as GET, handler as POST };
