@@ -20,7 +20,16 @@ interface Borrow {
     description?: string | null;
 }
 
-function AdminsBorrowDetail({ params }: { params: { id: string } }) {
+type PageProps = {
+    params: Promise<{
+        id: string;
+    }>;
+};
+
+function AdminsBorrowDetail({ params }: PageProps) {
+    const resolvedParams = React.use(params);  // Unwrap the params Promise
+    const { id } = resolvedParams;  // Access the id from the resolved params
+
     const { session, isLoading } = useAuthCheck("admin");
     const router = useRouter();
     const [borrow, setBorrow] = useState<Borrow | null>(null);
@@ -28,14 +37,15 @@ function AdminsBorrowDetail({ params }: { params: { id: string } }) {
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [alertType, setAlertType] = useState<"success" | "error" | null>(null);
 
-
     useEffect(() => {
         const fetchBorrow = async () => {
             try {
-                const response = await fetch(`/api/borrows/${params.id}`);
+                const response = await fetch(`/api/borrows/${id}`);
+
                 if (!response.ok) {
                     throw new Error("Failed to fetch borrow details");
                 }
+
                 const data: Borrow = await response.json();
                 setBorrow(data);
             } catch (error) {
@@ -46,7 +56,7 @@ function AdminsBorrowDetail({ params }: { params: { id: string } }) {
         if (session) {
             fetchBorrow();
         }
-    }, [session, params.id]);
+    }, [session, id]);
 
     if (isLoading) {
         return (
@@ -54,6 +64,16 @@ function AdminsBorrowDetail({ params }: { params: { id: string } }) {
                 <p>กำลังโหลด...</p>
             </div>
         );
+    }
+
+    if (!session) {
+        router.push("/login");
+        return null;
+    }
+
+    if (!session) {
+        router.push("/login");
+        return null;
     }
 
     const showAlert = (message: string, type: "success" | "error") => {
@@ -92,7 +112,7 @@ function AdminsBorrowDetail({ params }: { params: { id: string } }) {
                 setAlertType("error");
                 return;
             }
-        
+
             const response = await fetch("/api/order", {
                 method: "POST",
                 headers: {
@@ -105,14 +125,14 @@ function AdminsBorrowDetail({ params }: { params: { id: string } }) {
                     quantity: borrowQuantity,
                 }),
             });
-        
+
             if (!response.ok) {
                 const errorData = await response.json();
                 setAlertMessage(`Error: ${errorData.message}`);
                 setAlertType("error");
                 return;
             }
-        
+
             setAlertMessage(`เพิ่มรายการสำเร็จ ${borrowQuantity} รายการ`);
             setAlertType("success");
             setTimeout(() => {
@@ -122,7 +142,7 @@ function AdminsBorrowDetail({ params }: { params: { id: string } }) {
             setAlertMessage("เกิดข้อผิดพลาดในการเพิ่มรายการ");
             setAlertType("error");
         }
-        
+
     };
 
 
@@ -132,7 +152,7 @@ function AdminsBorrowDetail({ params }: { params: { id: string } }) {
             <div className="flex-1 flex flex-col">
                 <TopBar />
                 <div className="flex-1 flex items-start justify-center p-2">
-                    <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 flex">
+                    <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 flex lg:ml-52">
                         <div className="w-1/2 pr-4">
                             <div className="relative overflow-hidden rounded-lg shadow-md h-full">
                                 {borrow.borrow_images ? (

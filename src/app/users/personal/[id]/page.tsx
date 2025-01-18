@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import useAuthCheck from "@/hooks/useAuthCheck";
+import useAuthCheck from '@/hooks/useAuthCheck';
 import { useSession } from "next-auth/react";
 import NavbarUser from "@/components/NavbarUser";
 import AlertModal from "@/components/AlertModal";

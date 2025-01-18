@@ -2,16 +2,8 @@ import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt"; // เปลี่ยนการนำเข้า
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { authOptions } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-
-
-// ฟังก์ชันตรวจสอบสิทธิ์
-async function checkAdminSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
-    return !!(token && token.role === 'admin');
-}
 
 // Schema สำหรับตรวจสอบข้อมูล
 const profileUpdateSchema = z.object({
@@ -26,12 +18,17 @@ const profileUpdateSchema = z.object({
     password: z.string().optional(), // Password เป็น optional
 });
 
+async function checkAdminSession(request: Request): Promise<boolean> {
+    const token = await getToken({ req: request as any });
+    return !!(token && token.role === 'admin');
+}
+
 // ฟังก์ชัน GET สำหรับดึงข้อมูลผู้ใช้
 export async function GET(req: Request) {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !(await checkAdminSession(req))) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await getServerSession();
+    
+    if (!session || !session.user || !session.user.id) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
@@ -39,7 +36,7 @@ export async function GET(req: Request) {
     });
 
     if (!user) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const userData = {
@@ -56,9 +53,10 @@ export async function GET(req: Request) {
     return NextResponse.json(userData);
 }
 
+
 // ฟังก์ชัน PUT สำหรับอัปเดตข้อมูลผู้ใช้
 export async function PUT(req: Request) {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
 
     if (!session || !(await checkAdminSession(req))) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

@@ -55,10 +55,6 @@ const authOptions: NextAuthOptions = {
           const user = await prisma.user.findUnique({
             where: { username },
           });
-        try {
-          const user = await prisma.user.findUnique({
-            where: { username },
-          });
 
           if (!user) return null;
 
@@ -94,7 +90,6 @@ const authOptions: NextAuthOptions = {
         token.name = user.name;
       }
       return token;
-    },
     },
     async session({ session, token }) {
       session.user = {
