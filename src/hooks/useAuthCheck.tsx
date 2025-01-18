@@ -1,5 +1,3 @@
-"use client";
-
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -23,7 +21,7 @@ const useAuthCheck = (requiredRole: Role) => {
         // หาก role ไม่ตรงกับที่ต้องการ
         if (session.user.role !== requiredRole) {
             router.replace(
-                session.user.role === "admin" ? "/admins/dashboard" : "/users/requisition"
+                session.user.role === "admin" ? "/admins/dashboard" : "/users/borrow"
             );
             return;
         }

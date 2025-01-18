@@ -35,7 +35,7 @@ const Sidebar = () => {
 
             {/* Sidebar */}
             <div
-                className={`fixed top-0 left-0 h-screen w-52 bg-gradient-to-r from-violet-900 to-violet-900 text-white shadow-lg z-40 transform ${
+                className={`fixed top-0 left-0 h-screen w-52 bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-lg z-40 transform ${
                     isOpen ? 'translate-x-0' : '-translate-x-full'
                 } lg:translate-x-0 transition-transform duration-300`}
             >
