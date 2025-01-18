@@ -25,22 +25,28 @@ type BorrowLogGroup = {
     logs: {
         id: number;
         status: string;
+        quantity?: number;
         borrow: {
             borrow_name: string;
         };
     }[];
 };
 
+
+
 type RequisitionLogGroup = {
     requested_groupid: string;
     logs: {
         id: number;
         status: string;
+        quantity?: number;
+        requested_quantity?: number; // เพิ่ม property นี้
         requisition: {
             requisition_name: string;
         };
     }[];
 };
+
 
 
 function UsersStatus() {
@@ -52,7 +58,7 @@ function UsersStatus() {
 
     const [selectedGroup, setSelectedGroup] = useState<BorrowLogGroup | RequisitionLogGroup | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
-    
+
 
 
     useEffect(() => {
@@ -102,7 +108,7 @@ function UsersStatus() {
         setSelectedGroup(group); // เก็บข้อมูล group ที่เลือก
         setModalOpen(true); // เปิด Modal
     };
-    
+
 
     const closeModal = () => {
         setSelectedGroup(null); // ล้างข้อมูล groupid ที่เลือก
@@ -223,15 +229,18 @@ function UsersStatus() {
                 {modalOpen && selectedGroup && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                         <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
-                            <h2 className="text-2xl font-bold mb-4 text-center">รายละเอียด {selectedGroup.borrow_groupid ? "การยืม" : "การเบิก"}</h2>
+                            <h2 className="text-2xl font-bold mb-4 text-center">
+                                รายละเอียด {selectedGroup && ('borrow_groupid' in selectedGroup ? "การยืม" : "การเบิก")}
+                            </h2>
+
                             <ul className="divide-y divide-gray-200">
                                 {selectedGroup.logs.map((log) => (
                                     <li key={log.id} className="py-4">
                                         <p className="font-semibold text-gray-700">
-                                            ชื่อสื่อ: {log.borrow?.borrow_name || log.requisition?.requisition_name}
+                                            ชื่อ: {"borrow" in log ? log.borrow.borrow_name : log.requisition.requisition_name}
                                         </p>
                                         <p className="text-sm text-gray-600">
-                                            จำนวนที่ขอ: {log.quantity || log.requested_quantity}
+                                            จำนวนที่ขอ: {"quantity" in log ? log.quantity : "N/A"}
                                         </p>
                                         <p className="text-sm text-gray-600">
                                             สถานะ: {statusMapping[log.status]}
@@ -239,6 +248,8 @@ function UsersStatus() {
                                     </li>
                                 ))}
                             </ul>
+
+
                             <div className="mt-6 flex justify-end">
                                 <button
                                     onClick={closeModal}

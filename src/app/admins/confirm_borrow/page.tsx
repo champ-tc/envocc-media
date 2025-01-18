@@ -380,8 +380,9 @@ function AdminsConfirmBorrow() {
     const confirmReject = async () => {
         try {
             const response = await axios.put("/api/borrow_log/reject", {
-                groupId: selectedGroup.borrow_groupid,
+                groupId: selectedGroup?.borrow_groupid,
             });
+            ;
 
             if (response.status === 200) {
                 setAlertMessage("ปฏิเสธคำขอสำเร็จ!");

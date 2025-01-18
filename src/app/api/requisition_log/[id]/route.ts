@@ -64,9 +64,10 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const { id } = params;
     try {
         const items = await prisma.requisitionLog.findMany({
-            where: { request_group_id: id },
+            where: { requested_groupid: id }, // เปลี่ยนให้ตรงกับ schema ที่ถูกต้อง
             include: { requisition: true, user: true },
         });
+        
 
         if (!items.length) {
             return NextResponse.json({ error: "Group not found" }, { status: 404 });
@@ -96,7 +97,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     const body = await req.json();
     try {
         const updatedLog = await prisma.requisitionLog.update({
-            where: { id },
+            where: { id: Number(id) }, // แปลง id เป็น number
             data: body,
         });
         return NextResponse.json(updatedLog);
@@ -111,8 +112,8 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     const { id } = params;
     try {
         await prisma.requisitionLog.delete({
-            where: { id },
-        });
+            where: { id: Number(id) }, // แปลง id เป็น number
+        });        
         return NextResponse.json({ message: "Requisition log deleted successfully" });
     } catch (error) {
         console.error("Error deleting requisition log:", error);

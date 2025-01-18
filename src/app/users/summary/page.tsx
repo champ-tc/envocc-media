@@ -275,7 +275,6 @@ function UsersSummary() {
             setAddress(""); // รีเซ็ตที่อยู่การจัดส่ง
             await fetchOrders(); // ดึงข้อมูลใหม่เพื่อรีเฟรชตาราง
         } catch (error) {
-            console.error("Error response:", error.response?.data || error.message);
             showAlert("เกิดข้อผิดพลาดในการเบิกของ", "error");
         }
     };
