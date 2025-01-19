@@ -1,0 +1,189 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "windows", "linux-musl-openssl-3.0.x"]
+}
+
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+
+
+
+
+model RequisitionLog {
+  id                      Int         @id @default(autoincrement())
+  requisition_id          Int
+  user_id                 Int
+  requested_quantity      Int
+  approved_quantity       Int?
+  stock_after_requisition Int?
+  requisition_date        DateTime    @default(now())
+  approved_by_admin_id    Int?
+  createdAt               DateTime    @default(now())
+  status                  String
+  requested_groupid       String
+  delivery_address        String?
+  delivery_method         String
+  approvedByAdmin         user?       @relation("AdminRequisitionApproval", fields: [approved_by_admin_id], references: [id])
+  requisition             requisition @relation(fields: [requisition_id], references: [id])
+  user                    user        @relation(fields: [user_id], references: [id])
+
+  @@index([approved_by_admin_id], map: "requisition_log_approved_by_admin_id_fkey")
+  @@index([requisition_id], map: "requisition_log_requisition_id_fkey")
+  @@index([user_id], map: "requisition_log_user_id_fkey")
+  @@map("requisition_log")
+}
+
+model requisition_updates {
+  id            Int         @id @default(autoincrement())
+  requisitionId Int
+  addedQuantity Int
+  updateType    String
+  updatedAt     DateTime    @default(now())
+  remarks       String?
+  requisition   requisition @relation(fields: [requisitionId], references: [id])
+
+  @@index([requisitionId], map: "requisition_updates_requisitionId_fkey")
+}
+
+model Borrow {
+  id                  Int              @id @default(autoincrement())
+  borrow_name         String
+  unit                String
+  type_id             Int
+  quantity            Int
+  is_borro_restricted Boolean
+  description         String?
+  createdAt           DateTime         @default(now())
+  borrow_images       String
+  status              Int              @default(1) // 1 = ใช้งาน, 0 = ไม่ใช้งาน
+  type                Type             @relation(fields: [type_id], references: [id])
+  logs                BorrowLog[]
+  updates             Borrow_updates[]
+  order               order[]
+
+  @@index([type_id], map: "borrow_type_id_fkey")
+  @@map("borrow")
+}
+
+model Borrow_updates {
+  id              Int       @id @default(autoincrement())
+  borrowId        Int
+  updatedQuantity Int        // ฟิลด์นี้สำคัญ
+  updateType      String     // insert หรือ reduce
+  remarks         String?    // หมายเหตุ
+  createdAt       DateTime   @default(now())
+
+  borrow          Borrow     @relation(fields: [borrowId], references: [id])
+
+  @@map("borrow_updates")
+}
+
+
+model BorrowLog {
+  id                   Int      @id @default(autoincrement())
+  borrow_id            Int
+  user_id              Int
+  quantity             Int
+  returned_quantity    Int?
+  borrow_date          DateTime @default(now())
+  return_due_date      DateTime
+  actual_return_date   DateTime?
+  delivery_method      String   @default("self")
+  delivery_address     String?
+  borrow_groupid       String
+  approved_quantity    Int?     // Add this field for approved quantity
+  approved_by_admin_id Int?
+  createdAt            DateTime @default(now())
+  status               String   @default("pending")
+  approvedByAdmin      user?    @relation("AdminBorrowApproval", fields: [approved_by_admin_id], references: [id])
+  borrow               Borrow   @relation(fields: [borrow_id], references: [id])
+  user                 user     @relation(fields: [user_id], references: [id])
+
+  @@index([approved_by_admin_id], map: "borrow_log_approved_by_admin_id_fkey")
+  @@index([borrow_id], map: "borrow_log_borrow_id_fkey")
+  @@index([user_id], map: "borrow_log_user_id_fkey")
+  @@map("borrow_log")
+}
+
+
+
+
+
+model image {
+  id        Int      @id @default(autoincrement())
+  title     String
+  filename  String   @unique(map: "Image_filename_key")
+  addedDate DateTime @default(now())
+  viewCount Int      @default(0)
+}
+
+model order {
+  id               Int          @id @default(autoincrement())
+  userId           Int
+  requisitionId    Int?
+  borrowId         Int?
+  requisition_type Int
+  quantity         Int
+  date             DateTime     @default(now())
+  borrow           Borrow?      @relation(fields: [borrowId], references: [id], map: "Order_borrowId_fkey")
+  requisition      requisition? @relation(fields: [requisitionId], references: [id], map: "Order_requisitionId_fkey")
+
+  @@index([borrowId], map: "Order_borrowId_fkey")
+  @@index([requisitionId], map: "Order_requisitionId_fkey")
+}
+
+model requisition {
+  id                  Int                   @id @default(autoincrement())
+  requisition_name    String
+  unit                String
+  type_id             Int
+  quantity            Int
+  reserved_quantity   Int?
+  is_borro_restricted Boolean
+  description         String?
+  createdAt           DateTime              @default(now())
+  requisition_images  String
+  status              Int                   @default(1) // 1 = ใช้งาน, 0 = ไม่ใช้งาน
+  order               order[]
+  type                Type                  @relation(fields: [type_id], references: [id], map: "Requisition_type_id_fkey") // เปลี่ยนชื่อจาก types เป็น type
+  logs                RequisitionLog[]
+  updates             requisition_updates[]
+
+  @@index([type_id], map: "Requisition_type_id_fkey")
+}
+
+model Type {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique  // เพิ่ม @unique เพื่อให้ name เป็นฟิลด์ที่ไม่ซ้ำ
+  description String?
+  createdAt   DateTime      @default(now())
+  borrows     Borrow[]
+  requisition requisition[]
+
+  @@map("types")
+}
+
+
+
+model user {
+  id                   Int              @id @default(autoincrement())
+  username             String           @unique(map: "User_username_key")
+  password             String
+  title                String
+  firstName            String
+  lastName             String
+  tel                  String
+  email                String           @unique(map: "User_email_key")
+  department           String
+  position             String
+  role                 String           @default("user")
+  createdAt            DateTime         @default(now())
+  approvedBorrows      BorrowLog[]      @relation("AdminBorrowApproval")
+  borrowLogs           BorrowLog[]
+  approvedRequisitions RequisitionLog[] @relation("AdminRequisitionApproval")
+  requisitions         RequisitionLog[]
+}
