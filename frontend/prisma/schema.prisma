@@ -179,7 +179,7 @@ model user {
   tel                  String
   email                String           @unique(map: "User_email_key")
   department           String
-  position             String
+  position             String?
   role                 String           @default("user")
   createdAt            DateTime         @default(now())
   approvedBorrows      BorrowLog[]      @relation("AdminBorrowApproval")

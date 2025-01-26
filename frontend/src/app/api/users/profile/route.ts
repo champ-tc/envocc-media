@@ -14,7 +14,7 @@ const profileUpdateSchema = z.object({
     tel: z.string().min(1, "Telephone number is required"),
     email: z.string().email("Invalid email format"),
     department: z.string().min(1, "Department is required"),
-    position: z.string().min(1, "Position is required"),
+    position: z.string().optional().nullable(),
     password: z.string().optional(), // Password เป็น optional
 });
 
@@ -53,50 +53,34 @@ export async function GET(req: Request) {
     return NextResponse.json(userData);
 }
 
-
 // ฟังก์ชัน PUT สำหรับอัปเดตข้อมูลผู้ใช้
 export async function PUT(req: Request) {
     const session = await getServerSession();
 
-    if (!session || !(await checkAdminSession(req))) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const body = await req.json();
-
     try {
-        // ตรวจสอบความถูกต้องของข้อมูลที่ได้รับ
-        const data = profileUpdateSchema.parse(body);
+        const body = await req.json();
 
-        const updatedData: any = {
-            username: data.username,
-            title: data.title,
-            firstName: data.firstName,
-            lastName: data.lastName,
-            tel: data.tel,
-            email: data.email,
-            department: data.department,
-            position: data.position,
-        };
-
-        // Hash the password if it is provided
-        if (data.password) {
-            const hashedPassword = await bcrypt.hash(data.password, 12);
-            updatedData.password = hashedPassword;
+        if (!body.id || isNaN(Number(body.id))) {
+            return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
         }
 
-        // Update the user data in the database
+        if (!("position" in body) || body.position === null) {
+            body.position = "";
+        }
+
+        const validatedData = profileUpdateSchema.parse(body);
+
         const updatedUser = await prisma.user.update({
-            where: { id: session.user.id },
-            data: updatedData,
+            where: { id: Number(body.id) },
+            data: validatedData,
         });
 
-        return NextResponse.json({ message: 'User updated successfully', user: updatedUser });
+        return NextResponse.json({ message: "User updated successfully", user: updatedUser });
     } catch (error) {
-        if (error instanceof z.ZodError) {
-            return NextResponse.json({ error: 'Invalid input data', details: error.errors }, { status: 400 });
-        }
-        console.error('Error in PUT /api/users/profile:', error);
-        return NextResponse.json({ error: 'Error updating user profile' }, { status: 500 });
+        return NextResponse.json({ error: "Update failed" }, { status: 500 });
     }
 }

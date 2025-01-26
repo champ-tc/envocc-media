@@ -23,6 +23,103 @@ interface User {
     role: string;
 }
 
+const positionOptions: Record<string, { value: string; label: string }[]> = {
+    '1': [
+        { value: '10', label: 'กรุงเทพมหานคร' },
+        { value: '11', label: 'สมุทรปราการ' },
+        { value: '12', label: 'นนทบุรี' },
+        { value: '13', label: 'ปทุมธานี' },
+        { value: '14', label: 'พระนครศรีอยุธยา' },
+        { value: '15', label: 'อ่างทอง' },
+        { value: '16', label: 'ลพบุรี' },
+        { value: '17', label: 'สิงห์บุรี' },
+        { value: '18', label: 'ชัยนาท' },
+        { value: '19', label: 'สระบุรี' },
+        { value: '20', label: 'ชลบุรี' },
+        { value: '21', label: 'ระยอง' },
+        { value: '22', label: 'จันทบุรี' },
+        { value: '23', label: 'ตราด' },
+        { value: '24', label: 'ฉะเชิงเทรา' },
+        { value: '25', label: 'ปราจีนบุรี' },
+        { value: '26', label: 'นครนายก' },
+        { value: '27', label: 'สระแก้ว' },
+        { value: '30', label: 'นครราชสีมา' },
+        { value: '31', label: 'บุรีรัมย์' },
+        { value: '32', label: 'สุรินทร์' },
+        { value: '33', label: 'ศรีสะเกษ' },
+        { value: '34', label: 'อุบลราชธานี' },
+        { value: '35', label: 'ยโสธร' },
+        { value: '36', label: 'ชัยภูมิ' },
+        { value: '37', label: 'อำนาจเจริญ' },
+        { value: '38', label: 'บึงกาฬ' },
+        { value: '39', label: 'หนองบัวลำภู' },
+        { value: '40', label: 'ขอนแก่น' },
+        { value: '41', label: 'อุดรธานี' },
+        { value: '42', label: 'เลย' },
+        { value: '43', label: 'หนองคาย' },
+        { value: '44', label: 'มหาสารคาม' },
+        { value: '45', label: 'ร้อยเอ็ด' },
+        { value: '46', label: 'กาฬสินธุ์' },
+        { value: '47', label: 'สกลนคร' },
+        { value: '48', label: 'นครพนม' },
+        { value: '49', label: 'มุกดาหาร' },
+        { value: '50', label: 'เชียงใหม่' },
+        { value: '51', label: 'ลำพูน' },
+        { value: '52', label: 'ลำปาง' },
+        { value: '53', label: 'อุตรดิตถ์' },
+        { value: '54', label: 'แพร่' },
+        { value: '55', label: 'น่าน' },
+        { value: '56', label: 'พะเยา' },
+        { value: '57', label: 'เชียงราย' },
+        { value: '58', label: 'แม่ฮ่องสอน' },
+        { value: '60', label: 'นครสวรรค์' },
+        { value: '61', label: 'อุทัยธานี' },
+        { value: '62', label: 'กำแพงเพชร' },
+        { value: '63', label: 'ตาก' },
+        { value: '64', label: 'สุโขทัย' },
+        { value: '65', label: 'พิษณุโลก' },
+        { value: '66', label: 'พิจิตร' },
+        { value: '67', label: 'เพชรบูรณ์' },
+        { value: '70', label: 'ราชบุรี' },
+        { value: '71', label: 'กาญจนบุรี' },
+        { value: '72', label: 'สุพรรณบุรี' },
+        { value: '73', label: 'นครปฐม' },
+        { value: '74', label: 'สมุทรสาคร' },
+        { value: '75', label: 'สมุทรสงคราม' },
+        { value: '76', label: 'เพชรบุรี' },
+        { value: '77', label: 'ประจวบคีรีขันธ์' },
+        { value: '80', label: 'นครศรีธรรมราช' },
+        { value: '81', label: 'กระบี่' },
+        { value: '82', label: 'พังงา' },
+        { value: '83', label: 'ภูเก็ต' },
+        { value: '84', label: 'สุราษฎร์ธานี' },
+        { value: '85', label: 'ระนอง' },
+        { value: '86', label: 'ชุมพร' },
+        { value: '90', label: 'สงขลา' },
+        { value: '91', label: 'สตูล' },
+        { value: '92', label: 'ตรัง' },
+        { value: '93', label: 'พัทลุง' },
+        { value: '94', label: 'ปัตตานี' },
+        { value: '95', label: 'ยะลา' },
+        { value: '96', label: 'นราธิวาส' },
+    ],
+    '2': [
+        { value: '1', label: 'สำนักงานป้องกันควบคุมโรคที่ 1 เชียงใหม่' },
+        { value: '2', label: 'สำนักงานป้องกันควบคุมโรคที่ 2 พิษณุโลก' },
+        { value: '3', label: 'สำนักงานป้องกันควบคุมโรคที่ 3 นครสวรรค์' },
+        { value: '4', label: 'สำนักงานป้องกันควบคุมโรคที่ 4 สระบุรี' },
+        { value: '5', label: 'สำนักงานป้องกันควบคุมโรคที่ 5 ราชบุรี' },
+        { value: '6', label: 'สำนักงานป้องกันควบคุมโรคที่ 6 ชลบุรี' },
+        { value: '7', label: 'สำนักงานป้องกันควบคุมโรคที่ 7 ขอนแก่น' },
+        { value: '8', label: 'สำนักงานป้องกันควบคุมโรคที่ 8 อุดรธานี' },
+        { value: '9', label: 'สำนักงานป้องกันควบคุมโรคที่ 9 นครราชสีมา' },
+        { value: '10', label: 'สำนักงานป้องกันควบคุมโรคที่ 10 อุบลราชธานี' },
+        { value: '11', label: 'สำนักงานป้องกันควบคุมโรคที่ 11 นครศรีธรรมราช' },
+        { value: '12', label: 'สำนักงานป้องกันควบคุมโรคที่ 12 สงขลา' },
+        { value: '13', label: 'สถาบันป้องกันควบคุมโรคเขตเมือง' },
+    ],
+};
+
 function AdminsUserManagement() {
     const { session, isLoading } = useAuthCheck("admin");
     const router = useRouter();
@@ -150,14 +247,19 @@ function AdminsUserManagement() {
     };
 
     const departmentNames = {
-        "1": "เจ้าหน้าที่ envocc",
-        "2": "สคร.",
-        "3": "โรงพยาบาล",
-        "4": "สถานะประกอบการ",
-        "5": "มหาวิทยาลัย",
-        "6": "นักเรียน/นักศึกษา",
-        "7": "ประชาชนทั่วไป"
+        '1': 'สำนักงานสาธารณสุขจังหวัด',
+        '2': 'สำนักงานป้องกันควบคุมโรค',
+        '3': 'โรงพยาบาล',
+        '4': 'สถานประกอบการ',
+        '5': 'มหาวิทยาลัย',
+        '6': 'องค์กรอิสระ',
+        '7': 'เจ้าหน้าที่ภาครัฐ/รัฐวิสาหกิจ',
+        '8': 'เจ้าหน้าที่ EnvOcc',
+        '9': 'นักเรียน/นักศึกษา',
+        '10': 'ประชาชนทั่วไป',
     };
+
+
 
     const handlePageChange = (page: number) => setCurrentPage(page);
 
@@ -207,7 +309,7 @@ function AdminsUserManagement() {
                                         <th className="py-2 px-4 overflow-hidden text-ellipsis" style={{ width: "15%" }}>Email</th>
                                         <th className="py-2 px-4 whitespace-nowrap" style={{ width: "10%" }}>เบอร์</th>
                                         <th className="py-2 px-4 overflow-hidden text-ellipsis" style={{ width: "10%" }}>ประเภทผู้ใช้</th>
-                                        <th className="py-2 px-4 overflow-hidden text-ellipsis" style={{ width: "15%" }}>ตำแหน่ง/อาชีพ</th>
+                                        <th className="py-2 px-4 overflow-hidden text-ellipsis" style={{ width: "15%" }}>หน่วยงาน</th>
                                         <th className="py-2 px-4 whitespace-nowrap" style={{ width: "15%" }}>จัดการ</th>
                                     </tr>
                                 </thead>
@@ -220,7 +322,14 @@ function AdminsUserManagement() {
                                             <td className="py-2 px-4 overflow-hidden text-ellipsis min-w-0">{user.email}</td>
                                             <td className="py-2 px-4">{user.tel}</td>
                                             <td className="py-2 px-4 overflow-hidden text-ellipsis min-w-0">{departmentNames[user.department as keyof typeof departmentNames] || "N/A"}</td>
-                                            <td className="py-2 px-4 overflow-hidden text-ellipsis min-w-0">{user.position}</td>
+                                            <td className="py-2 px-4 overflow-hidden text-ellipsis min-w-0">
+                                                {['1', '2'].includes(user.department) ? (
+                                                    positionOptions[user.department]?.find(option => option.value === user.position)?.label || ''
+                                                ) : ['3', '4', '5', '6', '7', '9'].includes(user.department) ? (
+                                                    user.position || ''
+                                                ) : ''}
+                                            </td>
+
                                             <td className="py-2 px-4">
                                                 <button
                                                     onClick={() => openEditConfirm(user)}

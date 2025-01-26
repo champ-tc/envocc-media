@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
+  
   const {
     username,
     email,
@@ -65,18 +66,18 @@ export async function POST(req: NextRequest) {
     const jwtSecret = process.env.NEXTAUTH_SECRET || 'fallback-secret-key';
 
     // สร้าง JWT
-    const token = jwt.sign(
-      {
-        id: newUser.id,
-        name: newUser.username,
-        role: newUser.role,
-      },
-      jwtSecret,
-      { expiresIn: '1h' }
-    );
+    // const token = jwt.sign(
+    //   {
+    //     id: newUser.id,
+    //     name: newUser.username,
+    //     role: newUser.role,
+    //   },
+    //   jwtSecret,
+    //   { expiresIn: '1h' }
+    // );
 
     return NextResponse.json(
-      { message: 'User created successfully', token },
+      { message: 'User created successfully'},
       { status: 201 }
     );
   } catch (error) {

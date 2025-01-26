@@ -29,14 +29,13 @@ async function checkAdminOrUserSession(request: Request): Promise<boolean> {
 
 // Schema สำหรับตรวจสอบข้อมูลในฟังก์ชัน PUT
 const userUpdateSchema = z.object({
-    username: z.string().min(1, "Username is required"),
     title: z.string().min(1, "Title is required"),
     firstName: z.string().min(1, "First name is required"),
     lastName: z.string().min(1, "Last name is required"),
     tel: z.string().min(1, "Telephone number is required"),
     email: z.string().email("Invalid email format"),
     department: z.string().min(1, "Department is required"),
-    position: z.string().min(1, "Position is required"),
+    position: z.string().optional().nullable(),
     role: z.string().optional(), // role เป็น optional
 });
 
@@ -58,7 +57,6 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
     }
 }
 
-
 export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
     const { id } = await context.params;
     if (!(await checkAdminOrUserSession(req))) {
@@ -70,20 +68,26 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     }
 
     try {
-        const data = userUpdateSchema.parse(await req.json());
+        let data = await req.json();
+
+        // ตรวจสอบว่ามี position หรือไม่ ถ้าไม่มีให้ตั้งค่าเป็นค่าว่าง
+        if (!("position" in data) || data.position === null) {
+            data.position = "";
+        }
+
+        const validatedData = userUpdateSchema.parse(data);
 
         const updatedUser = await prisma.user.update({
             where: { id: Number(id) },
             data: {
-                username: data.username,
-                title: data.title,
-                firstName: data.firstName,
-                lastName: data.lastName,
-                tel: data.tel,
-                email: data.email,
-                department: data.department,
-                position: data.position,
-                role: data.role,
+                title: validatedData.title,
+                firstName: validatedData.firstName,
+                lastName: validatedData.lastName,
+                tel: validatedData.tel,
+                email: validatedData.email,
+                department: validatedData.department,
+                position: validatedData.position,  // รองรับค่าว่าง
+                role: validatedData.role,
             },
         });
 
