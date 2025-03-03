@@ -16,19 +16,48 @@ async function checkAdminSession(request: Request): Promise<boolean> {
 }
 
 // API สำหรับ GET ข้อมูล
-export async function GET(request: Request) {
-    try {
+// export async function GET(request: Request) {
+//     try {
 
-        if (!(await checkAdminSession(request))) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+//         if (!(await checkAdminSession(request))) {
+//             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+//         }
+
+//         const types = await prisma.type.findMany();
+//         return NextResponse.json(types);
+//     } catch (error) {
+//         return NextResponse.json({ error: "Error fetching type" }, { status: 500 });
+//     }
+// }
+
+export async function GET(req: Request) {
+    try {
+        if (!(await checkAdminSession(req))) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
-        const types = await prisma.type.findMany();
-        return NextResponse.json(types);
+        const { searchParams } = new URL(req.url);
+        const page = parseInt(searchParams.get("page") || "1", 10);
+        const limit = parseInt(searchParams.get("limit") || "10", 10);
+        const offset = (page - 1) * limit;
+
+
+        const types = await prisma.type.findMany({
+            skip: offset,
+            take: limit,
+            orderBy: { id: "asc" } // ให้แน่ใจว่าข้อมูลเรียงตาม id
+        });
+
+        const totalRecords = await prisma.type.count();
+        const totalPages = Math.ceil(totalRecords / limit);
+
+        return NextResponse.json({ items: types, totalPages, totalRecords });
     } catch (error) {
-        return NextResponse.json({ error: "Error fetching type" }, { status: 500 });
+
+        return NextResponse.json({ error: "Error fetching types" }, { status: 500 });
     }
 }
+
 
 // เพิ่มข้อมูล
 export async function POST(request: Request) {

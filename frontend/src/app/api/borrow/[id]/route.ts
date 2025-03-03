@@ -77,6 +77,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
         const description = formData.get("description")?.toString() || "";
         const file = formData.get("file") as File | null;
 
+        // ดึงข้อมูลเดิมจากฐานข้อมูล
         const existingBorrow = await prisma.borrow.findUnique({
             where: { id: numericId },
         });
@@ -102,6 +103,11 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
             imageUrl = filename;
         }
 
+        // คำนวณความแตกต่างของจำนวน
+        const updatedQuantity = quantity - existingBorrow.quantity;
+        const updateType = updatedQuantity > 0 ? "insert" : updatedQuantity < 0 ? "reduce" : "no change";
+
+        // อัปเดต borrow ในฐานข้อมูล
         const updatedBorrow = await prisma.borrow.update({
             where: { id: numericId },
             data: {
@@ -115,12 +121,26 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
             },
         });
 
+        // เพิ่มบันทึกการอัปเดตเฉพาะเมื่อมีการเปลี่ยนแปลงจำนวน
+        if (updatedQuantity !== 0) {
+            await prisma.borrow_updates.create({
+                data: {
+                    borrowId: numericId,
+                    updatedQuantity: updatedQuantity,
+                    updateType: updateType,
+                    remarks: "Updated via borrow edit form",
+                },
+            });
+        }
+
+
         return NextResponse.json(updatedBorrow);
     } catch (error) {
         console.error("Error updating borrow:", error);
         return NextResponse.json({ error: "Error updating borrow data" }, { status: 500 });
     }
 }
+
 
 // DELETE: ลบข้อมูล Borrow
 export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {

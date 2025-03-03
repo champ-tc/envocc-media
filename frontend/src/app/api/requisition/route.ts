@@ -94,10 +94,31 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
-        const requisitions = await prisma.requisition.findMany();
-        return NextResponse.json(requisitions);
+        // รับค่าหน้าและจำนวนต่อหน้า
+        const { searchParams } = new URL(request.url);
+        const page = parseInt(searchParams.get("page") || "1", 10);
+        const limit = parseInt(searchParams.get("limit") || "10", 10);
+        const offset = (page - 1) * limit;
+
+        // ดึงข้อมูล requisition แบบแบ่งหน้า
+        const requisitions = await prisma.requisition.findMany({
+            skip: offset,
+            take: limit,
+            orderBy: { id: "asc" },
+        });
+
+        // นับจำนวนข้อมูลทั้งหมด
+        const totalRecords = await prisma.requisition.count();
+        const totalPages = Math.ceil(totalRecords / limit);
+
+        return NextResponse.json({ 
+            items: requisitions, 
+            totalPages, 
+            totalRecords  // 🔥 ส่งจำนวนรายการทั้งหมดกลับไป
+        });
     } catch (error) {
         console.error('Error fetching requisitions:', error);
         return NextResponse.json({ error: 'Error fetching requisitions' }, { status: 500 });
     }
 }
+

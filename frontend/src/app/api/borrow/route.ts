@@ -109,14 +109,33 @@ export async function POST(request: Request) {
 // GET: ดึงข้อมูล Borrow ทั้งหมด
 export async function GET(request: Request) {
     try {
-
         if (!(await checkAdminSession(request))) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
-        const borrows = await prisma.borrow.findMany(); // ดึงข้อมูลทั้งหมด
-        return NextResponse.json(borrows); // ส่งคืนข้อมูลทั้งหมด รวมถึง borrow_images
+        // ดึงค่าจาก query params
+        const { searchParams } = new URL(request.url);
+        const page = parseInt(searchParams.get("page") || "1", 10);
+        const limit = parseInt(searchParams.get("limit") || "10", 10);
+        const offset = (page - 1) * limit;
+
+        // ดึงข้อมูลพร้อมแบ่งหน้า
+        const borrows = await prisma.borrow.findMany({
+            skip: offset,
+            take: limit,
+        });
+
+        // นับจำนวนทั้งหมด
+        const totalRecords = await prisma.borrow.count();
+        const totalPages = Math.ceil(totalRecords / limit);
+
+        return NextResponse.json({
+            items: borrows,
+            totalPages,
+            totalRecords,
+        });
     } catch (error) {
+        console.error("Error fetching borrows:", error);
         return NextResponse.json({ error: "Error fetching borrows" }, { status: 500 });
     }
 }

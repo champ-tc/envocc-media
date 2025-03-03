@@ -43,9 +43,8 @@ function AdminsMedia_management() {
 
 
     const [editedImage, setEditedImage] = useState<File | null>(null);
-    const [currentImage, setCurrentImage] = useState<string | null>(null); // เก็บชื่อรูปภาพเดิมจากฐานข้อมูล
+    const [currentImage, setCurrentImage] = useState<string | null>(null);
 
-    const [requisitions, setRequisitions] = useState<Requisition[]>([]);
     const [types, setTypes] = useState<Type[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [editModal, setEditModal] = useState(false);
@@ -74,17 +73,10 @@ function AdminsMedia_management() {
     const [editName, setEditName] = useState("");
     const [editDescription, setEditDescription] = useState("");
 
-    // การจัดการการยืนยัน (Confirm Actions)
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false); // Modal ยืนยันการลบ
     const [isEditConfirmOpen, setIsEditConfirmOpen] = useState(false);
     const [selectedType, setSelectedType] = useState<Requisition | null>(null);
     const [selectedId, setSelectedId] = useState<number | null>(null); // ID ของข้อมูลที่เลือกสำหรับการลบ
-
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10; // จำนวนรายการต่อหน้านหน้าทั้งหมด
-    const startIndex = (currentPage - 1) * itemsPerPage; // ดัชนีเริ่มต้นของรายการในหน้าปัจจุบัน
-    const endIndex = startIndex + itemsPerPage; // ดัชนีสิ้นสุดของรายการในหน้าปัจจุบัน
-
     const [paginatedRequisitions, setPaginatedRequisitions] = useState<Requisition[]>([]);
     const [isEnableConfirmOpen, setIsEnableConfirmOpen] = useState(false); // ใช้สำหรับ Modal เปิดการใช้งาน
 
@@ -96,34 +88,67 @@ function AdminsMedia_management() {
     }, []);
 
 
+    const [requisitions, setRequisitions] = useState<Requisition[]>([]);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalRecords, setTotalRecords] = useState(0); // 🔥 เก็บจำนวนข้อมูลทั้งหมด
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+
+
+    useEffect(() => {
+        fetchRequisitions();
+    }, [currentPage]);
+
     const fetchRequisitions = async () => {
         try {
-            const response = await axios.get('/api/requisition');
+
+            const response = await axios.get(`/api/requisition?page=${currentPage}&limit=${itemsPerPage}`);
+
             if (response.status === 200) {
-                setRequisitions(response.data); // ตั้งค่า State
-            } else {
-                console.error('Failed to fetch requisitions:', response.statusText);
+                setRequisitions(response.data.items || []);
+                setTotalPages(response.data.totalPages);
+                setTotalRecords(response.data.totalRecords);  // 🔥 อัปเดตจำนวนรายการทั้งหมด
             }
         } catch (error) {
-            console.error('Error fetching requisitions:', error);
+            console.error("Error fetching requisitions:");
         }
     };
+
+
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    const goToPreviousPage = () => {
+        if (currentPage > 1) setCurrentPage((prev) => prev - 1);
+    };
+
+    const goToNextPage = () => {
+        if (currentPage < totalPages) setCurrentPage((prev) => prev + 1);
+    };
+
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+
 
     const fetchTypes = async () => {
         try {
-            const response = await axios.get('/api/type');
-            if (response.status === 200) {
-                setTypes(response.data); // ตั้งค่า State
+            const response = await axios.get("/api/type");
+            if (response.status === 200 && Array.isArray(response.data.items)) { 
+                setTypes(response.data.items); // ✅ ใช้ response.data.items ซึ่งเป็น array
             } else {
-                console.error('Failed to fetch types:', response.statusText);
+                setTypes([]); // ป้องกัน error ถ้าข้อมูลผิด
             }
         } catch (error) {
-            console.error('Error fetching types:', error);
+            setTypes([]); // กำหนดค่าเริ่มต้นเป็นอาร์เรย์ว่าง
         }
     };
+    
+    
 
-    // คำนวณจำนวนหน้าจาก requisitions
-    const totalPages = Math.ceil(requisitions.length / itemsPerPage);
+
 
     useEffect(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
@@ -140,6 +165,7 @@ function AdminsMedia_management() {
             </div>
         );
     }
+
 
     const showAlert = (message: string, type: "success" | "error") => {
         setAlertMessage(message);
@@ -378,7 +404,7 @@ function AdminsMedia_management() {
             }
         } catch (error) {
             // จัดการข้อผิดพลาด
-            console.error("Error updating requisition:", error);
+            console.error("Error updating requisition:");
             showAlert("ไม่สามารถแก้ไขข้อมูลได้", "error");
         }
     };
@@ -426,7 +452,6 @@ function AdminsMedia_management() {
                 setAlertType("success");
             }
         } catch (error) {
-            console.error("Error updating status:", error);
             setAlertMessage("เกิดข้อผิดพลาดในการปิดการใช้งาน");
             setAlertType("error");
         } finally {
@@ -454,7 +479,6 @@ function AdminsMedia_management() {
                 setAlertType("success");
             }
         } catch (error) {
-            console.error("Error enabling requisition:", error);
             setAlertMessage("เกิดข้อผิดพลาดในการเปิดการใช้งาน");
             setAlertType("error");
         } finally {
@@ -466,17 +490,7 @@ function AdminsMedia_management() {
         }
     };
 
-    const goToPreviousPage = () => {
-        if (currentPage > 1) setCurrentPage((prev) => prev - 1);
-    };
 
-    const goToNextPage = () => {
-        if (currentPage < totalPages) setCurrentPage((prev) => prev + 1);
-    };
-
-    const handlePageChange = (page: number) => {
-        setCurrentPage(page);
-    };
 
     return (
         <div className="flex min-h-screen bg-gray-50">
@@ -504,82 +518,76 @@ function AdminsMedia_management() {
                                 </tr>
                             </thead>
                             <tbody className="text-gray-700 text-sm">
-                                {paginatedRequisitions.map((req) => (
-                                    <tr key={req.id}>
-                                        <td className="p-2 py-2 border">
-                                            {req.requisition_images ? (
-                                                <img
-                                                    src={`/requisitions/${req.requisition_images}`}
-                                                    alt={req.requisition_name}
-                                                    className="w-16 h-16 object-cover cursor-pointer"
-                                                    onClick={() => req.requisition_images && handleImageClick(req.requisition_images)}
-                                                />
-                                            ) : (
-                                                "ไม่มีรูปภาพ"
-                                            )}
-                                        </td>
-                                        <td className="p-2 border">{req.requisition_name}</td>
-                                        <td className="p-2 border">{req.unit}</td>
-                                        <td className="p-2 border">
-                                            {types.find((type) => type.id === req.type_id)?.name || '-'}
-                                        </td>
-                                        <td className="p-2 border">{req.quantity}</td>
-                                        <td className="p-2 border">{req.reserved_quantity || 0}</td>
-                                        <td className="p-2 border">{req.description || '-'}</td>
-                                        <td className="p-2 border">
-                                            {req.is_borro_restricted ? "ห้ามเบิก" : "เบิกได้"} {/* แสดงสถานะการเบิก */}
-                                        </td>
-                                        <td className="p-2 border">
-                                            <button
-                                                onClick={() => handleEditRequest(req)}
-                                                className="mb-4 py-2 px-2 mr-2 rounded-md transition"
-                                            >
-                                                <img
-                                                    src="/images/edit.png"
-                                                    alt="Edit Icon"
-                                                    className="h-6 w-6"
-                                                />
-                                            </button>
-
-                                            {req.status === 1 ? (
-                                                <button
-                                                    onClick={() => openDeleteConfirm(req.id)} // เปิด ConfirmModal สำหรับปิด
-                                                    className="mb-4 py-2 px-2 mr-2 rounded-md transition"
-                                                    title="ปิดใช้งาน"
-                                                >
+                                {requisitions.length > 0 ? (
+                                    requisitions.map((req) => (
+                                        <tr key={req.id}>
+                                            <td className="p-2 py-2 border">
+                                                {req.requisition_images ? (
                                                     <img
-                                                        src="/images/turn-on.png"
-                                                        alt="Turn Off Icon"
-                                                        className="h-6 w-6"
+                                                        src={`/requisitions/${req.requisition_images}`}
+                                                        alt={req.requisition_name}
+                                                        className="w-16 h-16 object-cover cursor-pointer"
+                                                        onClick={() => req.requisition_images && handleImageClick(req.requisition_images)}
                                                     />
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    onClick={() => openEnableConfirm(req.id)} // เปิด ConfirmModal สำหรับเปิด
-                                                    className="mb-4 py-2 px-2 mr-2 rounded-md transition"
-                                                    title="เปิดใช้งาน"
-                                                >
-                                                    <img
-                                                        src="/images/turn-off.png"
-                                                        alt="Turn On Icon"
-                                                        className="h-6 w-6"
-                                                    />
-                                                </button>
-                                            )}
+                                                ) : (
+                                                    "ไม่มีรูปภาพ"
+                                                )}
+                                            </td>
+                                            <td className="p-2 border">{req.requisition_name}</td>
+                                            <td className="p-2 border">{req.unit}</td>
+                                            <td className="p-2 border">
+                                                {Array.isArray(types) && types.length > 0
+                                                    ? types.find((type) => type.id === req.type_id)?.name || "ไม่พบประเภท"
+                                                    : "กำลังโหลด..."}
+                                            </td>
 
-                                        </td>
+                                            <td className="p-2 border">{req.quantity.toLocaleString()}</td>
+                                            <td className="p-2 border">{req.reserved_quantity ? req.reserved_quantity.toLocaleString() : 0}</td>
+                                            <td className="p-2 border">{req.description || "-"}</td>
+                                            <td className="p-2 border">
+                                                {req.is_borro_restricted ? "ห้ามเบิก" : "เบิกได้"}
+                                            </td>
+                                            <td className="p-2 border">
+                                                <button onClick={() => handleEditRequest(req)} className="mb-4 py-2 px-2 mr-2 rounded-md transition">
+                                                    <img src="/images/edit.png" alt="Edit Icon" className="h-6 w-6" />
+                                                </button>
+                                                {req.status === 1 ? (
+                                                    <button
+                                                        onClick={() => openDeleteConfirm(req.id)}
+                                                        className="mb-4 py-2 px-2 mr-2 rounded-md transition"
+                                                        title="ปิดใช้งาน"
+                                                    >
+                                                        <img src="/images/turn-on.png" alt="Turn Off Icon" className="h-6 w-6" />
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => openEnableConfirm(req.id)}
+                                                        className="mb-4 py-2 px-2 mr-2 rounded-md transition"
+                                                        title="เปิดใช้งาน"
+                                                    >
+                                                        <img src="/images/turn-off.png" alt="Turn On Icon" className="h-6 w-6" />
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={9} className="text-center py-4">ไม่มีข้อมูลรายการ</td>
                                     </tr>
-                                ))}
+                                )}
                             </tbody>
+
+
                         </table>
 
                         <div className="flex items-center justify-between mt-6">
                             <span className="text-sm text-gray-600">
                                 {
                                     (() => {
-                                        const startIndex = (currentPage - 1) * itemsPerPage;
-                                        const endIndex = Math.min(startIndex + itemsPerPage, requisitions.length);
-                                        return `รายการที่ ${startIndex + 1} ถึง ${endIndex} จาก ${requisitions.length} รายการ`;
+                                        const startIndex = (currentPage - 1) * itemsPerPage + 1;
+                                        const endIndex = Math.min(startIndex + requisitions.length - 1, totalRecords);
+                                        return `รายการที่ ${startIndex} ถึง ${endIndex} จาก ${totalRecords} รายการ`;
                                     })()
                                 }
                             </span>
@@ -798,16 +806,21 @@ function AdminsMedia_management() {
                                                     onChange={(e) =>
                                                         setNewRequisition({ ...newRequisition, type_id: Number(e.target.value) })
                                                     }
-                                                    className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                    className="w-full border border-gray-300 rounded px-3 py-1 focus:ring focus:ring-blue-400 focus:outline-none"
                                                     required
                                                 >
                                                     <option value="">เลือกประเภท</option>
-                                                    {types.map((type) => (
-                                                        <option key={type.id} value={type.id}>
-                                                            {type.name}
-                                                        </option>
-                                                    ))}
+                                                    {Array.isArray(types) && types.length > 0 ? (
+                                                        types.map((type) => (
+                                                            <option key={type.id} value={type.id}>
+                                                                {type.name}
+                                                            </option>
+                                                        ))
+                                                    ) : (
+                                                        <option disabled>กำลังโหลด...</option> // ✅ แสดงข้อความเมื่อข้อมูลยังไม่มา
+                                                    )}
                                                 </select>
+
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-3">

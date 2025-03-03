@@ -3,15 +3,31 @@ generator client {
   binaryTargets = ["native", "windows", "linux-musl-openssl-3.0.x"]
 }
 
-
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
 
+model requisition {
+  id                  Int                   @id @default(autoincrement())
+  requisition_name    String
+  unit                String
+  type_id             Int
+  quantity            Int
+  reserved_quantity   Int?
+  is_borro_restricted Boolean
+  description         String?
+  createdAt           DateTime              @default(now())
+  requisition_images  String
+  status              Int                   @default(1) // 1 = ใช้งาน, 0 = ไม่ใช้งาน
+  order               order[]
+  type                Type                  @relation(fields: [type_id], references: [id], map: "Requisition_type_id_fkey") // เปลี่ยนชื่อจาก types เป็น type
+  logs                RequisitionLog[]
+  updates             requisition_updates[]
 
-
+  @@index([type_id], map: "Requisition_type_id_fkey")
+}
 
 model RequisitionLog {
   id                      Int         @id @default(autoincrement())
@@ -136,25 +152,7 @@ model order {
   @@index([requisitionId], map: "Order_requisitionId_fkey")
 }
 
-model requisition {
-  id                  Int                   @id @default(autoincrement())
-  requisition_name    String
-  unit                String
-  type_id             Int
-  quantity            Int
-  reserved_quantity   Int?
-  is_borro_restricted Boolean
-  description         String?
-  createdAt           DateTime              @default(now())
-  requisition_images  String
-  status              Int                   @default(1) // 1 = ใช้งาน, 0 = ไม่ใช้งาน
-  order               order[]
-  type                Type                  @relation(fields: [type_id], references: [id], map: "Requisition_type_id_fkey") // เปลี่ยนชื่อจาก types เป็น type
-  logs                RequisitionLog[]
-  updates             requisition_updates[]
 
-  @@index([type_id], map: "Requisition_type_id_fkey")
-}
 
 model Type {
   id          Int           @id @default(autoincrement())

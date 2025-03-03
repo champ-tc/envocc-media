@@ -75,7 +75,6 @@ export async function POST(req: Request) {
 
 // ดึงข้อมูล requisition log
 export async function GET(req: Request) {
-
     if (!(await checkAdminOrUserSession(req))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
@@ -85,18 +84,28 @@ export async function GET(req: Request) {
         const status = searchParams.get("status");
         const requested_groupid = searchParams.get("groupid");
 
+        // ค่าหน้า (page) และจำนวนต่อหน้า (limit) (ค่าเริ่มต้น: page = 1, limit = 10)
+        const page = parseInt(searchParams.get("page") || "1", 10);
+        const limit = parseInt(searchParams.get("limit") || "10", 10);
+        const offset = (page - 1) * limit; // คำนวณ offset
+
         if (requested_groupid) {
-            // ดึงข้อมูลตาม requested_groupid
+            // ดึงข้อมูลเฉพาะ groupid ที่ร้องขอ
             const groupLogs = await prisma.requisitionLog.findMany({
                 where: { requested_groupid },
                 include: {
                     user: { select: { title: true, firstName: true, lastName: true } },
                     requisition: { select: { requisition_name: true } },
                 },
+                skip: offset, // ใช้ offset สำหรับ pagination
+                take: limit, // จำกัดจำนวนข้อมูล
             });
 
-            // แสดงข้อมูลโดยไม่ใช้การแมปสถานะ
-            return NextResponse.json(groupLogs);
+            // นับจำนวนทั้งหมดเพื่อใช้สำหรับ frontend
+            const totalRecords = await prisma.requisitionLog.count({ where: { requested_groupid } });
+            const totalPages = Math.ceil(totalRecords / limit);
+
+            return NextResponse.json({ items: groupLogs, totalPages, totalRecords });
         }
 
         // ดึงข้อมูลตาม status (ถ้ามี) หรือดึงทั้งหมด
@@ -107,15 +116,24 @@ export async function GET(req: Request) {
                 user: { select: { title: true, firstName: true, lastName: true } },
                 status: true,
             },
-            distinct: ["requested_groupid"], // ดึงกลุ่มที่ไม่ซ้ำกัน
+            distinct: ["requested_groupid"], // ดึงเฉพาะกลุ่มที่ไม่ซ้ำ
+            skip: offset, // ใช้ offset สำหรับ pagination
+            take: limit, // จำกัดจำนวนข้อมูล
         });
 
-        // แสดงข้อมูลโดยไม่ใช้การแมปสถานะ
-        return NextResponse.json(requisitionLogs);
+        // นับจำนวนทั้งหมดเพื่อใช้กับ frontend
+        const totalRecords = await prisma.requisitionLog.count({
+            where: status ? { status } : undefined,
+        });
+        const totalPages = Math.ceil(totalRecords / limit);
+
+        return NextResponse.json({ items: requisitionLogs, totalPages, totalRecords });
     } catch (error) {
+        console.error("Error fetching requisition logs:", error);
         return NextResponse.json({ error: "Failed to fetch requisition logs" }, { status: 500 });
     }
 }
+
 
 // อัปเดตสถานะ requisition log
 export async function PUT(req: Request) {

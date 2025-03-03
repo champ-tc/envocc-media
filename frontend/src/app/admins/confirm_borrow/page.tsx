@@ -61,32 +61,34 @@ function AdminsConfirmBorrow() {
     const [borrowGroups, setBorrowGroups] = useState<BorrowGroup[]>([]);
     const [selectedGroup, setSelectedGroup] = useState<BorrowGroup | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
-
-    // Pagination logic
-    const itemsPerPage = 10;
-    const totalPages = Math.ceil(borrowGroups.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentBorrows = borrowGroups.slice(startIndex, endIndex);
-
     const [returnModalOpen, setReturnModalOpen] = useState(false);
     const [detailModalOpen, setDetailModalOpen] = useState(false);
     const [selectedReturnGroup, setSelectedReturnGroup] = useState<BorrowGroup | null>(null);
 
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const itemsPerPage = 10;
+    const startIndex = (currentPage - 1) * itemsPerPage;
+
+    const currentBorrows = borrowGroups || [];
+
     useEffect(() => {
         const fetchBorrowLogs = async () => {
             try {
-                if (!session || !statusFilter) return; // ย้ายเงื่อนไขการตรวจสอบเข้ามาในฟังก์ชัน
+                if (!session || !statusFilter) return;
+
                 const url =
                     statusFilter === "all"
-                        ? "/api/borrow_log"
-                        : `/api/borrow_log?status=${statusFilter}`;
+                        ? `/api/borrow_log?page=${currentPage}&limit=${itemsPerPage}`
+                        : `/api/borrow_log?page=${currentPage}&limit=${itemsPerPage}&status=${statusFilter}`;
+
                 const response = await fetch(url);
                 const data = await response.json();
 
-                if (Array.isArray(data)) {
-                    setBorrowGroups(data); // เก็บข้อมูลใน state
+                if (data.items && Array.isArray(data.items)) {
+                    setBorrowGroups(data.items);
+                    setTotalPages(data.totalPages); // ✅ ใช้ค่าจาก backend
                 }
             } catch (error) {
                 console.error("Error fetching borrow logs:", error);
@@ -94,7 +96,7 @@ function AdminsConfirmBorrow() {
         };
 
         fetchBorrowLogs();
-    }, [session, statusFilter]);
+    }, [session, statusFilter, currentPage]);
 
     useEffect(() => {
         if (session && statusFilter) {
@@ -543,7 +545,6 @@ function AdminsConfirmBorrow() {
                                     currentBorrows.map((group, index) => {
                                         return (
                                             <tr key={group.borrow_groupid} className="border-b text-xs">
-                                                {/* เปลี่ยนจาก group.borrow_groupid เป็นการแสดงลำดับ */}
                                                 <td className="py-3 px-4">คำขอที่ {startIndex + index + 1}</td>
                                                 <td className="py-3 px-4">
                                                     {group.user

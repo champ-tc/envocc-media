@@ -38,7 +38,6 @@ function AdminsBorrow_management() {
 
     const [borrows, setBorrows] = useState<Borrow[]>([]);
 
-    const [types, setTypes] = useState<Type[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [editModal, setEditModal] = useState(false);
     const [borrowImage, setBorrowImage] = useState<File | null>(null);
@@ -66,13 +65,6 @@ function AdminsBorrow_management() {
         createdAt: new Date().toISOString(),
     };
 
-
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
-    const totalPages = Math.ceil(borrows.length / itemsPerPage);
-
-
-
     const [isEditConfirmOpen, setIsEditConfirmOpen] = useState(false);
     const [selectedType, setSelectedType] = useState<Type | null>(null);
 
@@ -92,34 +84,73 @@ function AdminsBorrow_management() {
 
 
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+    const [totalPages, setTotalPages] = useState(1); // ✅ ใช้ State รองรับ API
+    const [totalRecords, setTotalRecords] = useState(0); // ✅ เพิ่ม State สำหรับ totalRecords
+
 
     useEffect(() => {
         fetchBorrows();
-        fetchTypes();
-    }, []);
+    }, [currentPage]);
+
 
 
     const fetchBorrows = async () => {
         try {
-            const response = await axios.get('/api/borrow');
-            setBorrows(response.data); // setBorrows คือตัวจัดการ state ของข้อมูล
+            const response = await axios.get(`/api/borrow?page=${currentPage}&limit=${itemsPerPage}`);
+
+            if (response.status === 200) {
+                setBorrows(response.data.items || []);
+                setTotalPages(response.data.totalPages);
+                setTotalRecords(response.data.totalRecords);
+            }
         } catch (error) {
-            console.error("Error fetching borrows:", error);
-            setAlertMessage("เกิดข้อผิดพลาดในการดึงข้อมูล");
-            setAlertType("error");
+            console.error("Error fetching borrows:");
         }
     };
 
 
+
+    const startIndex = (currentPage - 1) * itemsPerPage + 1;
+    const endIndex = Math.min(startIndex + borrows.length - 1, totalRecords);
+    const paginatedBorrows = borrows;
+
+
+    const handlePageChange = (page: number) => setCurrentPage(page);
+    const goToPreviousPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+    const goToNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+
+
+    const [types, setTypes] = useState<Type[]>([]);
+    const [isLoadingTypes, setIsLoadingTypes] = useState<boolean>(true); // เพิ่ม state โหลดข้อมูล
+    
 
     const fetchTypes = async () => {
         try {
-            const response = await axios.get('/api/type');
-            setTypes(response.data);
+            const response = await axios.get("/api/type");
+            if (response.status === 200 && response.data.items && Array.isArray(response.data.items)) {
+                setTypes(response.data.items);
+            } else {
+                setTypes([]);
+            }
         } catch (error) {
-            console.error('Error fetching types:', error);
+            console.error("Error fetching types:", error);
+            setTypes([]);
+        } finally {
+            setIsLoadingTypes(false);
         }
     };
+    
+
+    useEffect(() => {
+        fetchTypes();
+    }, []);
+    
+
+
+
+
 
     if (isLoading) {
         return (
@@ -170,10 +201,10 @@ function AdminsBorrow_management() {
         });
         setBorrowImage(null); // รีเซ็ตภาพ
     };
-    
+
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
-    
+
         // ตรวจสอบฟิลด์ที่จำเป็นต้องกรอก
         if (!newBorrow.borrow_name || !newBorrow.unit || newBorrow.type_id === 0 || newBorrow.quantity === 0) {
             setAlertMessage("กรุณากรอกข้อมูลให้ครบถ้วน");
@@ -181,14 +212,14 @@ function AdminsBorrow_management() {
             setTimeout(() => setAlertMessage(null), 3000);
             return;
         }
-    
+
         if (!borrowImage) {
             setAlertMessage("กรุณาเลือกไฟล์รูปภาพ");
             setAlertType("error");
             setTimeout(() => setAlertMessage(null), 3000);
             return;
         }
-    
+
         const maxSize = 10 * 1024 * 1024; // ขนาดสูงสุด 10MB
         if (borrowImage.size > maxSize) {
             setAlertMessage("ไฟล์มีขนาดเกิน 10MB");
@@ -196,7 +227,7 @@ function AdminsBorrow_management() {
             setTimeout(() => setAlertMessage(null), 3000);
             return;
         }
-    
+
         const formData = new FormData();
         formData.append("borrow_name", newBorrow.borrow_name);
         formData.append("unit", newBorrow.unit);
@@ -205,12 +236,12 @@ function AdminsBorrow_management() {
         formData.append("is_borro_restricted", String(newBorrow.is_borro_restricted));
         formData.append("description", newBorrow.description || "");
         formData.append("file", borrowImage);
-    
+
         try {
             const response = await axios.post("/api/borrow", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
-    
+
             if (response.status === 200) {
                 await fetchBorrows(); // รีโหลดข้อมูล
                 setShowModal(false); // ปิด Modal
@@ -218,7 +249,6 @@ function AdminsBorrow_management() {
                 setAlertType("success");
             }
         } catch (error) {
-            console.error("Error adding borrow:", error);
             setAlertMessage("เกิดข้อผิดพลาดในการเพิ่มข้อมูล");
             setAlertType("error");
         } finally {
@@ -229,7 +259,7 @@ function AdminsBorrow_management() {
             }, 3000);
         }
     };
-    
+
 
 
 
@@ -258,13 +288,15 @@ function AdminsBorrow_management() {
     };
 
 
-
-
-
     const openEnableConfirm = (id: number) => {
         setSelectedId(id); // เก็บ ID ของรายการ
         setIsEnableConfirmOpen(true); // เปิด Modal ยืนยัน
     };
+
+    const openDeleteConfirm = (id: number) => {
+        setSelectedId(id); // กำหนด ID ที่จะปิดการใช้งาน
+        setIsDeleteConfirmOpen(true); // เปิด Modal ยืนยันการปิด
+    };  
 
 
     const handleEditSubmit = async (e: React.FormEvent) => {
@@ -320,7 +352,6 @@ function AdminsBorrow_management() {
                 setAlertType("success");
             }
         } catch (error) {
-            console.error("Error editing borrow:", error);
             setAlertMessage("เกิดข้อผิดพลาดในการแก้ไขข้อมูล");
             setAlertType("error");
         } finally {
@@ -341,7 +372,6 @@ function AdminsBorrow_management() {
             setAlertMessage("ปิดการใช้งานสำเร็จ");
             setAlertType("success");
         } catch (error) {
-            console.error("Error disabling borrow:", error);
             setAlertMessage("เกิดข้อผิดพลาดในการปิดการใช้งาน");
             setAlertType("error");
         } finally {
@@ -362,7 +392,6 @@ function AdminsBorrow_management() {
             setAlertMessage("เปิดการใช้งานสำเร็จ");
             setAlertType("success");
         } catch (error) {
-            console.error("Error enabling borrow:", error);
             setAlertMessage("เกิดข้อผิดพลาดในการเปิดการใช้งาน");
             setAlertType("error");
         } finally {
@@ -374,17 +403,6 @@ function AdminsBorrow_management() {
     };
 
 
-
-
-
-
-    const handlePageChange = (page: number) => setCurrentPage(page);
-    const goToPreviousPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
-    const goToNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const paginatedBorrows = borrows.slice(startIndex, endIndex);
 
     if (status === "loading") return <p>Loading...</p>;
 
@@ -414,9 +432,9 @@ function AdminsBorrow_management() {
                                 </tr>
                             </thead>
 
-                            {/* Table Body */}
+
                             <tbody className="text-gray-700 text-sm">
-                                {paginatedBorrows.length > 0 ? (
+                                {Array.isArray(paginatedBorrows) && paginatedBorrows.length > 0 ? (
                                     paginatedBorrows.map((borrow) => (
                                         <tr key={borrow.id}>
                                             <td className="px-4 py-2 border">
@@ -433,7 +451,11 @@ function AdminsBorrow_management() {
                                             </td>
                                             <td className="px-4 py-2 border">{borrow.borrow_name}</td>
                                             <td className="px-4 py-2 border">{borrow.unit}</td>
-                                            <td className="px-4 py-2 border">{types.find((type) => type.id === borrow.type_id)?.name || '-'}</td>
+                                            <td className="px-4 py-2 border">
+                                                {Array.isArray(types) && types.length > 0
+                                                    ? types.find((type) => type.id === borrow.type_id)?.name || '-'
+                                                    : 'กำลังโหลด...'}
+                                            </td>
                                             <td className="px-4 py-2 border">{borrow.quantity}</td>
                                             <td className="px-4 py-2 border">{borrow.description || '-'}</td>
                                             <td className="px-4 py-2 border">{borrow.is_borro_restricted ? "ห้ามเบิก" : "เบิกได้"}</td>
@@ -442,29 +464,20 @@ function AdminsBorrow_management() {
                                                     onClick={() => openEditModal(borrow)}
                                                     className="mb-4 py-2 px-2 mr-2 rounded-md transition"
                                                 >
-                                                    <img
-                                                        src="/images/edit.png"
-                                                        alt="Edit Icon"
-                                                        className="h-6 w-6"
-                                                    />
+                                                    <img src="/images/edit.png" alt="Edit Icon" className="h-6 w-6" />
                                                 </button>
                                                 {borrow.status === 1 ? (
                                                     <button
-                                                        onClick={() => {
-                                                            setSelectedId(borrow.id); // กำหนด ID ของรายการ
-                                                            setIsDeleteConfirmOpen(true); // เปิด Modal ยืนยันปิดการใช้งาน
-                                                        }}
+                                                        onClick={() => openDeleteConfirm(borrow.id)}
                                                         className="mb-4 py-2 px-2 mr-2 rounded-md transition"
                                                         title="ปิดใช้งาน"
                                                     >
                                                         <img src="/images/turn-on.png" alt="Turn Off Icon" className="h-6 w-6" />
                                                     </button>
+
                                                 ) : (
                                                     <button
-                                                        onClick={() => {
-                                                            setSelectedId(borrow.id); // กำหนด ID ของรายการ
-                                                            setIsEnableConfirmOpen(true); // เปิด Modal ยืนยันเปิดการใช้งาน
-                                                        }}
+                                                        onClick={() => openEnableConfirm(borrow.id)}
                                                         className="mb-4 py-2 px-2 mr-2 rounded-md transition"
                                                         title="เปิดใช้งาน"
                                                     >
@@ -480,13 +493,15 @@ function AdminsBorrow_management() {
                                     </tr>
                                 )}
                             </tbody>
+
                         </table>
 
 
                         <div className="flex items-center justify-between mt-6">
                             <span className="text-sm text-gray-600">
-                                รายการที่ {startIndex + 1} ถึง {Math.min(endIndex, borrows.length)} จาก {borrows.length} รายการ
+                                รายการที่ {totalRecords === 0 ? 0 : startIndex + 1} ถึง {endIndex} จาก {totalRecords} รายการ
                             </span>
+
                             <div className="flex space-x-2">
                                 <button
                                     onClick={goToPreviousPage}
@@ -688,19 +703,24 @@ function AdminsBorrow_management() {
                                                 <label className="block text-gray-700 font-medium mb-1">ประเภท</label>
                                                 <select
                                                     value={newBorrow.type_id}
-                                                    onChange={(e) =>
-                                                        setNewBorrow({ ...newBorrow, type_id: Number(e.target.value) })
-                                                    }
+                                                    onChange={(e) => setNewBorrow({ ...newBorrow, type_id: Number(e.target.value) })}
                                                     className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
                                                     required
                                                 >
                                                     <option value="">เลือกประเภท</option>
-                                                    {types.map((type) => (
-                                                        <option key={type.id} value={type.id}>
-                                                            {type.name}
-                                                        </option>
-                                                    ))}
+                                                    {Array.isArray(types) && types.length > 0 ? (
+                                                        types.map((type) => (  // ✅ ใช้ types ตรงๆ ได้เลย
+                                                            <option key={type.id} value={type.id}>
+                                                                {type.name}
+                                                            </option>
+                                                        ))
+                                                    ) : (
+                                                        <option disabled>กำลังโหลด...</option>
+                                                    )}
+
                                                 </select>
+
+
                                             </div>
                                         </div>
                                         <div>
@@ -760,10 +780,10 @@ function AdminsBorrow_management() {
 
                         {isDeleteConfirmOpen && (
                             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 backdrop-blur-sm">
-                            <div className="relative bg-white p-8 rounded-2xl shadow-2xl w-86 h-80 max-w-5xl text-center border-2 border-orange-500">
-                                <div className="text-red-500 mb-4">
-                                    <img src="/images/alert.png" alt="Confirm Icon" className="h-40 w-40 mx-auto" />
-                                </div>
+                                <div className="relative bg-white p-8 rounded-2xl shadow-2xl w-86 h-80 max-w-5xl text-center border-2 border-orange-500">
+                                    <div className="text-red-500 mb-4">
+                                        <img src="/images/alert.png" alt="Confirm Icon" className="h-40 w-40 mx-auto" />
+                                    </div>
                                     <h2 className="text-lg font-semibold mb-4">คุณต้องการปิดการใช้งานรายการนี้หรือไม่?</h2>
                                     <div className="flex justify-center space-x-4">
                                         <button

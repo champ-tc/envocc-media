@@ -91,11 +91,16 @@ export async function POST(request: Request) {
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
-        const status = searchParams.get('status');
-        const groupid = searchParams.get('groupid');
+        const status = searchParams.get("status");
+        const groupid = searchParams.get("groupid");
+
+        // ค่าหน้า (page) และจำนวนต่อหน้า (limit) (ค่าเริ่มต้น: page = 1, limit = 10)
+        const page = parseInt(searchParams.get("page") || "1", 10);
+        const limit = parseInt(searchParams.get("limit") || "10", 10);
+        const offset = (page - 1) * limit;
 
         if (groupid) {
-            // กรณีดึง logs เฉพาะ groupid
+            // ดึง logs ตาม groupid
             const groupLogs = await prisma.borrowLog.findMany({
                 where: { borrow_groupid: groupid },
                 select: {
@@ -107,12 +112,21 @@ export async function GET(req: Request) {
                     approved_quantity: true,
                     status: true,
                 },
+                skip: offset,
+                take: limit,
             });
 
-            return NextResponse.json(groupLogs);
+            // นับจำนวนข้อมูลทั้งหมด
+            const totalRecords = await prisma.borrowLog.count({
+                where: { borrow_groupid: groupid },
+            });
+
+            const totalPages = Math.ceil(totalRecords / limit);
+
+            return NextResponse.json({ items: groupLogs, totalPages, totalRecords });
         }
 
-        // กรณีดึงข้อมูลทั้งหมด หรือกรองด้วย status
+        // ดึงข้อมูล borrow logs ทั้งหมด หรือกรองตาม status
         const borrowLogs = await prisma.borrowLog.findMany({
             where: status ? { status } : undefined,
             select: {
@@ -121,12 +135,21 @@ export async function GET(req: Request) {
                 status: true,
                 actual_return_date: true,
             },
-            distinct: ['borrow_groupid'],
+            distinct: ["borrow_groupid"],
+            skip: offset,
+            take: limit,
         });
 
-        return NextResponse.json(borrowLogs);
+        // นับจำนวนทั้งหมด
+        const totalRecords = await prisma.borrowLog.count({
+            where: status ? { status } : undefined,
+        });
+
+        const totalPages = Math.ceil(totalRecords / limit);
+
+        return NextResponse.json({ items: borrowLogs, totalPages, totalRecords });
     } catch (error) {
-        console.error('Error fetching borrow logs:', error);
-        return NextResponse.json({ error: 'Failed to fetch borrow logs' }, { status: 500 });
+        console.error("Error fetching borrow logs:", error);
+        return NextResponse.json({ error: "Failed to fetch borrow logs" }, { status: 500 });
     }
 }

@@ -63,8 +63,24 @@ async function updateRequisitionDetails(id: number, request: Request) {
         },
     });
 
+    // ตรวจสอบจำนวนที่เปลี่ยนแปลง
+    const addedQuantity = quantity - existingRequisition.quantity;
+    const updateType = addedQuantity > 0 ? "increase" : addedQuantity < 0 ? "decrease" : "no change";
+
+    if (addedQuantity !== 0) {
+        await prisma.requisition_updates.create({
+            data: {
+                requisitionId: id,
+                addedQuantity: addedQuantity,
+                updateType: updateType,
+                remarks: "Updated via requisition edit",
+            },
+        });
+    }
+
     return NextResponse.json(updatedRequisition);
 }
+
 
 // ฟังก์ชันเปลี่ยนสถานะ requisition
 async function updateRequisitionStatus(id: number, request: Request) {
@@ -111,3 +127,4 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
         return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
     }
 }
+

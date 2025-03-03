@@ -21,34 +21,49 @@ interface Borrow {
 function AdminsBorrow() {
     const { session, isLoading } = useAuthCheck("admin");
     const router = useRouter();
+    // const [borrows, setBorrows] = useState<Borrow[]>([]);
+    // const [searchQuery, setSearchQuery] = useState("");
+
+    // const [filterType, setFilterType] = useState("");
+
+    // const [currentPage, setCurrentPage] = useState(1);
+    // const [totalPages, setTotalPages] = useState(1);
+    // const itemsPerPage = 10;
+
     const [borrows, setBorrows] = useState<Borrow[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [filterType, setFilterType] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalRecords, setTotalRecords] = useState(0); // ✅ ใช้ค่าจาก backend
     const itemsPerPage = 10;
 
     useEffect(() => {
         const fetchBorrows = async () => {
             try {
-                const response = await fetch("/api/borrows");
+                const response = await fetch(`/api/borrows?page=${currentPage}&limit=${itemsPerPage}`);
                 const data = await response.json();
 
-                if (Array.isArray(data)) {
-                    setBorrows(data);
+                if (data.items && Array.isArray(data.items)) {
+                    setBorrows(data.items);
+                    setTotalPages(data.totalPages);
+                    setTotalRecords(data.totalRecords); // ✅ อัปเดต totalRecords
                 } else {
-                    console.error("API did not return an array:", data);
+                    console.error("API did not return expected data:", data);
                     setBorrows([]);
+                    setTotalRecords(0);
                 }
             } catch (error) {
                 console.error("Error fetching borrows:", error);
                 setBorrows([]);
+                setTotalRecords(0);
             }
         };
 
         if (session) {
             fetchBorrows();
         }
-    }, [session]);
+    }, [session, currentPage]);
 
     if (isLoading) {
         return (
@@ -96,22 +111,22 @@ function AdminsBorrow() {
         })
         : [];
 
-    const totalPages = Math.ceil(filteredBorrows.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentBorrows = filteredBorrows.slice(startIndex, endIndex);
 
-    const handlePageChange = (page: number) => {
-        setCurrentPage(page);
-    };
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = Math.min(startIndex + itemsPerPage, totalRecords); // ✅ ใช้ totalRecords ที่มาจาก backend
+        const currentBorrows = borrows || []; // ✅ ตรวจสอบให้แน่ใจว่า borrows มีค่าก่อนใช้
 
-    const goToPreviousPage = () => {
-        if (currentPage > 1) setCurrentPage(currentPage - 1);
-    };
-
-    const goToNextPage = () => {
-        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-    };
+        const handlePageChange = (page: number) => {
+            setCurrentPage(page);
+        };
+    
+        const goToPreviousPage = () => {
+            if (currentPage > 1) setCurrentPage(currentPage - 1);
+        };
+    
+        const goToNextPage = () => {
+            if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+        };
 
 
     return (
@@ -192,7 +207,7 @@ function AdminsBorrow() {
 
                         <div className="flex items-center justify-between mt-6">
                             <span className="text-sm text-gray-600">
-                                รายการที่ {startIndex + 1} ถึง {Math.min(endIndex, filteredBorrows.length)} จาก {filteredBorrows.length} รายการ
+                                รายการที่ {totalRecords === 0 ? 0 : startIndex + 1} ถึง {totalRecords === 0 ? 0 : endIndex} จาก {totalRecords} รายการ
                             </span>
                             <div className="flex space-x-2">
                                 <button

@@ -59,36 +59,34 @@ function ConfirmRequisition() {
 
 
     const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
     const itemsPerPage = 10;
-    const totalPages = Math.ceil(requisitionGroups.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentRequisitions = requisitionGroups.slice(startIndex, endIndex);
-
-
-
-
 
     useEffect(() => {
         const fetchRequisitionLogs = async () => {
             try {
-                if (!statusFilter) return; // หากยังไม่ได้เลือกสถานะ ข้ามไปเลย
-                const url =
-                    statusFilter === "all"
-                        ? "/api/requisition_log"
-                        : `/api/requisition_log?status=${statusFilter}`;
+                if (!statusFilter) return;
+
+                const url = statusFilter === "all"
+                    ? `/api/requisition_log?page=${currentPage}&limit=${itemsPerPage}`
+                    : `/api/requisition_log?page=${currentPage}&limit=${itemsPerPage}&status=${statusFilter}`;
+
                 const response = await axios.get(url);
 
-                if (response.status === 200 && Array.isArray(response.data)) {
-                    setRequisitionGroups(response.data); // เก็บข้อมูลใน state
+                if (response.status === 200 && response.data.items) {
+                    setRequisitionGroups(response.data.items);
+                    setTotalPages(response.data.totalPages);
                 }
             } catch (error) {
-                console.error("Error fetching requisition logs:");
+                console.error("Error fetching requisition logs:", error);
             }
         };
 
         fetchRequisitionLogs();
-    }, [statusFilter]);
+    }, [statusFilter, currentPage]);
+
+
+
 
 
     if (isLoading) {
@@ -250,6 +248,8 @@ function ConfirmRequisition() {
     };
 
 
+    const startIndex = (currentPage - 1) * itemsPerPage;
+
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
     };
@@ -290,7 +290,7 @@ function ConfirmRequisition() {
                     </div>
 
                     {!statusFilter ? (
-                        <h1 className="text-2xl font-bold mb-6 text-center">กรุณาเลือกสถานะเพื่อตรวจสอบข้อมูล</h1>
+                        <p className="text-center text-gray-500">กรุณาเลือกสถานะเพื่อตรวจสอบข้อมูล</p>
                     ) : (
                         <table className="w-full border-collapse bg-white shadow rounded-lg overflow-hidden">
                             <thead>

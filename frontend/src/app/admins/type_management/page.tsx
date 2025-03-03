@@ -56,31 +56,59 @@ function AdminsType_management() {
     const [selectedType, setSelectedType] = useState<{ id: number; name: string; description: string } | null>(null); // ข้อมูลที่เลือก
     const [selectedId, setSelectedId] = useState<number | null>(null); // ID ของข้อมูลที่เลือกสำหรับการลบ
 
-    // การจัดการการแบ่งหน้า (Pagination)
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10; // จำนวนรายการต่อหน้า
-    const totalPages = Math.ceil(types.length / itemsPerPage); // จำนวนหน้าทั้งหมด
-    const startIndex = (currentPage - 1) * itemsPerPage; // ดัชนีเริ่มต้นของรายการในหน้าปัจจุบัน
-    const endIndex = startIndex + itemsPerPage; // ดัชนีสิ้นสุดของรายการในหน้าปัจจุบัน
-    const currentTypes = types.slice(startIndex, endIndex); // รายการที่แสดงในหน้าปัจจุบัน
 
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalRecords, setTotalRecords] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     useEffect(() => {
         if (!isLoading) {
             fetchTypes();
         }
-    }, [isLoading]);
+    }, [isLoading, currentPage]);
 
     const fetchTypes = async () => {
         try {
-            const response = await axios.get("/api/type");
+            const response = await axios.get(`/api/type?page=${currentPage}&limit=${itemsPerPage}`);
+
             if (response.status === 200) {
-                setTypes(response.data || []);
+                setTypes(response.data.items || []);
+                setTotalPages(response.data.totalPages);
+                setTotalRecords(response.data.totalRecords);
             }
         } catch (error) {
-            console.error("Failed to fetch types:", error);
+            console.error("Failed to fetch types:");
         }
     };
+
+
+
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentTypes = types.slice(startIndex, endIndex);
+
+    const handlePageChange = (page: number) => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
+    };
+
+
+    const goToPreviousPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
+    const goToNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
+
+
 
     if (isLoading) {
         return (
@@ -215,18 +243,6 @@ function AdminsType_management() {
         }, 3000);
     };
 
-    const handlePageChange = (page: number) => {
-        setCurrentPage(page);
-    };
-
-    const goToPreviousPage = () => {
-        if (currentPage > 1) setCurrentPage(currentPage - 1);
-    };
-
-    const goToNextPage = () => {
-        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-    };
-
     return (
         <div className="flex min-h-screen bg-gray-50">
             <Sidebar />
@@ -251,37 +267,21 @@ function AdminsType_management() {
                                         </tr>
                                     </thead>
                                     <tbody className="text-gray-700 text-sm">
-                                        {currentTypes.length > 0 ? (
-                                            currentTypes.map(type => (
+                                        {types.length > 0 ? (
+                                            types.map(type => (
                                                 <tr key={type.id} className="hover:bg-gray-100 text-sm">
                                                     <td className="px-4 py-2 border-b">{type.name}</td>
                                                     <td className="px-4 py-2 border-b">{type.description}</td>
                                                     <td className="px-4 py-2 border-b">
-                                                        {type.createdAt ? new Date(String(type.createdAt)).toLocaleDateString() : 'ไม่ทราบวันที่'}
+                                                        {type.createdAt ? new Date(type.createdAt).toLocaleDateString() : "ไม่ทราบวันที่"}
                                                     </td>
-
                                                     <td className="px-4 py-2 border-b">
-                                                        <button
-                                                            onClick={() => openEditConfirm(type)}
-                                                            className="mb-4 py-2 px-2 mr-2 rounded-md transition">
-                                                            <img
-                                                                src="/images/edit.png"
-                                                                alt="Edit Icon"
-                                                                className="h-6 w-6"
-                                                            />
+                                                        <button onClick={() => openEditConfirm(type)} className="mb-4 py-2 px-2 mr-2 rounded-md">
+                                                            <img src="/images/edit.png" alt="Edit Icon" className="h-6 w-6" />
                                                         </button>
-
-                                                        <button
-                                                            onClick={() => openDeleteConfirm(type.id)}
-                                                            className="mb-4  py-2 px-2 rounded-md htransition"
-                                                        >
-                                                            <img
-                                                                src="/images/delete.png"
-                                                                alt="Success Icon"
-                                                                className="h-6 w-6"
-                                                            />
+                                                        <button onClick={() => openDeleteConfirm(type.id)} className="mb-4 py-2 px-2 rounded-md">
+                                                            <img src="/images/delete.png" alt="Delete Icon" className="h-6 w-6" />
                                                         </button>
-
                                                     </td>
                                                 </tr>
                                             ))
@@ -294,7 +294,9 @@ function AdminsType_management() {
                                 </table>
 
                                 <div className="flex items-center justify-between mt-6">
-                                    <span className="text-sm text-gray-600">รายการที่ {startIndex + 1} ถึง {Math.min(endIndex, types.length)} จาก {types.length} รายการ</span>
+                                    <span className="text-sm text-gray-600">
+                                        รายการที่ {(currentPage - 1) * itemsPerPage + 1} ถึง {Math.min(currentPage * itemsPerPage, totalRecords)} จาก {totalRecords} รายการ
+                                    </span>
                                     <div className="flex space-x-2">
                                         <button
                                             onClick={goToPreviousPage}
