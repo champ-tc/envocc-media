@@ -9,48 +9,52 @@ async function checkAdminOrUserSession(request: Request): Promise<boolean> {
 }
 
 export async function POST(request: Request) {
-
     if (!(await checkAdminOrUserSession(request))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     try {
+        const {
+            userId,
+            orders,
+            deliveryMethod,
+            address,
+            returnDate,
+            usageReasonId,
+            customUsageReason,
+        } = await request.json();
 
-        const { userId, orders, deliveryMethod, address, returnDate } = await request.json();
-
-        if (!userId || !orders || !returnDate) {
+        // Validation
+        if (!userId || !orders || !returnDate || usageReasonId === null || usageReasonId === undefined) {
             return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
         }
 
-        // ตรวจสอบว่า userId มีอยู่ในระบบ
         const userExists = await prisma.user.findUnique({ where: { id: userId } });
         if (!userExists) {
             return NextResponse.json({ message: "User does not exist" }, { status: 400 });
         }
 
-        // ตรวจสอบรูปแบบของวันที่คืน
         const parsedReturnDate = new Date(returnDate);
         if (isNaN(parsedReturnDate.getTime())) {
             return NextResponse.json({ message: "Invalid return date format" }, { status: 400 });
         }
 
-        // สร้าง group ID ใหม่
         const newGroupId = uuidv4();
 
-        // สร้างข้อมูล borrow logs
         const borrowLogs = orders.map((order: { borrowId: number; quantity: number }) => ({
             borrow_id: order.borrowId,
             user_id: userId,
             quantity: order.quantity,
             borrow_groupid: newGroupId,
-            return_due_date: parsedReturnDate, // ใช้วันที่ที่จัดรูปแบบแล้ว
+            return_due_date: parsedReturnDate,
             borrow_date: new Date(),
             status: "Pending",
             delivery_method: deliveryMethod,
             delivery_address: deliveryMethod === "delivery" ? address : null,
+            usageReason: usageReasonId,
+            customUsageReason: usageReasonId === 0 ? customUsageReason : null,
         }));
 
-        // ใช้ transaction เพื่อสร้าง borrow log และลบข้อมูลจากตาราง order
         await prisma.$transaction([
             prisma.borrowLog.createMany({ data: borrowLogs }),
             prisma.order.deleteMany({
@@ -72,3 +76,4 @@ export async function POST(request: Request) {
         );
     }
 }
+

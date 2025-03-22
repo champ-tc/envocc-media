@@ -56,6 +56,71 @@ export async function POST(req: Request) {
         return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
     }
 }
+// export async function POST(req: Request) {
+//     if (!(await checkAdminOrUserSession(req))) {
+//         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+//     }
+
+//     try {
+//         const {
+//             userId,
+//             requisitionId,
+//             borrowId,
+//             requisition_type,
+//             quantity,
+//             usageReason, // ฟิลด์ใหม่
+//             customUsageReason, // ฟิลด์ใหม่
+//         } = await req.json();
+
+//         const date = new Date();
+
+//         // ตรวจสอบ input ที่จำเป็น
+//         if (!userId || !quantity || !requisition_type || (!requisitionId && !borrowId)) {
+//             return NextResponse.json({ message: "Invalid input" }, { status: 400 });
+//         }
+
+//         // ถ้าเลือก "อื่นๆ" ต้องมีค่าจาก customUsageReason
+//         const finalUsageReason =
+//             usageReason === "อื่นๆ" ? customUsageReason?.trim() || null : usageReason;
+
+//         if (!finalUsageReason) {
+//             return NextResponse.json({ message: "Invalid usage reason" }, { status: 400 });
+//         }
+
+//         // ตรวจสอบ Borrow (เฉพาะกรณี requisition_type เป็นการยืม)
+//         if (requisition_type === 2 && borrowId) {
+//             const borrow = await prisma.borrow.findUnique({ where: { id: borrowId } });
+
+//             if (!borrow) {
+//                 return NextResponse.json({ message: "Borrow not found" }, { status: 404 });
+//             }
+
+//             // ตรวจสอบว่าสินค้าคงเหลือเพียงพอหรือไม่
+//             if (quantity > borrow.quantity) {
+//                 return NextResponse.json({ message: "Not enough stock available" }, { status: 400 });
+//             }
+//         }
+
+//         // สร้างคำสั่งซื้อในตาราง Order
+//         const order = await prisma.order.create({
+//             data: {
+//                 userId,
+//                 requisitionId: requisitionId || null,
+//                 borrowId: borrowId || null,
+//                 requisition_type,
+//                 quantity,
+//                 date,
+//                 usageReason: finalUsageReason, // เพิ่มฟิลด์นี้
+//             },
+//         });
+
+//         return NextResponse.json(order);
+//     } catch (error) {
+//         console.error("Error adding order:", error);
+//         return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+//     }
+// }
+
 
 
 

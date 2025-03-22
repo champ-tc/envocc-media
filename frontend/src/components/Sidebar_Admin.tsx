@@ -26,7 +26,6 @@ const Sidebar = () => {
 
     return (
         <>
-            {/* Hamburger Icon for mobile view */}
             <div className="lg:hidden fixed top-4 left-4 z-50">
                 <button onClick={() => setIsOpen(!isOpen)} aria-label="Toggle Menu">
                     <img src="/images/hamburger.png" alt="menu" className="h-8 w-8" />
@@ -35,9 +34,10 @@ const Sidebar = () => {
 
             {/* Sidebar */}
             <div
-                className={`fixed top-0 left-0 h-screen w-52 bg-gradient-to-r from-violet-900 to-violet-900 text-white shadow-lg z-40 transform ${
+                className={`fixed top-0 left-0 h-screen w-52 bg-[#8c63f4] text-white shadow-lg z-40 transform ${
                     isOpen ? 'translate-x-0' : '-translate-x-full'
                 } lg:translate-x-0 transition-transform duration-300`}
+                
             >
                 <div className="p-4 flex justify-center">
                     <img src="/images/icon_media.png" alt="icon" className="h-10" />
@@ -52,7 +52,7 @@ const Sidebar = () => {
                                         activePath.includes('/admins/type_management') ||
                                         activePath.includes('/admins/media_management') ||
                                         activePath.includes('/admins/borrow_management') ||
-                                        activePath.includes('/admins/imagse') ? 'bg-orange-400' : 'hover:bg-orange-400'
+                                        activePath.includes('/admins/imagse') ? 'bg-[#a886ff]' : 'hover:bg-[#a886ff]'
                                     }`}
                                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                 >
@@ -62,28 +62,28 @@ const Sidebar = () => {
                                 {isDropdownOpen && (
                                     <ul className="ml-8 space-y-2">
                                         <li className={`p-2 rounded-lg transition-colors duration-300 flex items-center ${
-                                            activePath === '/admins/type_management' ? 'bg-orange-400' : 'hover:bg-orange-400'
+                                            activePath === '/admins/type_management' ? 'bg-[#a886ff]' : 'hover:bg-[#a886ff]'
                                         }`}>
                                             <Link href="/admins/type_management" className="flex items-center text-white w-full">
                                                 <span>จัดการประเภท</span>
                                             </Link>
                                         </li>
                                         <li className={`p-2 rounded-lg transition-colors duration-300 flex items-center ${
-                                            activePath === '/admins/media_management' ? 'bg-orange-400' : 'hover:bg-orange-400'
+                                            activePath === '/admins/media_management' ? 'bg-[#a886ff]' : 'hover:bg-[#a886ff]'
                                         }`}>
                                             <Link href="/admins/media_management" className="flex items-center text-white w-full">
                                                 <span>จัดการสื่อ</span>
                                             </Link>
                                         </li>
                                         <li className={`p-2 rounded-lg transition-colors duration-300 flex items-center ${
-                                            activePath === '/admins/borrow_management' ? 'bg-orange-400' : 'hover:bg-orange-400'
+                                            activePath === '/admins/borrow_management' ? 'bg-[#a886ff]' : 'hover:bg-[#a886ff]'
                                         }`}>
                                             <Link href="/admins/borrow_management" className="flex items-center text-white w-full">
                                                 <span>จัดการยืม/คืน</span>
                                             </Link>
                                         </li>
                                         <li className={`p-2 rounded-lg transition-colors duration-300 flex items-center ${
-                                            activePath === '/admins/image' ? 'bg-orange-400' : 'hover:bg-orange-400'
+                                            activePath === '/admins/image' ? 'bg-[#a886ff]' : 'hover:bg-[#a886ff]'
                                         }`}>
                                             <Link href="/admins/image" className="flex items-center text-white w-full">
                                                 <span>จัดการสื่อดาวน์โหลด</span>
@@ -96,7 +96,7 @@ const Sidebar = () => {
                             <li
                                 key={index}
                                 className={`p-2 rounded-lg transition-colors duration-300 flex items-center ${
-                                    activePath === item.href ? 'bg-orange-400' : 'hover:bg-orange-400'
+                                    activePath === item.href ? 'bg-[#a886ff]' : 'hover:bg-[#a886ff]'
                                 }`}
                             >
                                 <Link href={item.href ?? '#'} className="flex items-center text-white w-full">

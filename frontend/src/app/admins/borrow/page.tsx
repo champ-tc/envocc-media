@@ -35,7 +35,7 @@ function AdminsBorrow() {
     const [filterType, setFilterType] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const [totalRecords, setTotalRecords] = useState(0); // ✅ ใช้ค่าจาก backend
+    const [totalRecords, setTotalRecords] = useState(0);
     const itemsPerPage = 10;
 
     useEffect(() => {
@@ -47,7 +47,7 @@ function AdminsBorrow() {
                 if (data.items && Array.isArray(data.items)) {
                     setBorrows(data.items);
                     setTotalPages(data.totalPages);
-                    setTotalRecords(data.totalRecords); // ✅ อัปเดต totalRecords
+                    setTotalRecords(data.totalRecords);
                 } else {
                     console.error("API did not return expected data:", data);
                     setBorrows([]);
@@ -113,8 +113,8 @@ function AdminsBorrow() {
 
 
         const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = Math.min(startIndex + itemsPerPage, totalRecords); // ✅ ใช้ totalRecords ที่มาจาก backend
-        const currentBorrows = borrows || []; // ✅ ตรวจสอบให้แน่ใจว่า borrows มีค่าก่อนใช้
+        const endIndex = Math.min(startIndex + itemsPerPage, totalRecords);
+        const currentBorrows = borrows || [];
 
         const handlePageChange = (page: number) => {
             setCurrentPage(page);

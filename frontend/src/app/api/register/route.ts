@@ -81,9 +81,9 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("System Error:", error); // แสดง Error ในโหมดพัฒนา
-    }
+    // if (process.env.NODE_ENV === "development") {
+    //   console.error("System Error:", error); // แสดง Error ในโหมดพัฒนา
+    // }
 
     return NextResponse.json(
       { error: "เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่ภายหลัง" },

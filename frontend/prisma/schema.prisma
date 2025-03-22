@@ -29,29 +29,7 @@ model requisition {
   @@index([type_id], map: "Requisition_type_id_fkey")
 }
 
-model RequisitionLog {
-  id                      Int         @id @default(autoincrement())
-  requisition_id          Int
-  user_id                 Int
-  requested_quantity      Int
-  approved_quantity       Int?
-  stock_after_requisition Int?
-  requisition_date        DateTime    @default(now())
-  approved_by_admin_id    Int?
-  createdAt               DateTime    @default(now())
-  status                  String
-  requested_groupid       String
-  delivery_address        String?
-  delivery_method         String
-  approvedByAdmin         user?       @relation("AdminRequisitionApproval", fields: [approved_by_admin_id], references: [id])
-  requisition             requisition @relation(fields: [requisition_id], references: [id])
-  user                    user        @relation(fields: [user_id], references: [id])
 
-  @@index([approved_by_admin_id], map: "requisition_log_approved_by_admin_id_fkey")
-  @@index([requisition_id], map: "requisition_log_requisition_id_fkey")
-  @@index([user_id], map: "requisition_log_user_id_fkey")
-  @@map("requisition_log")
-}
 
 model requisition_updates {
   id            Int         @id @default(autoincrement())
@@ -99,31 +77,6 @@ model Borrow_updates {
 }
 
 
-model BorrowLog {
-  id                   Int      @id @default(autoincrement())
-  borrow_id            Int
-  user_id              Int
-  quantity             Int
-  returned_quantity    Int?
-  borrow_date          DateTime @default(now())
-  return_due_date      DateTime
-  actual_return_date   DateTime?
-  delivery_method      String   @default("self")
-  delivery_address     String?
-  borrow_groupid       String
-  approved_quantity    Int?     // Add this field for approved quantity
-  approved_by_admin_id Int?
-  createdAt            DateTime @default(now())
-  status               String   @default("pending")
-  approvedByAdmin      user?    @relation("AdminBorrowApproval", fields: [approved_by_admin_id], references: [id])
-  borrow               Borrow   @relation(fields: [borrow_id], references: [id])
-  user                 user     @relation(fields: [user_id], references: [id])
-
-  @@index([approved_by_admin_id], map: "borrow_log_approved_by_admin_id_fkey")
-  @@index([borrow_id], map: "borrow_log_borrow_id_fkey")
-  @@index([user_id], map: "borrow_log_user_id_fkey")
-  @@map("borrow_log")
-}
 
 
 
@@ -151,6 +104,69 @@ model order {
   @@index([borrowId], map: "Order_borrowId_fkey")
   @@index([requisitionId], map: "Order_requisitionId_fkey")
 }
+
+
+model Reason {
+  id          Int     @id @default(autoincrement())
+  reason_name String  @unique
+
+  @@map("reason")
+}
+
+model RequisitionLog {
+  id                      Int         @id @default(autoincrement())
+  requisition_id          Int
+  user_id                 Int
+  requested_quantity      Int
+  approved_quantity       Int?
+  stock_after_requisition Int?
+  requisition_date        DateTime    @default(now())
+  approved_by_admin_id    Int?
+  createdAt               DateTime    @default(now())
+  status                  String
+  requested_groupid       String
+  delivery_address        String?
+  delivery_method         String
+  approvedByAdmin         user?       @relation("AdminRequisitionApproval", fields: [approved_by_admin_id], references: [id])
+  requisition             requisition @relation(fields: [requisition_id], references: [id])
+  user                    user        @relation(fields: [user_id], references: [id])
+  usageReason             Int
+  customUsageReason       String?
+
+  @@index([approved_by_admin_id], map: "requisition_log_approved_by_admin_id_fkey")
+  @@index([requisition_id], map: "requisition_log_requisition_id_fkey")
+  @@index([user_id], map: "requisition_log_user_id_fkey")
+  @@map("requisition_log")
+}
+
+model BorrowLog {
+  id                   Int      @id @default(autoincrement())
+  borrow_id            Int
+  user_id              Int
+  quantity             Int
+  returned_quantity    Int?
+  borrow_date          DateTime @default(now())
+  return_due_date      DateTime
+  actual_return_date   DateTime?
+  delivery_method      String   @default("self")
+  delivery_address     String?
+  borrow_groupid       String
+  approved_quantity    Int?
+  approved_by_admin_id Int?
+  createdAt            DateTime @default(now())
+  status               String   @default("pending")
+  approvedByAdmin      user?    @relation("AdminBorrowApproval", fields: [approved_by_admin_id], references: [id])
+  borrow               Borrow   @relation(fields: [borrow_id], references: [id])
+  user                 user     @relation(fields: [user_id], references: [id])
+  usageReason          Int
+  customUsageReason    String?
+
+  @@index([approved_by_admin_id], map: "borrow_log_approved_by_admin_id_fkey")
+  @@index([borrow_id], map: "borrow_log_borrow_id_fkey")
+  @@index([user_id], map: "borrow_log_user_id_fkey")
+  @@map("borrow_log")
+}
+
 
 
 

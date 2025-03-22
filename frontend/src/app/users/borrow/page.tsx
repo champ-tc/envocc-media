@@ -20,34 +20,46 @@ interface Borrow {
 function UsersBorrow() {
     const { session, isLoading } = useAuthCheck("user");
     const router = useRouter();
+    // const [borrows, setBorrows] = useState<Borrow[]>([]);
+    // const [searchQuery, setSearchQuery] = useState("");
+    // const [filterType, setFilterType] = useState("");
+    // const [currentPage, setCurrentPage] = useState(1);
+    // const itemsPerPage = 10;
+
     const [borrows, setBorrows] = useState<Borrow[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [filterType, setFilterType] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalRecords, setTotalRecords] = useState(0); // ✅ ใช้ค่าจาก backend
     const itemsPerPage = 10;
 
     useEffect(() => {
         const fetchBorrows = async () => {
             try {
-                const response = await fetch("/api/borrows");
+                const response = await fetch(`/api/borrows?page=${currentPage}&limit=${itemsPerPage}`);
                 const data = await response.json();
 
-                if (Array.isArray(data)) {
-                    setBorrows(data);
+                if (data.items && Array.isArray(data.items)) {
+                    setBorrows(data.items);
+                    setTotalPages(data.totalPages);
+                    setTotalRecords(data.totalRecords);
                 } else {
-                    console.error("API did not return an array:", data);
+                    console.error("API did not return expected data:", data);
                     setBorrows([]);
+                    setTotalRecords(0);
                 }
             } catch (error) {
                 console.error("Error fetching borrows:", error);
                 setBorrows([]);
+                setTotalRecords(0);
             }
         };
 
         if (session) {
             fetchBorrows();
         }
-    }, [session]);
+    }, [session, currentPage]);
 
     if (isLoading) {
         return (
@@ -95,10 +107,9 @@ function UsersBorrow() {
         })
         : [];
 
-    const totalPages = Math.ceil(filteredBorrows.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentBorrows = filteredBorrows.slice(startIndex, endIndex);
+    const endIndex = Math.min(startIndex + itemsPerPage, totalRecords);
+    const currentBorrows = borrows || [];
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);

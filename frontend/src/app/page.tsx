@@ -19,6 +19,7 @@ export default function Home() {
   const pathname = usePathname();
   const [images, setImages] = useState<ImageData[]>([]);
 
+
   useEffect(() => {
     const fetchImages = async () => {
       try {
@@ -26,6 +27,7 @@ export default function Home() {
         const data: ImageData[] = await response.json();
         const sortedData = data.sort((a, b) => new Date(b.addedDate).getTime() - new Date(a.addedDate).getTime());
         setImages(sortedData.slice(0, 3));
+
       } catch (error) {
         console.error('Error fetching images:', error);
       }

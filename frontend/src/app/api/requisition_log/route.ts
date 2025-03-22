@@ -10,22 +10,27 @@ async function checkAdminOrUserSession(request: Request): Promise<boolean> {
 
 // ใช้สำหรับ requisition_summary
 export async function POST(req: Request) {
-
     if (!(await checkAdminOrUserSession(req))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     try {
-        const { userId, orders, deliveryMethod, address } = await req.json();
+        const {
+            userId,
+            orders,
+            deliveryMethod,
+            address,
+            usageReasonId,
+            customUsageReason,
+        } = await req.json();
 
-        // ตรวจสอบ userId
+
         const userExists = await prisma.user.findUnique({ where: { id: userId } });
-        
+
         if (!userExists) {
             return NextResponse.json({ message: "User does not exist" }, { status: 400 });
         }
 
-        // ตรวจสอบ requisitionId ทั้งหมดใน orders
         const requisitionIds = orders.map((order: { requisitionId: number }) => order.requisitionId);
         const existingRequisitions = await prisma.requisition.findMany({
             where: { id: { in: requisitionIds } },
@@ -35,10 +40,8 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: "Invalid requisition IDs", requisitionIds }, { status: 400 });
         }
 
-        // สร้าง group ID ใหม่
         const newGroupId = uuidv4();
 
-        // สร้าง requisition logs
         const requisitionLogs = orders.map((order: { requisitionId: number; quantity: number }) => ({
             requisition_id: order.requisitionId,
             user_id: userId,
@@ -50,9 +53,11 @@ export async function POST(req: Request) {
             delivery_method: deliveryMethod,
             delivery_address: deliveryMethod === "delivery" ? address : null,
             requested_groupid: newGroupId,
+            usageReason: usageReasonId, // ✅ ใช้ชื่อให้ตรงกับ Prisma model
+            customUsageReason: usageReasonId === 0 ? customUsageReason : null, // ✅ ตรวจสอบเมื่อเป็น "อื่นๆ"
         }));
 
-        // ใช้ transaction เพื่อสร้าง requisition log และลบ order
+
         await prisma.$transaction([
             prisma.requisitionLog.createMany({ data: requisitionLogs }),
             prisma.order.deleteMany({
@@ -72,6 +77,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ message: "Internal Server Error", error: (error as Error).message }, { status: 500 });
     }
 }
+
 
 // ดึงข้อมูล requisition log
 export async function GET(req: Request) {
@@ -141,7 +147,7 @@ export async function PUT(req: Request) {
     if (!(await checkAdminOrUserSession(req))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
-    
+
     try {
         const { id, status } = await req.json();
 
