@@ -107,8 +107,10 @@ model order {
 
 
 model Reason {
-  id          Int     @id @default(autoincrement())
-  reason_name String  @unique
+  id              Int              @id @default(autoincrement())
+  reason_name     String           @unique
+  requisitionLogs RequisitionLog[] @relation("RequisitionUsageReason")
+  borrowLogs      BorrowLog[]      @relation("BorrowUsageReason")
 
   @@map("reason")
 }
@@ -130,8 +132,10 @@ model RequisitionLog {
   approvedByAdmin         user?       @relation("AdminRequisitionApproval", fields: [approved_by_admin_id], references: [id])
   requisition             requisition @relation(fields: [requisition_id], references: [id])
   user                    user        @relation(fields: [user_id], references: [id])
-  usageReason             Int
+  usageReason             Int         
   customUsageReason       String?
+  reason                  Reason @relation("RequisitionUsageReason", fields: [usageReason], references: [id])
+
 
   @@index([approved_by_admin_id], map: "requisition_log_approved_by_admin_id_fkey")
   @@index([requisition_id], map: "requisition_log_requisition_id_fkey")
@@ -160,6 +164,7 @@ model BorrowLog {
   user                 user     @relation(fields: [user_id], references: [id])
   usageReason          Int
   customUsageReason    String?
+  reason               Reason @relation("BorrowUsageReason", fields: [usageReason], references: [id])
 
   @@index([approved_by_admin_id], map: "borrow_log_approved_by_admin_id_fkey")
   @@index([borrow_id], map: "borrow_log_borrow_id_fkey")

@@ -12,22 +12,33 @@ import ConfirmEditModal from "@/components/ConfirmEditModal";
 interface Group {
     requested_groupid: string;
     status: string;
-    logs: Log[]; // ทำให้ logs ไม่เป็น optional หาก logs ต้องมีเสมอ
+    logs: Log[];
     user?: {
         title: string;
         firstName: string;
         lastName: string;
     };
+    reason?: {
+        id: number;
+        reason_name: string;
+    };
+    customUsageReason?: string;
 }
 
+
 interface Log {
-    id: number; // รหัสคำขอ
+    id: number;
     requisition: {
-        requisition_name: string; // ชื่อสื่อ
+        requisition_name: string;
     };
-    requested_quantity: number; // จำนวนที่ขอ
-    approved_quantity: number; // จำนวนที่อนุมัติ (ค่าเริ่มต้นเป็น 0)
+    requested_quantity: number;
+    approved_quantity: number;
+    reason?: {
+        reason_name: string;
+    };
+    customUsageReason?: string;
 }
+
 
 
 interface ApprovedGroup extends Group {
@@ -104,12 +115,18 @@ function ConfirmRequisition() {
         setApprovedModalOpen(false);
     };
 
+
     const openModal = async (group: Group, type: "pending" | "approved") => {
         try {
             const response = await fetch(`/api/requisition_log?groupid=${group.requested_groupid}`);
-            const data: Log[] = await response.json();
+            const data = await response.json();
 
-            const logs = data.map((log: Log) => ({
+            if (!Array.isArray(data.items)) {
+                console.error("Unexpected response format:", data);
+                return;
+            }
+
+            const logs = data.items.map((log: Log) => ({
                 ...log,
                 approved_quantity: log.approved_quantity ?? 0,
             }));
@@ -125,6 +142,8 @@ function ConfirmRequisition() {
             console.error("Error fetching group details:", error);
         }
     };
+
+
 
     const statusMapping: Record<string, string> = {
         Pending: "รอพิจารณา",
@@ -388,7 +407,19 @@ function ConfirmRequisition() {
                 {pendingModalOpen && selectedPendingGroup && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                         <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
-                            <h2 className="text-2xl font-bold mb-4 text-center">รายละเอียดคำขอที่รอพิจารณา</h2>
+                            <h2 className="text-2xl font-bold mb-2 text-center">รายละเอียดคำขอที่รอพิจารณา</h2>
+
+                            {selectedPendingGroup.logs.length > 0 && (
+                                <p className="text-sm text-gray-600">
+                                    เหตุผลการใช้งาน:{" "}
+                                    {selectedPendingGroup.logs[0].reason?.reason_name ||
+                                        selectedPendingGroup.logs[0].customUsageReason ||
+                                        "ไม่ระบุ"}
+                                </p>
+                            )}
+
+
+
                             <ul className="divide-y divide-gray-200">
                                 {selectedPendingGroup.logs.map((log, index) => (
                                     <li key={log.id} className="py-4">
@@ -406,9 +437,9 @@ function ConfirmRequisition() {
                                                 type="number"
                                                 min="0"
                                                 max={log.requested_quantity}
-                                                value={log.approved_quantity ?? 0} // ใช้ค่า 0 ถ้า approved_quantity เป็น null
+                                                value={log.approved_quantity ?? 0}
                                                 onChange={(e) =>
-                                                    handleQuantityChange(index, Number(e.target.value)) // แปลงค่าเป็น number
+                                                    handleQuantityChange(index, Number(e.target.value))
                                                 }
                                                 className="block w-20 px-2 py-1 border rounded-md text-gray-700 text-sm"
                                             />
@@ -416,6 +447,7 @@ function ConfirmRequisition() {
                                     </li>
                                 ))}
                             </ul>
+
                             <div className="mt-6 flex justify-between items-center space-x-4">
                                 <button
                                     onClick={handleApprove}
@@ -423,7 +455,6 @@ function ConfirmRequisition() {
                                 >
                                     อนุมัติ
                                 </button>
-
                                 <button
                                     onClick={() => handleReject(selectedPendingGroup)}
                                     className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-semibold"
@@ -440,6 +471,7 @@ function ConfirmRequisition() {
                         </div>
                     </div>
                 )}
+
 
                 {approvedModalOpen && selectedApprovedGroup && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

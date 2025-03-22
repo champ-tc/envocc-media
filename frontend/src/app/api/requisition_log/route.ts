@@ -84,6 +84,7 @@ export async function GET(req: Request) {
     if (!(await checkAdminOrUserSession(req))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
+    
 
     try {
         const { searchParams } = new URL(req.url);
@@ -102,10 +103,13 @@ export async function GET(req: Request) {
                 include: {
                     user: { select: { title: true, firstName: true, lastName: true } },
                     requisition: { select: { requisition_name: true } },
+                    reason: { select: { reason_name: true } },
                 },
-                skip: offset, // ใช้ offset สำหรับ pagination
-                take: limit, // จำกัดจำนวนข้อมูล
+                skip: offset,
+                take: limit,
             });
+            
+            
 
             // นับจำนวนทั้งหมดเพื่อใช้สำหรับ frontend
             const totalRecords = await prisma.requisitionLog.count({ where: { requested_groupid } });

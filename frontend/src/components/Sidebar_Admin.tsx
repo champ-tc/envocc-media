@@ -19,7 +19,8 @@ const Sidebar = () => {
         { href: '/admins/borrow', src: '/images/borrow.png', label: 'ยืม/คืน สื่อ' },
         { href: '/admins/confirm_borrow', src: '/images/approv_borrow.png', label: 'อนุมัติยืม/คืน สื่อ' },
         { isDropdown: true, label: 'จัดการสื่อ', src: '/images/type.png' },
-        { href: '/admins/reports', src: '/images/reports.png', label: 'รายงาน' },
+        { href: '/admins/reports_requisition', src: '/images/reports.png', label: 'รายงานการขอเบิก' },
+        { href: '/admins/reports_borrow', src: '/images/reports.png', label: 'รายงานการยืม' },
         { href: '/admins/user-management', src: '/images/user.png', label: 'จัดการผู้ใช้งาน' },
     ];
     

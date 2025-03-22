@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getToken } from 'next-auth/jwt';
+import { Prisma } from '@prisma/client';
+
 
 interface Order {
-    borrowId: string; // Borrow IDs are strings in the request
+    borrowId: string;
     quantity: number;
+    usageReason: number;
 }
+
 
 async function checkAdminSession(request: Request): Promise<boolean> {
     const token = await getToken({ req: request as any });
@@ -56,20 +60,25 @@ export async function POST(request: Request) {
         }
 
         // Create borrow logs
-        const borrowLogs = orders.map((order) => ({
-            borrow_id: Number(order.borrowId), // Ensure it's a number
-            user_id: typeof userId === "string" ? parseInt(userId) : userId, // Ensure it's a number
+        const borrowLogs: Prisma.BorrowLogCreateManyInput[] = orders.map((order) => ({
+            borrow_id: Number(order.borrowId),
+            user_id: typeof userId === "string" ? parseInt(userId) : userId,
             quantity: order.quantity,
-            borrow_groupid: borrowGroupId, // Non-null string
-            return_due_date: new Date(returnDate), // Valid Date object
-            borrow_date: new Date(), // Current date
-            status: "pending", // Default value
+            borrow_groupid: borrowGroupId,
+            return_due_date: new Date(returnDate),
+            borrow_date: new Date(),
+            status: "pending",
             delivery_method: deliveryMethod,
-            delivery_address: deliveryMethod === "delivery" ? address : null, // Nullable
+            delivery_address: deliveryMethod === "delivery" ? address : undefined,
+            usageReason: order.usageReason, // ✅ ต้องมีค่านี้เสมอ
         }));
+        
 
         // Insert logs into the database
-        await prisma.borrowLog.createMany({ data: borrowLogs });
+        await prisma.borrowLog.createMany({
+            data: borrowLogs,
+        });
+
 
         return NextResponse.json({
             message: "Borrow logs created successfully",
@@ -111,6 +120,8 @@ export async function GET(req: Request) {
                     actual_return_date: true,
                     approved_quantity: true,
                     status: true,
+                    customUsageReason: true,
+                    reason: { select: { reason_name: true } }, // ✅ ดึงชื่อเหตุผลจาก relation
                 },
                 skip: offset,
                 take: limit,

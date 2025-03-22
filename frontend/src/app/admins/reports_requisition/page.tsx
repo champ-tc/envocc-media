@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import useAuthCheck from '@/hooks/useAuthCheck';
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
@@ -8,16 +8,15 @@ import TopBar from "@/components/TopBar";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
-interface BorrowLogItem {
+interface LogItem {
     id: number;
-    quantity: number;
+    requested_quantity: number;
     approved_quantity?: number;
-    borrow_date: string;
-    actual_return_date?: string;
+    requisition_date: string;
     status: string;
-    borrow_groupid: string;
-    borrow: {
-        borrow_name: string;
+    requested_groupid: string;
+    requisition: {
+        requisition_name: string;
     };
     user: {
         title: string;
@@ -27,11 +26,11 @@ interface BorrowLogItem {
     };
 }
 
-function AdminsReports_borrows() {
+function AdminsReports_requisition() {
     const { session, isLoading } = useAuthCheck("admin");
     const router = useRouter();
 
-    const [logs, setLogs] = useState<BorrowLogItem[]>([]);
+    const [logs, setLogs] = useState<LogItem[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [totalPages, setTotalPages] = useState(1);
@@ -53,32 +52,28 @@ function AdminsReports_borrows() {
     ];
 
     const statusOptions = [
-        { key: "pending", label: "รอดำเนินการ" },
-        { key: "approved", label: "รอคืน" },
-        { key: "returned", label: "คืนแล้ว" },
-        { key: "approvedreturned", label: "คืนสำเร็จ" },
+        { key: "all", label: "ทั้งหมด" },
+        { key: "Pending", label: "รอพิจารณา" },
+        { key: "Approved", label: "อนุมัติ" },
+        { key: "NotApproved", label: "ไม่อนุมัติ" },
     ];
-
 
     const getDepartmentLabel = (value: string) => {
         return departmentOptions.find((opt) => opt.value === value)?.label || "-";
     };
 
     const getStatusLabel = (key: string) => {
-        const normalizedKey = key.trim().toLowerCase();
-        const match = statusOptions.find(
-            (opt) => opt.key.toLowerCase() === normalizedKey
-        );
-        return match?.label || "-";
+        return statusOptions.find((opt) => opt.key === key)?.label || "-";
     };
 
-
     const groupedLogs = logs.reduce((acc, log) => {
-        const groupId = log.borrow_groupid;
-        if (!acc[groupId]) acc[groupId] = [];
+        const groupId = log.requested_groupid;
+        if (!acc[groupId]) {
+            acc[groupId] = [];
+        }
         acc[groupId].push(log);
         return acc;
-    }, {} as Record<string, BorrowLogItem[]>);
+    }, {} as Record<string, LogItem[]>);
 
     const currentGroups = Object.entries(groupedLogs);
 
@@ -89,13 +84,13 @@ function AdminsReports_borrows() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await fetch(`/api/report_borrow?page=${currentPage}&limit=${itemsPerPage}`);
+                const res = await fetch(`/api/report_requisition?page=${currentPage}&limit=${itemsPerPage}`);
                 const json = await res.json();
                 setLogs(json.items || []);
                 setTotalPages(json.totalPages || 1);
                 setTotalRecords(json.totalRecords || 0);
             } catch (err) {
-                console.error("Failed to fetch borrow logs:", err);
+                console.error("Failed to fetch requisition logs:", err);
                 setLogs([]);
             }
         };
@@ -114,21 +109,29 @@ function AdminsReports_borrows() {
         const dataForExcel = currentGroups.map(([groupId, groupLogs], index) => {
             const firstLog = groupLogs[0];
 
-            const itemMap = new Map<string, { quantity: number; approved: number }>();
+            // รวมรายการที่เบิก
+            const itemMap = new Map<string, { requested: number; approved: number }>();
             groupLogs.forEach((log) => {
-                const name = log.borrow.borrow_name;
-                const qty = log.quantity;
+                const name = log.requisition.requisition_name;
+                const requested = log.requested_quantity;
                 const approved = log.approved_quantity ?? 0;
-                if (!itemMap.has(name)) itemMap.set(name, { quantity: 0, approved: 0 });
+
+                if (!itemMap.has(name)) {
+                    itemMap.set(name, { requested: 0, approved: 0 });
+                }
+
                 const current = itemMap.get(name)!;
                 itemMap.set(name, {
-                    quantity: current.quantity + qty,
+                    requested: current.requested + requested,
                     approved: current.approved + approved,
                 });
             });
 
-            const borrowText = Array.from(itemMap.entries())
-                .map(([name, { quantity, approved }]) => `${name} - ขอ ${quantity} / อนุมัติ ${approved}`)
+            const requisitionText = Array.from(itemMap.entries())
+                .map(
+                    ([name, { requested, approved }]) =>
+                        `${name} - ขอ ${requested} / อนุมัติ ${approved}`
+                )
                 .join("\n");
 
             return {
@@ -137,21 +140,19 @@ function AdminsReports_borrows() {
                     (log) => `${log.user.title}${log.user.firstName} ${log.user.lastName}`
                 ))].join(", "),
                 หน่วยงาน: getDepartmentLabel(firstLog.user.department),
-                "รายการที่ยืม": borrowText,
-                "วันที่ยืม": new Date(firstLog.borrow_date).toLocaleDateString("th-TH"),
-                "วันที่คืน": firstLog.actual_return_date
-                    ? new Date(firstLog.actual_return_date).toLocaleDateString("th-TH")
-                    : "-",
+                "รายการที่เบิก": requisitionText,
+                "วันที่เบิก": new Date(firstLog.requisition_date).toLocaleDateString("th-TH"),
                 สถานะ: getStatusLabel(firstLog.status),
             };
         });
 
         const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "BorrowReport");
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Report");
+
         const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
         const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-        saveAs(blob, `รายงานการยืม.xlsx`);
+        saveAs(blob, `รายงานการขอเบิก.xlsx`);
     };
 
     return (
@@ -161,14 +162,14 @@ function AdminsReports_borrows() {
                 <TopBar />
                 <div className="flex-1 p-4 mt-4 lg:ml-52">
                     <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8">
-                        <h2 className="text-2xl font-semibold text-gray-800 mb-4">รายงานการยืม</h2>
+                        <h2 className="text-2xl font-semibold text-gray-800 mb-4">รายงานการขอเบิก</h2>
 
                         <div className="flex justify-end mb-4">
                             <button
                                 onClick={exportToExcel}
                                 className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
                             >
-                                Export เป็น Excel
+                                Export
                             </button>
                         </div>
 
@@ -179,9 +180,8 @@ function AdminsReports_borrows() {
                                         <th className="border px-4 py-2">ลำดับ</th>
                                         <th className="border px-4 py-2">ชื่อ - นามสกุล</th>
                                         <th className="border px-4 py-2">หน่วยงาน</th>
-                                        <th className="border px-4 py-2">รายการและจำนวนที่ยืม</th>
-                                        <th className="border px-4 py-2">วันที่ยืม</th>
-                                        <th className="border px-4 py-2">วันที่คืน</th>
+                                        <th className="border px-4 py-2">รายการและจำนวนที่เบิก</th>
+                                        <th className="border px-4 py-2">วันที่เบิก</th>
                                         <th className="border px-4 py-2">สถานะ</th>
                                     </tr>
                                 </thead>
@@ -201,37 +201,31 @@ function AdminsReports_borrows() {
                                                 </td>
                                                 <td className="border px-4 py-2 text-left">
                                                     {(() => {
-                                                        const itemMap = new Map<string, { quantity: number; approved: number }>();
+                                                        const itemMap = new Map<string, { requested: number; approved: number }>();
                                                         groupLogs.forEach((log) => {
-                                                            const name = log.borrow.borrow_name;
-                                                            const quantity = log.quantity;
+                                                            const name = log.requisition.requisition_name;
+                                                            const requested = log.requested_quantity;
                                                             const approved = log.approved_quantity ?? 0;
-                                                            if (!itemMap.has(name)) itemMap.set(name, { quantity: 0, approved: 0 });
+                                                            if (!itemMap.has(name)) {
+                                                                itemMap.set(name, { requested: 0, approved: 0 });
+                                                            }
                                                             const current = itemMap.get(name)!;
                                                             itemMap.set(name, {
-                                                                quantity: current.quantity + quantity,
+                                                                requested: current.requested + requested,
                                                                 approved: current.approved + approved,
                                                             });
                                                         });
-                                                        return Array.from(itemMap.entries()).map(([name, { quantity, approved }], idx) => (
+                                                        return Array.from(itemMap.entries()).map(([name, { requested, approved }], idx) => (
                                                             <div key={idx}>
-                                                                {name} - ขอ {quantity} / อนุมัติ {approved}
+                                                                {name} - ขอ {requested} / อนุมัติ {approved}
                                                             </div>
                                                         ));
                                                     })()}
                                                 </td>
                                                 <td className="border px-4 py-2">
-                                                    {new Date(firstLog.borrow_date).toLocaleDateString("th-TH")}
+                                                    {new Date(firstLog.requisition_date).toLocaleDateString("th-TH")}
                                                 </td>
-                                                <td className="border px-4 py-2">
-                                                    {firstLog.actual_return_date
-                                                        ? new Date(firstLog.actual_return_date).toLocaleDateString("th-TH")
-                                                        : "-"}
-                                                </td>
-                                                <td className="border px-4 py-2">
-                                                    {getStatusLabel(firstLog.status)}
-                                                </td>
-
+                                                <td className="border px-4 py-2">{getStatusLabel(firstLog.status)}</td>
                                             </tr>
                                         );
                                     })}
@@ -246,6 +240,7 @@ function AdminsReports_borrows() {
                                 {Math.min(startIndex + itemsPerPage, currentGroups.length)} จาก{" "}
                                 {currentGroups.length} รายการ
                             </span>
+
                             <div className="flex space-x-2">
                                 <button
                                     onClick={goToPreviousPage}
@@ -283,4 +278,4 @@ function AdminsReports_borrows() {
     );
 }
 
-export default AdminsReports_borrows;
+export default AdminsReports_requisition;

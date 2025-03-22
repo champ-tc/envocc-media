@@ -17,28 +17,32 @@ import type { ReactDatePickerCustomHeaderProps } from "react-datepicker";
 registerLocale("th", th);
 
 
+interface BorrowLog {
+    id: number;
+    borrow: {
+        borrow_name: string;
+    };
+    quantity: number;
+    returned_quantity: number;
+    approved_quantity?: number;
+    status: string;
+    // เพิ่มให้รองรับ reason/customReason ถ้ามี
+    reason?: { reason_name: string };
+    customUsageReason?: string;
+}
+
 interface BorrowGroup {
     borrow_groupid: string;
     status: string;
-    logs: BorrowLog[]; // ต้องมีข้อมูล logs
+    logs: BorrowLog[];
     user?: {
         title: string;
         firstName: string;
         lastName: string;
     };
-    actual_return_date?: string; // สำหรับวันที่คืน
+    actual_return_date?: string;
 }
 
-interface BorrowLog {
-    id: number;
-    borrow: {
-        borrow_name: string; // ชื่อของที่ยืม
-    };
-    quantity: number; // จำนวนที่ยืม
-    returned_quantity: number; // จำนวนที่คืน
-    approved_quantity?: number; // จำนวนที่อนุมัติ (ถ้ามี)
-    status: string;
-}
 
 interface CustomInputProps {
     value?: string;
@@ -230,12 +234,15 @@ function AdminsConfirmBorrow() {
             const response = await fetch(`/api/borrow_log?groupid=${group.borrow_groupid}`);
             const data = await response.json();
 
-            setSelectedGroup({ ...group, logs: data });
+            const logs = Array.isArray(data.items) ? data.items : data; // รองรับทั้งกรณี items หรือ array ตรง
+
+            setSelectedGroup({ ...group, logs });
             setModalOpen(true);
         } catch (error) {
             console.error("Error fetching group details:", error);
         }
     };
+
 
     // Close modal
     const closeModal = () => {
@@ -259,7 +266,9 @@ function AdminsConfirmBorrow() {
             const response = await fetch(`/api/borrow_log?groupid=${group.borrow_groupid}`);
             const data = await response.json();
 
-            setSelectedReturnGroup({ ...group, logs: data });
+            const logs = Array.isArray(data.items) ? data.items : data;
+
+            setSelectedReturnGroup({ ...group, logs }); // ✅ ใช้ logs ที่เป็น array เท่านั้น
             setReturnModalOpen(true);
         } catch (error) {
             console.error("Error fetching logs:", error);
@@ -271,8 +280,10 @@ function AdminsConfirmBorrow() {
             const response = await fetch(`/api/borrow_log?groupid=${group.borrow_groupid}`);
             const data = await response.json();
 
-            if (Array.isArray(data)) {
-                setSelectedReturnGroup({ ...group, logs: data });
+            const logs = Array.isArray(data.items) ? data.items : [];
+
+            if (logs.length > 0) {
+                setSelectedReturnGroup({ ...group, logs });
                 setDetailModalOpen(true);
             } else {
                 alert('ไม่พบข้อมูล logs สำหรับคำขอนี้');
@@ -282,6 +293,7 @@ function AdminsConfirmBorrow() {
             alert('เกิดข้อผิดพลาดในการดึงข้อมูล logs');
         }
     };
+
 
 
 
@@ -626,13 +638,22 @@ function AdminsConfirmBorrow() {
                             </div>
                         </div>
                     )}
-
                 </div>
 
                 {modalOpen && selectedGroup && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                         <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
                             <h2 className="text-2xl font-bold mb-4 text-center">รายละเอียดคำขอ</h2>
+
+                            {selectedGroup.logs.length > 0 && (
+                                <p className="text-sm text-gray-600 mb-4">
+                                    เหตุผลการขอ:{" "}
+                                    {selectedGroup.logs[0].reason?.reason_name ||
+                                        selectedGroup.logs[0].customUsageReason ||
+                                        "ไม่ระบุ"}
+                                </p>
+                            )}
+
                             <ul className="divide-y divide-gray-200">
                                 {selectedGroup.logs.map((log, index) => (
                                     <li key={log.id} className="py-4">
@@ -700,7 +721,7 @@ function AdminsConfirmBorrow() {
                                                 const selectedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
                                                 const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-                                                if (selectedDate < currentDate) {
+                                                if (selectedDate > currentDate) {
                                                     showAlert("ไม่สามารถเลือกวันที่น้อยกว่าวันปัจจุบัน", "error");
                                                     return;
                                                 }
@@ -724,7 +745,7 @@ function AdminsConfirmBorrow() {
                                             />
                                         }
                                         className="datepicker-input" // เพิ่ม className สำหรับปรับแต่ง
-                                        minDate={new Date()} // ห้ามเลือกวันที่น้อยกว่าวันปัจจุบัน
+                                        maxDate={new Date()} // ห้ามเลือกวันที่น้อยกว่าวันปัจจุบัน
                                     />
 
                                 </div>
@@ -804,7 +825,13 @@ function AdminsConfirmBorrow() {
                                                 จำนวนที่คืน: {log.approved_quantity !== null && log.approved_quantity !== undefined ? log.approved_quantity : "ยังไม่ได้คืน"}
                                             </p>
                                             <p className="text-sm text-gray-600">
-                                                วันที่คืน: {selectedReturnGroup.actual_return_date ? new Date(selectedReturnGroup.actual_return_date).toLocaleDateString() : "ยังไม่มี"}
+                                                วันที่คืน: {selectedReturnGroup.actual_return_date ?
+                                                    new Date(selectedReturnGroup.actual_return_date).toLocaleDateString("th-TH", {
+                                                        day: "2-digit",
+                                                        month: "2-digit",
+                                                        year: "numeric",
+                                                    })
+                                                    : "ยังไม่มี"}
                                             </p>
 
                                         </li>
