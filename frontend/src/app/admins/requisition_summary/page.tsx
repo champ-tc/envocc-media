@@ -48,13 +48,18 @@ interface Order {
     quantity: number;
 }
 
+type Reason = {
+    id: number;
+    reason_name: string;
+};
 
 
 function RequisitionSummary() {
     const { session, isLoading } = useAuthCheck("admin");
     const router = useRouter();
 
-    const [selectedAction, setSelectedAction] = useState("");
+    const [selectedAction, setSelectedAction] = useState<string | null>(null);
+
     const [returnDate, setReturnDate] = useState("");
     const [deliveryMethod, setDeliveryMethod] = useState("self");
     const [address, setAddress] = useState("");
@@ -63,7 +68,34 @@ function RequisitionSummary() {
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [alertType, setAlertType] = useState<"success" | "error" | null>(null);
-    const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null); // เก็บ ID ที่จะลบ
+    const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+
+    const [usageReasonId, setUsageReasonId] = useState<number | null>(null);
+    const [customUsageReasonError, setCustomUsageReasonError] = useState<string | null>(null);
+
+    const [customUsageReason, setCustomUsageReason] = useState(""); // เก็บค่าที่พิมพ์เมื่อเลือก "อื่นๆ"
+    const [reasons, setReasons] = useState<Reason[]>([]);
+
+
+    const handleUsageChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        const selectedValue = Number(event.target.value); // แปลง string -> number
+        setUsageReasonId(selectedValue);
+
+        if (selectedValue !== 0) {
+            setCustomUsageReason(""); // ล้างเมื่อไม่ใช่ "อื่นๆ"
+        }
+    };
+
+
+
+
+    useEffect(() => {
+        fetch("/api/reason")
+            .then((res) => res.json())
+            .then((data) => setReasons(data))
+            .catch((error) => console.error("Error fetching reasons:", error));
+    }, []);
+
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -87,13 +119,11 @@ function RequisitionSummary() {
             const response = await fetch(`/api/order?userId=${session?.user?.id}`);
             if (!response.ok) throw new Error("Error fetching orders");
             const data = await response.json();
-            setOrders(data); // อัปเดต state ของ orders
+            setOrders(data);
         } catch (error) {
             showAlert("เกิดข้อผิดพลาดในการลบรายการ", "error");
         }
     };
-
-
 
     if (isLoading) {
         return (
@@ -102,8 +132,6 @@ function RequisitionSummary() {
             </div>
         );
     }
-
-
 
     const DynamicDatePicker = dynamic<any>(() => import("react-datepicker"), {
         ssr: false,
@@ -201,11 +229,6 @@ function RequisitionSummary() {
         );
     };
 
-
-
-
-
-
     const showAlert = (message: string, type: "success" | "error") => {
         setAlertMessage(message);
         setAlertType(type);
@@ -219,9 +242,6 @@ function RequisitionSummary() {
         setSelectedOrderId(orderId);
         setIsDeleteConfirmOpen(true);
     };
-
-
-
 
     const handleConfirmDelete = async () => {
         if (!selectedOrderId) return;
@@ -244,7 +264,6 @@ function RequisitionSummary() {
     };
 
 
-
     const handleSubmitRequisition = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -253,30 +272,61 @@ function RequisitionSummary() {
             return;
         }
 
+        if (usageReasonId === null) {
+            showAlert("กรุณาเลือกเหตุผลในการนำไปใช้", "error");
+            return;
+        }
+
+        if (usageReasonId === 0 && !customUsageReason.trim()) {
+            showAlert("กรุณาระบุรายละเอียดเพิ่มเติม", "error");
+            return;
+        }
+
+
+        if (deliveryMethod === "delivery" && !address.trim()) {
+            showAlert("กรุณากรอกที่อยู่สำหรับการจัดส่ง", "error");
+            return;
+        }
+        
+
+
+
         try {
             const formattedOrders = orders
                 .filter((order: Order) => order.requisition?.id && order.quantity > 0)
-                .map((order: Order) => ({
-                    requisitionId: order.requisition!.id,
-                    quantity: order.quantity,
-                }));
+                .reduce((acc, order) => {
+                    const existingOrder = acc.find(o => o.requisitionId === order.requisition!.id);
+                    if (existingOrder) {
+                        existingOrder.quantity += order.quantity; // รวมจำนวน
+                    } else {
+                        acc.push({
+                            requisitionId: order.requisition!.id,
+                            quantity: order.quantity,
+                        });
+                    }
+                    return acc;
+                }, [] as { requisitionId: number; quantity: number }[]);
 
             if (formattedOrders.length === 0) {
                 showAlert("ไม่มีรายการเบิกที่ถูกต้อง", "error");
                 return;
             }
 
+            // ส่งคำขอไปยัง API
             const response = await axios.post("/api/requisition_log", {
                 userId: session?.user?.id,
                 orders: formattedOrders,
                 deliveryMethod,
                 address: deliveryMethod === "delivery" ? address : null,
+                usageReasonId,
+                customUsageReason: usageReasonId === 0 ? customUsageReason : null,
             });
 
             showAlert("บันทึกการเบิกสำเร็จ!", "success");
-            setOrders([]); // ล้างรายการใน state
-            setAddress(""); // รีเซ็ตที่อยู่การจัดส่ง
-            await fetchOrders(); // ดึงข้อมูลใหม่เพื่อรีเฟรชตาราง
+            setOrders([]);
+            setAddress("");
+            setSelectedAction(null);
+            await fetchOrders();
         } catch (error) {
             showAlert("เกิดข้อผิดพลาดในการเบิกของ", "error");
         }
@@ -284,20 +334,29 @@ function RequisitionSummary() {
 
 
 
-
     const handleSubmitBorrow = async (e: React.FormEvent) => {
         e.preventDefault();
-
+    
         if (!returnDate) {
             showAlert("กรุณากรอกวันที่คืน", "error");
             return;
         }
-
+    
         if (deliveryMethod === "delivery" && !address.trim()) {
             showAlert("กรุณากรอกข้อมูลที่อยู่สำหรับการจัดส่ง", "error");
             return;
         }
-
+    
+        if (usageReasonId === null) {
+            showAlert("กรุณาเลือกเหตุผลในการนำไปใช้", "error");
+            return;
+        }
+    
+        if (usageReasonId === 0 && !customUsageReason.trim()) {
+            showAlert("กรุณาระบุรายละเอียดเพิ่มเติม", "error");
+            return;
+        }
+    
         try {
             const formattedOrders = orders
                 .filter((order: Order) => order.borrow?.id && order.quantity > 0)
@@ -305,31 +364,33 @@ function RequisitionSummary() {
                     borrowId: order.borrow!.id,
                     quantity: order.quantity,
                 }));
-
+    
             if (formattedOrders.length === 0) {
                 showAlert("ไม่มีรายการยืมที่ถูกต้อง", "error");
                 return;
             }
-
+    
             const response = await axios.post("/api/borrowlog", {
                 userId: session?.user?.id,
                 orders: formattedOrders,
                 deliveryMethod,
                 address: deliveryMethod === "delivery" ? address : null,
                 returnDate,
+                usageReasonId,
+                customUsageReason: usageReasonId === 0 ? customUsageReason : null,
             });
-
+    
             showAlert("บันทึกการยืมสำเร็จ!", "success");
-
-            setOrders([]); // ล้างรายการ
-            setAddress(""); // รีเซ็ตที่อยู่การจัดส่ง
-            await fetchOrders(); // ดึงข้อมูลใหม่เพื่อรีเฟรชตาราง
+    
+            setOrders([]);
+            setAddress("");
+            setSelectedAction(null); 
+            await fetchOrders();
         } catch (error) {
             showAlert("เกิดข้อผิดพลาดในการยืมของ", "error");
         }
     };
-
-
+    
 
 
     const filteredOrders: Order[] =
@@ -346,10 +407,11 @@ function RequisitionSummary() {
             <div className="flex-1">
                 <TopBar />
 
-                <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
+                <div
+                    className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52"
+                >
                     <h1 className="text-2xl font-bold mb-4">รายการ</h1>
 
-                    {/* ตัวเลือกระหว่าง Requisition และ Borrow */}
                     <div className="mb-4 flex space-x-4">
                         <button
                             onClick={() => setSelectedAction("requisition")}
@@ -453,6 +515,39 @@ function RequisitionSummary() {
                                 </div>
                             )}
 
+                            <div className="mt-6">
+                                <label className="block text-gray-700 font-semibold mb-2">นำไปใช้เพื่ออะไร:</label>
+                                <select
+                                    value={usageReasonId ?? ""}
+                                    onChange={handleUsageChange}
+                                    className="w-full px-4 py-2 border rounded-md"
+                                >
+                                    <option value="" disabled>กรุณาเลือก...</option>
+                                    {reasons.map((reason) => (
+                                        <option key={reason.id} value={reason.id}>{reason.reason_name}</option>
+                                    ))}
+                                    <option value={0}>อื่นๆ</option> {/* 👈 เปลี่ยนจาก "อื่นๆ" เป็น value 0 */}
+                                </select>
+
+
+                                {usageReasonId === 0 && (
+                                    <>
+                                        <input
+                                            type="text"
+                                            value={customUsageReason}
+                                            onChange={(e) => setCustomUsageReason(e.target.value)}
+                                            className="mt-2 w-full px-4 py-2 border rounded-md"
+                                            placeholder="กรุณาระบุรายละเอียด"
+                                        />
+                                        {customUsageReasonError && (
+                                            <p className="text-red-500 text-sm mt-1">{customUsageReasonError}</p>
+                                        )}
+                                    </>
+                                )}
+
+
+                            </div>
+
 
 
                             {/* ตัวเลือกจัดส่ง */}
@@ -514,6 +609,7 @@ function RequisitionSummary() {
                             กรุณาเลือกระหว่างเบิกสื่อ หรือ ยืมสื่อ
                         </p>
                     )}
+
                 </div>
 
                 {isDeleteConfirmOpen && (

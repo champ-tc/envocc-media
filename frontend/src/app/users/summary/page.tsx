@@ -71,6 +71,7 @@ function UsersSummary() {
     const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
     const [usageReasonId, setUsageReasonId] = useState<number | null>(null);
+    const [customUsageReasonError, setCustomUsageReasonError] = useState<string | null>(null);
 
     const [customUsageReason, setCustomUsageReason] = useState(""); // เก็บค่าที่พิมพ์เมื่อเลือก "อื่นๆ"
     const [reasons, setReasons] = useState<Reason[]>([]);

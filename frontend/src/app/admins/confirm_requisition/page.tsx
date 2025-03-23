@@ -119,7 +119,13 @@ function ConfirmRequisition() {
     const openModal = async (group: Group, type: "pending" | "approved") => {
         try {
             const response = await fetch(`/api/requisition_log?groupid=${group.requested_groupid}`);
-            const data = await response.json();
+            console.log("Fetch status:", response.status);
+            if (!response.ok) throw new Error("Fetch failed");
+
+            const data = await response.json().catch(() => null);
+
+
+
 
             if (!Array.isArray(data.items)) {
                 console.error("Unexpected response format:", data);

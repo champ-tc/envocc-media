@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
+import { sendLineGroupMessage } from "@/lib/lineNotify";
 
 async function checkAdminOrUserSession(request: Request): Promise<boolean> {
     const token = await getToken({ req: request as any });
@@ -23,6 +24,15 @@ export async function POST(request: Request) {
             usageReasonId,
             customUsageReason,
         } = await request.json();
+
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { title: true, firstName: true, lastName: true }
+        });
+
+        if (!user) {
+            return NextResponse.json({ message: "User does not exist" }, { status: 400 });
+        }
 
         // Validation
         if (!userId || !orders || !returnDate || usageReasonId === null || usageReasonId === undefined) {
@@ -64,6 +74,22 @@ export async function POST(request: Request) {
                 },
             }),
         ]);
+
+        // ดึงชื่อเหตุผลการใช้งาน (ถ้ามี)
+        const reason = await prisma.reason.findUnique({
+            where: { id: usageReasonId },
+            select: { reason_name: true }
+        });
+
+        await sendLineGroupMessage(
+            "ยืม",
+            `${user.title ?? ""}${user.firstName} ${user.lastName}`,
+            orders.reduce((sum: number, o: { quantity: number }) => sum + o.quantity, 0),
+            new Date().toLocaleDateString("th-TH"),
+            usageReasonId === 0 ? customUsageReason : reason?.reason_name || "ไม่ระบุ"
+        );
+
+
 
         return NextResponse.json({
             message: "Borrow logs created successfully",

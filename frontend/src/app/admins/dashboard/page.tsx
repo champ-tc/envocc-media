@@ -1,27 +1,39 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from 'react';
-import useAuthCheck from '@/hooks/useAuthCheck';
-import { useSession } from "next-auth/react";
+import React, { useEffect, useState } from 'react';
+import Sidebar from '@/components/Sidebar_Admin';
+import TopBar from '@/components/TopBar';
+import useAuthCheck from "@/hooks/useAuthCheck";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/Sidebar_Admin";
-import TopBar from "@/components/TopBar";
-import { Bar, Doughnut } from 'react-chartjs-2';
+import { Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
   ArcElement,
   Tooltip,
   Legend,
+  ChartOptions,
 } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  ChartDataLabels
+);
 
-function AdminsDashboard() {
+export default function AdminsDashboard() {
   const { session, isLoading } = useAuthCheck("admin");
   const router = useRouter();
+  const [data, setData] = useState<any>(null);
+
+  useEffect(() => {
+    fetch('/api/dashboard')
+      .then((res) => res.json())
+      .then((json) => setData(json));
+  }, []);
+
+  if (!data) return <div className="p-4">กำลังโหลด...</div>;
 
   if (isLoading) {
     return (
@@ -32,64 +44,158 @@ function AdminsDashboard() {
   }
 
   const cardData = [
-    { label: "รายการทั้งหมด", value: 15000 },
-    { label: "คำขอที่ทั้งหมด", value: 15000 },
-    { label: "คำขออนุมัติทั้งหมด", value: 15000 },
-    { label: "อนุมัติทั้งหมด", value: 15000 }
+    { label: 'รายการขอเบิกทั้งหมด', value: data.totalRequisitionLogs },
+    { label: 'อนุมัติขอเบิกทั้งหมด', value: data.approvedRequisitionLogs },
+    { label: 'รายการขอยืม/คืนทั้งหมด', value: data.totalBorrowLogs },
+    { label: 'อนุมัติยืมคืน', value: data.returnedCount },
   ];
 
-  const barData = {
-    labels: ["Feb", "Mar", "Apr"],
-    datasets: [
-      {
-        label: "ประเภทการเบิก",
-        backgroundColor: "#F97316", // ใช้รหัสสีแทนชื่อสี
-        data: [3000, 4000, 5000]
-      }
-    ]
+  const doughnutOptions: ChartOptions<'doughnut'> = {
+    plugins: {
+      datalabels: {
+        color: '#ffffff',
+        font: {
+          weight: 'bold',
+          size: 14,
+        },
+        formatter: (value: number) => value,
+      },
+      legend: {
+        position: 'top',
+        align: 'start',
+        labels: {
+          color: '#374151',
+          boxWidth: 16,
+          padding: 10,
+          font: {
+            size: 14,
+          },
+        },
+      },
+    },
+    layout: {
+      padding: 0,
+    },
   };
 
-
-  const doughnutData = {
-    labels: ["หมวด A", "หมวด B"],
+  const doughnutUserType = {
+    labels: data.userTypeStats.map((u: any) => u.name),
     datasets: [
       {
-        data: [150, 50],
-        backgroundColor: ["#FF5733", "#F97316"]
-      }
-    ]
+        data: data.userTypeStats.map((u: any) => u.count),
+        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#8B5CF6', '#EC4899'],
+      },
+    ],
+  };
+
+  const doughnutPurposeRequisition = {
+    labels: data.usagePurposeStatsRequisition.map((r: any) => r.name),
+    datasets: [
+      {
+        data: data.usagePurposeStatsRequisition.map((r: any) => r.count),
+        backgroundColor: ['#60A5FA', '#FBBF24', '#F87171', '#34D399'],
+      },
+    ],
+  };
+
+  const doughnutPurposeBorrow = {
+    labels: data.usagePurposeStatsBorrow.map((r: any) => r.name),
+    datasets: [
+      {
+        data: data.usagePurposeStatsBorrow.map((r: any) => r.count),
+        backgroundColor: ['#A78BFA', '#FDBA74', '#FCA5A5', '#6EE7B7'],
+      },
+    ],
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
+    <div className="min-h-screen flex bg-gray-100">
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <TopBar />
-        <div className="flex-1 flex items-start justify-center p-2">
-          <div className="rounded-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 w-full mb-6 max-w-full">
-              {cardData.map((card, index) => (
-                <div key={index} className="bg-white rounded-lg shadow p-4 text-center">
-                  <p className="text-2xl font-semibold">{card.value.toLocaleString()}</p>
-                  <p className="text-sm text-gray-600">{card.label}</p>
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-full">
-              <div className="bg-white rounded-lg shadow p-4 overflow-hidden">
-                <h3 className="text-lg font-semibold mb-4">ประเภทการเบิก</h3>
-                <Bar data={barData} />
+        <div className="flex-1 p-6 lg:ml-52 space-y-6">
+
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {cardData.map((card, i) => (
+              <div
+                key={i}
+                className="bg-white hover:shadow-lg transition-shadow duration-300 rounded-2xl p-6 text-center shadow-md"
+              >
+                <p className="text-3xl font-bold text-indigo-600">{card.value.toLocaleString()}</p>
+                <p className="text-sm text-gray-600 mt-1">{card.label}</p>
               </div>
-              <div className="bg-white rounded-lg shadow p-4 overflow-hidden">
-                <h3 className="text-lg font-semibold mb-4">ตำแหน่ง/อาชีพ</h3>
-                <Doughnut data={doughnutData} />
+            ))}
+          </div>
+
+          {/* แถวที่ 1: สัดส่วนประเภทผู้ใช้ + TOP5 เบิก + TOP5 ยืม */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-2xl shadow-md">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">สัดส่วนประเภทผู้ใช้</h3>
+              <Doughnut data={doughnutUserType} options={doughnutOptions} plugins={[ChartDataLabels]} />
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-2xl shadow-md">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">TOP 5 รายการเบิก</h3>
+                <table className="w-full text-sm">
+                  <thead className="text-left border-b text-gray-600">
+                    <tr>
+                      <th className="py-2">รายการ</th>
+                      <th>จำนวนที่เบิก</th>
+                      <th>คงเหลือ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.topRequisitions.map((item: any, idx: number) => (
+                      <tr key={idx} className="border-b text-gray-700">
+                        <td className="py-2">{item.name}</td>
+                        <td>{item.used}</td>
+                        <td>{item.remaining}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl shadow-md">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">TOP 5 รายการยืม/คืน</h3>
+                <table className="w-full text-sm">
+                  <thead className="text-left border-b text-gray-600">
+                    <tr>
+                      <th className="py-2">รายการ</th>
+                      <th>จำนวนที่ยืม</th>
+                      <th>คงเหลือ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.topBorrows.map((item: any, idx: number) => (
+                      <tr key={idx} className="border-b text-gray-700">
+                        <td className="py-2">{item.name}</td>
+                        <td>{item.used}</td>
+                        <td>{item.remaining}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
+
+          {/* แถวที่ 2: เหตุผลการเบิกและยืม */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-2xl shadow-md">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">เบิกสำหรับใช้ประโยชน์</h3>
+              <Doughnut data={doughnutPurposeRequisition} options={doughnutOptions} plugins={[ChartDataLabels]} />
+            </div>
+            <div className="bg-white p-6 rounded-2xl shadow-md">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">ยืมสำหรับใช้ประโยชน์</h3>
+              <Doughnut data={doughnutPurposeBorrow} options={doughnutOptions} plugins={[ChartDataLabels]} />
+            </div>
+          </div>
         </div>
+
       </div>
     </div>
   );
 }
-
-export default AdminsDashboard;

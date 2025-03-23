@@ -34,7 +34,6 @@ function AdminsReports_borrows() {
     const [logs, setLogs] = useState<BorrowLogItem[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
-    const [totalPages, setTotalPages] = useState(1);
     const [totalRecords, setTotalRecords] = useState(0);
 
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -73,6 +72,7 @@ function AdminsReports_borrows() {
     };
 
 
+    // Group
     const groupedLogs = logs.reduce((acc, log) => {
         const groupId = log.borrow_groupid;
         if (!acc[groupId]) acc[groupId] = [];
@@ -80,7 +80,15 @@ function AdminsReports_borrows() {
         return acc;
     }, {} as Record<string, BorrowLogItem[]>);
 
-    const currentGroups = Object.entries(groupedLogs);
+    // แปลงเป็น array
+    const groupArray = Object.entries(groupedLogs);
+
+    // Total pages จากจำนวนกลุ่ม
+    const totalPages = Math.ceil(groupArray.length / itemsPerPage);
+
+    // กำหนดกลุ่มในหน้าปัจจุบัน
+    const currentGroups = groupArray.slice(startIndex, startIndex + itemsPerPage);
+
 
     const handlePageChange = (page: number) => setCurrentPage(page);
     const goToPreviousPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -89,18 +97,19 @@ function AdminsReports_borrows() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await fetch(`/api/report_borrow?page=${currentPage}&limit=${itemsPerPage}`);
+                const res = await fetch(`/api/report_borrow`);
                 const json = await res.json();
                 setLogs(json.items || []);
-                setTotalPages(json.totalPages || 1);
-                setTotalRecords(json.totalRecords || 0);
+                setTotalRecords(json.items?.length || 0);
             } catch (err) {
                 console.error("Failed to fetch borrow logs:", err);
                 setLogs([]);
             }
         };
         fetchData();
-    }, [currentPage]);
+    }, []);
+
+
 
     if (isLoading) {
         return (
@@ -242,10 +251,11 @@ function AdminsReports_borrows() {
                         {/* Pagination */}
                         <div className="flex items-center justify-between mt-6">
                             <span className="text-sm text-gray-600">
-                                รายการที่ {currentGroups.length === 0 ? 0 : startIndex + 1} ถึง{" "}
-                                {Math.min(startIndex + itemsPerPage, currentGroups.length)} จาก{" "}
-                                {currentGroups.length} รายการ
+                                รายการที่ {groupArray.length === 0 ? 0 : startIndex + 1} ถึง{" "}
+                                {Math.min(startIndex + itemsPerPage, groupArray.length)} จาก{" "}
+                                {groupArray.length} รายการ
                             </span>
+
                             <div className="flex space-x-2">
                                 <button
                                     onClick={goToPreviousPage}
