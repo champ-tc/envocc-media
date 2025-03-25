@@ -36,6 +36,7 @@ const Sidebar = () => {
             {/* Sidebar */}
             <div
                 className={`fixed top-0 left-0 h-screen w-52 bg-[#8c63f4] text-white shadow-lg z-40 transform ${
+                // className={`fixed top-0 left-0 h-screen w-52 bg-[#1f9f84] text-white shadow-lg z-40 transform ${
                     isOpen ? 'translate-x-0' : '-translate-x-full'
                 } lg:translate-x-0 transition-transform duration-300`}
                 
@@ -53,7 +54,7 @@ const Sidebar = () => {
                                         activePath.includes('/admins/type_management') ||
                                         activePath.includes('/admins/media_management') ||
                                         activePath.includes('/admins/borrow_management') ||
-                                        activePath.includes('/admins/imagse') ? 'bg-[#a886ff]' : 'hover:bg-[#a886ff]'
+                                        activePath.includes('/admins/imagse') ? 'bg-[#b8a0f5]' : 'hover:bg-[#b8a0f5]'
                                     }`}
                                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                 >
@@ -63,28 +64,28 @@ const Sidebar = () => {
                                 {isDropdownOpen && (
                                     <ul className="ml-8 space-y-2">
                                         <li className={`p-2 rounded-lg transition-colors duration-300 flex items-center ${
-                                            activePath === '/admins/type_management' ? 'bg-[#a886ff]' : 'hover:bg-[#a886ff]'
+                                            activePath === '/admins/type_management' ? 'bg-[#b8a0f5]' : 'hover:bg-[#b8a0f5]'
                                         }`}>
                                             <Link href="/admins/type_management" className="flex items-center text-white w-full">
                                                 <span>จัดการประเภท</span>
                                             </Link>
                                         </li>
                                         <li className={`p-2 rounded-lg transition-colors duration-300 flex items-center ${
-                                            activePath === '/admins/media_management' ? 'bg-[#a886ff]' : 'hover:bg-[#a886ff]'
+                                            activePath === '/admins/media_management' ? 'bg-[#b8a0f5]' : 'hover:bg-[#b8a0f5]'
                                         }`}>
                                             <Link href="/admins/media_management" className="flex items-center text-white w-full">
                                                 <span>จัดการสื่อ</span>
                                             </Link>
                                         </li>
                                         <li className={`p-2 rounded-lg transition-colors duration-300 flex items-center ${
-                                            activePath === '/admins/borrow_management' ? 'bg-[#a886ff]' : 'hover:bg-[#a886ff]'
+                                            activePath === '/admins/borrow_management' ? 'bg-[#b8a0f5]' : 'hover:bg-[#b8a0f5]'
                                         }`}>
                                             <Link href="/admins/borrow_management" className="flex items-center text-white w-full">
                                                 <span>จัดการยืม/คืน</span>
                                             </Link>
                                         </li>
                                         <li className={`p-2 rounded-lg transition-colors duration-300 flex items-center ${
-                                            activePath === '/admins/image' ? 'bg-[#a886ff]' : 'hover:bg-[#a886ff]'
+                                            activePath === '/admins/image' ? 'bg-[#b8a0f5]' : 'hover:bg-[#b8a0f5]'
                                         }`}>
                                             <Link href="/admins/image" className="flex items-center text-white w-full">
                                                 <span>จัดการสื่อดาวน์โหลด</span>
@@ -97,7 +98,7 @@ const Sidebar = () => {
                             <li
                                 key={index}
                                 className={`p-2 rounded-lg transition-colors duration-300 flex items-center ${
-                                    activePath === item.href ? 'bg-[#a886ff]' : 'hover:bg-[#a886ff]'
+                                    activePath === item.href ? 'bg-[#b8a0f5]' : 'hover:bg-[#b8a0f5]'
                                 }`}
                             >
                                 <Link href={item.href ?? '#'} className="flex items-center text-white w-full">

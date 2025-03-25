@@ -12,18 +12,19 @@ function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { data: session, status } = useSession();
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-  
+
     // เรียก API signIn
     const res = await signIn("credentials", {
       redirect: false,
       username,
       password,
     });
-  
+
     if (res?.error) {
       if (res.error === "userisalreadylogged") {
         setError("มีผู้ใช้นี้กำลังเข้าสู่ระบบอยู่ในขณะนี้");
@@ -32,7 +33,7 @@ function LoginPage() {
       }
     }
   };
-  
+
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -88,18 +89,26 @@ function LoginPage() {
                   required
                 />
               </div>
-              <div>
+              <div className="relative">
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Password"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  maxLength={20}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 pr-10"
                   required
                 />
+                <img
+                  src={showPassword ? '/images/hide.png' : '/images/eye.png'}
+                  alt="toggle password"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="w-5 h-5 absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer"
+                />
               </div>
+
               <div className="flex justify-between text-orange-600 text-sm mt-2 mb-6">
-                <Link href="#">
+                <Link href="forgot-password">
                   ลืมรหัสผ่าน
                 </Link>
                 <Link href="/">
