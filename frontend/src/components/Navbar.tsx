@@ -22,15 +22,23 @@ function Navbar() {
     }
 
     return (
-        <nav className="bg-gradient-to-r from-[#fb8124] via-[#f89c2b] to-[#f5b83c]">
-        {/* <nav> */}
+        <nav className="bg-gradient-to-r from-[#fdb7fe] via-[#c78ee8] to-[#9063d2]">
+            {/* <nav> */}
             <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
-                <Link href="/"><img src="/images/icon_media.png" alt="icon" className="h-10" /></Link>
-                <button 
-                    onClick={toggleMenu} // เพิ่ม onClick เพื่อควบคุมเมนู
-                    type="button" 
-                    className="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600" 
-                    aria-controls="navbar-default" 
+                <div className="flex items-center space-x-2">
+                    <Link href="/">
+                        <img src="/images/logoddc.png" alt="Media Icon" className="h-10" />
+                    </Link>
+                    <Link href="/">
+                        <img src="/images/icon_media.png" alt="icon" className="h-10" />
+                    </Link>
+                </div>
+
+                <button
+                    onClick={toggleMenu}
+                    type="button"
+                    className="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
+                    aria-controls="navbar-default"
                     aria-expanded={isMenuOpen ? "true" : "false"} // แก้ไขสถานะการขยายของเมนู
                 >
                     <span className="sr-only">Open main menu</span>
@@ -39,13 +47,13 @@ function Navbar() {
                 <div className={`${isMenuOpen ? 'block' : 'hidden'} w-full md:block md:w-auto  md:bg-white/80 px-4 py-2 border-gray-100 rounded-lg bg-gray-50`} id="navbar-default">
                     <ul className="font-medium flex flex-col p-4 md:p-0 mt-4 md:flex-row md:space-x-8 rtl:space-x-reverse md:mt-0">
                         <li>
-                            <a href="/media" className="font-bold block py-2 px-3 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 md:dark:text-blue-500" aria-current="page">สื่อเผยแพร่</a>
+                            <a href="/media" className="font-bold block py-2 px-3 text-[#46c1a5] rounded md:bg-transparent md:text-[#46c1a5] md:p-0 md:dark:text-[#46c1a5]" aria-current="page">สื่อเผยแพร่</a>
                         </li>
                         <li>
-                            <a href="/login" className="font-bold block py-2 px-3 text-orange-500 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500">เข้าสู่ระบบ</a>
+                            <a href="/login" className="font-bold block py-2 px-3 text-[#46c1a5] rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-[#46c1a5] md:p-0 md:dark:hover:text-[#46c1a5]">เข้าสู่ระบบ</a>
                         </li>
                         <li>
-                            <a href="/register" className="font-bold block py-2 px-3 text-orange-500 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500">สมัครสมาชิก</a>
+                            <a href="/register" className="font-bold block py-2 px-3 text-[#46c1a5] rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:text-[#46c1a5] md:p-0 md:dark:hover:text-[#46c1a5]">สมัครสมาชิก</a>
                         </li>
                     </ul>
                 </div>

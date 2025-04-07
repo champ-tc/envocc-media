@@ -282,9 +282,9 @@ function PersonalPage() {
 
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="min-h-screen bg-[#f3e5f5]">
             <Navbar />
-            <div className="relative -mt-24 flex flex-col items-center">
+            <div className="relative flex flex-col items-center">
                 <div className="flex-1 flex items-start justify-center p-2">
                     <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4">
                         <h1 className="text-2xl font-bold mb-4">ข้อมูลส่วนตัว</h1>
@@ -331,7 +331,7 @@ function PersonalPage() {
                                                     onChange={(e) =>
                                                         setUserData((prev) => ({ ...prev, password: e.target.value }))
                                                     }
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                                                 />
                                                 <p className="text-xs text-gray-500 mt-1">
                                                     ต้องมีความยาวอย่างน้อย 8 ตัว A-Z, a-z และตัวเลข
@@ -356,7 +356,7 @@ function PersonalPage() {
                                                             confirm_password: e.target.value,
                                                         }))
                                                     }
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                                                 />
                                                 <p className="text-xs text-gray-500 mt-1">
                                                     ต้องกรอกรหัสผ่านอีกครั้งให้ตรงกับ Password
@@ -386,7 +386,7 @@ function PersonalPage() {
                                         name="title"
                                         value={userData.title}
                                         onChange={(e) => setUserData({ ...userData, title: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                                         required
                                     >
                                         <option value="">คำนำหน้า</option>
@@ -403,7 +403,7 @@ function PersonalPage() {
                                         name="firstName"
                                         value={userData.firstName}
                                         onChange={(e) => setUserData({ ...userData, firstName: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                                         required
                                     />
                                 </div>
@@ -415,7 +415,7 @@ function PersonalPage() {
                                         name="lastName"
                                         value={userData.lastName}
                                         onChange={(e) => setUserData({ ...userData, lastName: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                                         required
                                     />
                                 </div>
@@ -432,7 +432,7 @@ function PersonalPage() {
                                         value={userData.tel}
                                         onChange={(e) => setUserData({ ...userData, tel: e.target.value })}
                                         pattern="[0-9]*"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                                         required
                                     />
                                 </div>
@@ -445,7 +445,7 @@ function PersonalPage() {
                                         name="email"
                                         value={userData.email}
                                         onChange={(e) => setUserData({ ...userData, email: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                                         required
                                     />
                                 </div>
@@ -459,7 +459,7 @@ function PersonalPage() {
                                         onChange={(e) => {
                                             setUserData({ ...userData, department: e.target.value, position: '' });
                                         }}
-                                        className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 sm:text-sm"
+                                        className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#9063d2] sm:text-sm"
                                         required
                                     >
                                         <option value="">เลือกประเภทผู้ใช้</option>
@@ -476,7 +476,7 @@ function PersonalPage() {
                                             name="position"
                                             value={userData.position}
                                             onChange={(e) => setUserData({ ...userData, position: e.target.value })}
-                                            className="block w-full py-2 px-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 sm:text-sm"
+                                            className="block w-full py-2 px-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2] sm:text-sm"
                                             required
                                         >
                                             <option value="">เลือกตำแหน่ง</option>
@@ -492,7 +492,7 @@ function PersonalPage() {
                                             name="position"
                                             value={userData.position}
                                             onChange={(e) => setUserData({ ...userData, position: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                                             required
                                         />
                                     ) : null}
@@ -502,7 +502,7 @@ function PersonalPage() {
                             </div>
 
                             <div className="flex justify-center mt-6 gap-2">
-                                <button type="submit" className="bg-orange-500 text-white px-4 py-2 rounded-xl hover:bg-orange-600 transition">ยืนยัน</button>
+                                <button type="submit" className="bg-[#9063d2] hover:bg-[#8753d5] text-white px-4 py-2 rounded-xl transition">ยืนยัน</button>
                             </div>
 
                         </form>

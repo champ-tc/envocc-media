@@ -72,7 +72,7 @@ export async function POST(request: Request) {
             delivery_address: deliveryMethod === "delivery" ? address : undefined,
             usageReason: order.usageReason, // ✅ ต้องมีค่านี้เสมอ
         }));
-        
+
 
         // Insert logs into the database
         await prisma.borrowLog.createMany({
@@ -158,7 +158,12 @@ export async function GET(req: Request) {
 
         const totalPages = Math.ceil(totalRecords / limit);
 
-        return NextResponse.json({ items: borrowLogs, totalPages, totalRecords });
+        return NextResponse.json({
+            items: borrowLogs,
+            totalPages,
+            totalItems: totalRecords,
+        });
+
     } catch (error) {
         console.error("Error fetching borrow logs:", error);
         return NextResponse.json({ error: "Failed to fetch borrow logs" }, { status: 500 });

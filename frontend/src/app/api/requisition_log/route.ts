@@ -161,7 +161,13 @@ export async function GET(req: Request) {
         });
         const totalPages = Math.ceil(totalRecords / limit);
 
-        return NextResponse.json({ items: requisitionLogs, totalPages, totalRecords });
+        return NextResponse.json({
+            items: requisitionLogs,
+            totalPages,
+            totalRecords,
+            totalItems: totalRecords,
+        });
+
     } catch (error) {
         console.error("Error fetching requisition logs:", error instanceof Error ? error.stack : error);
         return NextResponse.json(

@@ -228,9 +228,9 @@ function RegisterPage() {
 
   return (
     <>
-      <div className="flex items-center justify-center min-h-screen bg-orange-500/10 px-2">
+      <div className="flex items-center justify-center min-h-screen bg-[#f3e5f5] px-2">
         <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-3xl shadow-lg w-full max-w-2xl">
-          <h2 className="text-orange-500 text-3xl font-bold text-center mb-4">ลงทะเบียน</h2>
+          <h2 className="text-[#8753d5] text-3xl font-bold text-center mb-4">ลงทะเบียน</h2>
 
           {successMessage && (
             <div className="bg-green-50 text-green-500 p-6 mb-10 text-sm rounded-2xl" role="alert">
@@ -250,7 +250,7 @@ function RegisterPage() {
             <div className="grid grid-cols-1 gap-4 mt-2 sm:grid-cols-2">
               <div className="w-full">
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                <input type="text" maxLength={20} id="username" name="username" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500" required />
+                <input type="text" maxLength={20} id="username" name="username" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]" required />
               </div>
               <div className="w-full">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
@@ -263,7 +263,7 @@ function RegisterPage() {
                     name="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 pr-10"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2] pr-10"
                     required
                   />
                   <img
@@ -284,7 +284,7 @@ function RegisterPage() {
             <div className="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-5">
               <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1 col-span-5">ชื่อ - นามสกุล</label>
               <div className="w-full col-span-5 md:col-span-1">
-                <select id="title" name="title" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500" required>
+                <select id="title" name="title" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]" required>
                   <option value="">คำนำหน้า</option>
                   <option value="นาย">นาย</option>
                   <option value="นาง">นาง</option>
@@ -292,21 +292,21 @@ function RegisterPage() {
                 </select>
               </div>
               <div className="w-full col-span-5 md:col-span-2">
-                <input type="text" maxLength={20} id="firstName" name="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500" required />
+                <input type="text" maxLength={20} id="firstName" name="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]" required />
               </div>
               <div className="w-full col-span-5 md:col-span-2">
-                <input type="text" maxLength={20} id="lastName" name="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500" required />
+                <input type="text" maxLength={20} id="lastName" name="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]" required />
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-2 mt-4 sm:grid-cols-2">
               <div className="w-full mt-2 col-span-2 md:col-span-1">
                 <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร</label>
-                <input type="tel" maxLength={10} id="phoneNumber" name="phoneNumber" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} pattern="[0-9]*" className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500" required />
+                <input type="tel" maxLength={10} id="phoneNumber" name="phoneNumber" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} pattern="[0-9]*" className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]" required />
               </div>
               <div className="w-full mt-2 col-span-2 md:col-span-1">
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input type="email" maxLength={30} id="email" name="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500" required />
+                <input type="email" maxLength={30} id="email" name="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]" required />
               </div>
 
               <div className="w-full mt-2 col-span-2 md:col-span-1">
@@ -316,7 +316,7 @@ function RegisterPage() {
                   name="department"
                   value={department}
                   onChange={handleDepartmentChange}
-                  className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 sm:text-sm"
+                  className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#9063d2] sm:text-sm"
                   required
                 >
                   {departmentOptions.map((option) => (
@@ -333,7 +333,7 @@ function RegisterPage() {
                     name="position"
                     value={position}
                     onChange={(e) => setPosition(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                     required
                   >
                     <option value="">เลือกตำแหน่ง</option>
@@ -352,7 +352,7 @@ function RegisterPage() {
                     name="position"
                     value={position}
                     onChange={(e) => setPosition(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                     required
                   />
                 </div>
@@ -360,10 +360,14 @@ function RegisterPage() {
             </div>
 
             <div className="flex justify-center mt-6 gap-2">
-              <button type="submit" className="bg-orange-500 text-white px-4 py-2 rounded-xl hover:bg-orange-600 transition">ยืนยัน</button>
-              <Link href="/" className="bg-orange-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-orange-300 transition">
+              <button type="submit" className="bg-[#9063d2] hover:bg-[#8753d5] text-white px-4 py-2 rounded-xl  transition">ยืนยัน</button>
+              <Link
+                href="/"
+                className="bg-[#f3e5f5] hover:bg-[#8753d5] text-gray-700 px-4 py-2 rounded-xl  hover:text-white transition"
+              >
                 ย้อนกลับ
               </Link>
+
             </div>
           </form>
         </div>

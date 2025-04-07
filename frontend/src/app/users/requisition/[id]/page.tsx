@@ -104,9 +104,9 @@ function UsersRequisitionDetail() {
 
     return (
         <>
-            <div className="min-h-screen bg-gray-100">
+            <div className="min-h-screen bg-[#f3e5f5]">
                 <Navbar />
-                <div className="relative -mt-24 flex flex-col items-center">
+                <div className="relative flex flex-col items-center">
                     <div className="flex-1 flex flex-col">
                         <div className="flex-1 flex items-start justify-center p-2">
                             <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 flex">
@@ -153,21 +153,21 @@ function UsersRequisitionDetail() {
                                             max={remaining}
                                             value={quantity}
                                             onChange={(e) => setQuantity(Number(e.target.value))}
-                                            className="w-2/4 px-4 py-2 border rounded-md text-center focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                            className="w-2/4 px-4 py-2 border rounded-md text-center focus:ring-2 focus:ring-[#9063d2] focus:outline-none"
                                             placeholder="จำนวน"
                                         />
                                     </div>
                                     <div className="mt-6 flex items-center space-x-4">
                                         <button
                                             onClick={(e) => handleAddToOrder(requisition.id, quantity, e)}
-                                            className="bg-[#fb8124] text-white px-4 py-2 rounded-md hover:bg-[#fb8124]"
+                                            className="bg-[#9063d2] hover:bg-[#8753d5] text-white px-4 py-2 rounded-md"
                                         >
                                             เพิ่มรายการ
                                         </button>
 
                                         <button
                                             onClick={() => window.history.back()}
-                                            className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
+                                            className="bg-[#f3e5f5] hover:bg-[#8753d5] text-white px-4 py-2 rounded-md"
                                         >
                                             ย้อนกลับ
                                         </button>

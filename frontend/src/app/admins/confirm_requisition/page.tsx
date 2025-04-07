@@ -73,6 +73,8 @@ function ConfirmRequisition() {
     const [totalPages, setTotalPages] = useState(1);
     const itemsPerPage = 10;
 
+
+
     useEffect(() => {
         const fetchRequisitionLogs = async () => {
             try {
@@ -87,6 +89,7 @@ function ConfirmRequisition() {
                 if (response.status === 200 && response.data.items) {
                     setRequisitionGroups(response.data.items);
                     setTotalPages(response.data.totalPages);
+                    setTotalItems(response.data.totalItems); // ✅ รับจำนวนทั้งหมดมาด้วย
                 }
             } catch (error) {
                 console.error("Error fetching requisition logs:", error);
@@ -96,7 +99,22 @@ function ConfirmRequisition() {
         fetchRequisitionLogs();
     }, [statusFilter, currentPage]);
 
+    const [totalItems, setTotalItems] = useState(0);
 
+
+    const startIndex = (currentPage - 1) * itemsPerPage;
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    const goToPreviousPage = () => {
+        if (currentPage > 1) setCurrentPage(currentPage - 1);
+    };
+
+    const goToNextPage = () => {
+        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+    };
 
 
 
@@ -273,19 +291,7 @@ function ConfirmRequisition() {
     };
 
 
-    const startIndex = (currentPage - 1) * itemsPerPage;
 
-    const handlePageChange = (page: number) => {
-        setCurrentPage(page);
-    };
-
-    const goToPreviousPage = () => {
-        if (currentPage > 1) setCurrentPage(currentPage - 1);
-    };
-
-    const goToNextPage = () => {
-        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-    };
 
     return (
         <div className="min-h-screen flex bg-gray-50">
@@ -293,7 +299,7 @@ function ConfirmRequisition() {
             <div className="flex-1">
                 <TopBar />
 
-                <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
+                <div className="bg-white rounded-lg shadow-lg max-w-5xl w-full p-8 mt-4 lg:ml-56">
                     <h1 className="text-2xl font-bold mb-6">อนุมัติเบิกสื่อ</h1>
 
                     <div className="mb-4 flex space-x-4">
@@ -306,7 +312,7 @@ function ConfirmRequisition() {
                             <button
                                 key={key}
                                 onClick={() => setStatusFilter(key)}
-                                className={`py-2 px-4 rounded ${statusFilter === key ? "bg-[#fb8124] text-white" : "bg-gray-200"
+                                className={`py-2 px-4 rounded ${statusFilter === key ? "bg-[#9063d2] text-white" : "bg-gray-200"
                                     }`}
                             >
                                 {label}
@@ -319,72 +325,71 @@ function ConfirmRequisition() {
                     ) : (
                         <table className="w-full border-collapse bg-white shadow rounded-lg overflow-hidden">
                             <thead>
-                                <tr className="bg-gray-200 text-gray-700">
-                                    <th className="py-3 px-4 text-left">ลำดับ</th>
-                                    <th className="py-3 px-4 text-left">ชื่อผู้ขอ</th>
-                                    <th className="py-3 px-4 text-left">สถานะ</th>
-                                    <th className="py-3 px-4 text-left">การจัดการ</th>
+                                <tr className="bg-[#9063d2] text-white text-left text-sm uppercase font-semibold tracking-wider">
+                                    <th className="border py-3 px-4 text-left">ลำดับ</th>
+                                    <th className="border py-3 px-4 text-left">ชื่อผู้ขอ</th>
+                                    <th className="border py-3 px-4 text-left">สถานะ</th>
+                                    <th className="border py-3 px-4 text-left">การจัดการ</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {(statusFilter === "all"
-                                    ? requisitionGroups.slice(startIndex, startIndex + 10) // แสดงข้อมูลทีละ 10 แถว
-                                    : requisitionGroups
-                                        .filter((group) => group.status === statusFilter)
-                                        .slice(startIndex, startIndex + 10) // แสดงข้อมูลทีละ 10 แถวสำหรับสถานะที่เลือก
-                                ).map((group, index) => (
-                                    <tr key={group.requested_groupid} className="border-b text-sm">
-                                        <td className="py-3 px-4">คำขอที่ {startIndex + index + 1}</td>
-                                        <td className="py-3 px-4">
-                                            {group.user
-                                                ? `${group.user.title}${group.user.firstName} ${group.user.lastName}`
-                                                : "ไม่ระบุข้อมูลผู้ใช้"}
-                                        </td>
-                                        <td className="py-3 px-4">{statusMapping[group.status]}</td>
-                                        <td className="py-3 px-4">
-                                            {group.status === "Pending" && (
-                                                <button
-                                                    onClick={() => openModal(group, "pending")}
-                                                    className="px-4 py-2 rounded bg-[#fb8124] text-white"
-                                                >
-                                                    ดูคำขอ
-                                                </button>
-                                            )}
-                                            {group.status === "Approved" && (
-                                                <button
-                                                    onClick={() => openModal(group, "approved")}
-                                                    className="px-4 py-2 rounded bg-green-500 text-white"
-                                                >
-                                                    รายละเอียด
-                                                </button>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                                {(statusFilter === "all" && requisitionGroups.length === 0) ||
-                                    (statusFilter !== "all" &&
-                                        requisitionGroups.filter((group) => group.status === statusFilter).length === 0) ? (
+                                {requisitionGroups.length > 0 ? (
+                                    requisitionGroups.map((group, index) => (
+                                        <tr key={group.requested_groupid} className="border-b text-xs font-normal">
+                                            <td className="py-3 px-4">คำขอที่ {(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                            <td className="py-3 px-4">
+                                                {group.user
+                                                    ? `${group.user.title}${group.user.firstName} ${group.user.lastName}`
+                                                    : "ไม่ระบุข้อมูลผู้ใช้"}
+                                            </td>
+                                            <td className="py-3 px-4">{statusMapping[group.status]}</td>
+                                            <td className="py-3 px-4">
+                                                {group.status === "Pending" && (
+                                                    <button
+                                                        onClick={() => openModal(group, "pending")}
+                                                        className="px-4 py-2 rounded bg-[#fb8124] text-white"
+                                                    >
+                                                        ดูคำขอ
+                                                    </button>
+                                                )}
+                                                {group.status === "Approved" && (
+                                                    <button
+                                                        onClick={() => openModal(group, "approved")}
+                                                        className="px-4 py-2 rounded bg-[#9063d2] text-white"
+                                                    >
+                                                        รายละเอียด
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
                                     <tr>
                                         <td colSpan={4} className="py-4 px-4 text-center text-gray-500">
                                             ไม่มีข้อมูลคำขอในสถานะนี้
                                         </td>
                                     </tr>
-                                ) : null}
+                                )}
                             </tbody>
+
                         </table>
                     )}
 
                     {statusFilter && (
                         <div className="flex items-center justify-between mt-6">
                             <span className="text-sm text-gray-600">
-                                รายการที่ {startIndex + 1} ถึง {Math.min(startIndex + 10, requisitionGroups.length)} จาก {" "}
-                                {requisitionGroups.length} รายการ
+                                {totalItems > 0
+                                    ? `รายการที่ ${startIndex + 1} ถึง ${Math.min(startIndex + itemsPerPage, totalItems)} จาก ${totalItems} รายการ`
+                                    : "ไม่มีรายการ"}
                             </span>
+
+
+
                             <div className="flex space-x-2">
                                 <button
                                     onClick={goToPreviousPage}
                                     disabled={currentPage === 1}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                 >
                                     ก่อนหน้า
                                 </button>
@@ -392,8 +397,8 @@ function ConfirmRequisition() {
                                     <button
                                         key={page}
                                         onClick={() => handlePageChange(page)}
-                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#fb8124] text-white" : "bg-gray-200 text-gray-600"
-                                            } hover:bg-[#fb8124] hover:text-white transition`}
+                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-600"
+                                            } hover:bg-[#9063d2] hover:text-white transition`}
                                     >
                                         {page}
                                     </button>
@@ -401,7 +406,7 @@ function ConfirmRequisition() {
                                 <button
                                     onClick={goToNextPage}
                                     disabled={currentPage === totalPages}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                 >
                                     ถัดไป
                                 </button>
@@ -457,19 +462,19 @@ function ConfirmRequisition() {
                             <div className="mt-6 flex justify-between items-center space-x-4">
                                 <button
                                     onClick={handleApprove}
-                                    className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg font-semibold"
+                                    className="flex-1 bg-[#9063d2] hover:bg-[#8753d5] text-white py-2 px-4 rounded-lg font-semibold"
                                 >
                                     อนุมัติ
                                 </button>
                                 <button
                                     onClick={() => handleReject(selectedPendingGroup)}
-                                    className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-semibold"
+                                    className="flex-1 bg-[#f3e5f5] hover:bg-[#8753d5] text-white py-2 px-4 rounded-lg font-semibold"
                                 >
                                     ไม่อนุมัติ
                                 </button>
                                 <button
                                     onClick={closeModal}
-                                    className="flex-1 bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded-lg font-semibold"
+                                    className="flex-1 bg-[#f3e5f5] hover:bg-[#8753d5] text-white py-2 px-4 rounded-lg font-semibold"
                                 >
                                     ปิด
                                 </button>

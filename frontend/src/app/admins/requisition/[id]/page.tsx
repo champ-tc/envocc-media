@@ -168,14 +168,14 @@ function RequisitionDetail() {
                                             alert("จำนวนที่กรอกต้องไม่เกินจำนวนคงเหลือ");
                                         }
                                     }}
-                                    className="w-2/4 px-4 py-2 border rounded-md text-center focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                    className="w-2/4 px-4 py-2 border rounded-md text-center focus:ring-2 focus:ring-[#9063d2] focus:outline-none"
                                     placeholder="จำนวน"
                                 />
                             </div>
                             <div className="mt-6 flex items-center space-x-4">
                                 <button
                                     onClick={(e) => handleAddToOrder(requisition.id, quantity, e)}
-                                    className="bg-[#fb8124] text-white px-4 py-2 rounded-md hover:bg-[#fb8124]"
+                                    className="bg-[#9063d2] hover:bg-[#8753d5] text-white px-4 py-2 rounded-md"
                                 >
                                     เพิ่มรายการ
                                 </button>
@@ -183,7 +183,7 @@ function RequisitionDetail() {
 
                                 <button
                                     onClick={() => window.history.back()}
-                                    className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
+                                    className="bg-[#f3e5f5] hover:bg-[#8753d5] text-white px-4 py-2 rounded-md"
                                 >
                                     ย้อนกลับ
                                 </button>

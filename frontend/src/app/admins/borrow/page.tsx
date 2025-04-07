@@ -192,7 +192,7 @@ function AdminsBorrow() {
                                     </p>
 
                                     <button
-                                        className="mt-auto bg-[#fb8124] text-white py-2 px-4 rounded-lg w-full transition-colors"
+                                        className="mt-auto bg-[#9063d2] text-white py-2 px-4 rounded-lg w-full transition-colors"
                                         onClick={() => {
                                             window.location.assign(`/admins/borrow/${item.id}`);
                                         }}
@@ -213,7 +213,7 @@ function AdminsBorrow() {
                                 <button
                                     onClick={goToPreviousPage}
                                     disabled={currentPage === 1}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                 >
                                     ก่อนหน้า
                                 </button>
@@ -221,7 +221,7 @@ function AdminsBorrow() {
                                     <button
                                         key={page}
                                         onClick={() => handlePageChange(page)}
-                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#fb8124] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#fb8124] hover:text-white transition`}
+                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#9063d2] hover:text-white transition`}
                                     >
                                         {page}
                                     </button>
@@ -229,7 +229,7 @@ function AdminsBorrow() {
                                 <button
                                     onClick={goToNextPage}
                                     disabled={currentPage === totalPages}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                 >
                                     ถัดไป
                                 </button>

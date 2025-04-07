@@ -263,7 +263,7 @@ function EditUser() {
                     name="role"
                     value={userData.role}
                     onChange={(e) => setUserData({ ...userData, role: e.target.value })}
-                    className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 sm:text-sm"
+                    className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#9063d2] sm:text-sm"
                     required
                   >
                     <option value="user">User</option>
@@ -280,7 +280,7 @@ function EditUser() {
                     name="title"
                     value={userData.title}
                     onChange={(e) => setUserData({ ...userData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                     required
                   >
                     <option value="">คำนำหน้า</option>
@@ -297,7 +297,7 @@ function EditUser() {
                     name="firstName"
                     value={userData.firstName}
                     onChange={(e) => setUserData({ ...userData, firstName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                     required
                   />
                 </div>
@@ -309,7 +309,7 @@ function EditUser() {
                     name="lastName"
                     value={userData.lastName}
                     onChange={(e) => setUserData({ ...userData, lastName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                     required
                   />
                 </div>
@@ -326,7 +326,7 @@ function EditUser() {
                     value={userData.tel}
                     onChange={(e) => setUserData({ ...userData, tel: e.target.value })}
                     pattern="[0-9]*"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                     required
                   />
                 </div>
@@ -339,7 +339,7 @@ function EditUser() {
                     name="email"
                     value={userData.email}
                     onChange={(e) => setUserData({ ...userData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                     required
                   />
                 </div>
@@ -357,7 +357,7 @@ function EditUser() {
                         position: ['8', '10'].includes(e.target.value) ? '' : userData.position
                       });
                     }}
-                    className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 sm:text-sm"
+                    className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#9063d2] sm:text-sm"
                     required
                   >
                     <option value="">เลือกประเภทผู้ใช้</option>
@@ -375,7 +375,7 @@ function EditUser() {
                       name="position"
                       value={userData.position || ''}
                       onChange={(e) => setUserData({ ...userData, position: e.target.value })}
-                      className="block w-full py-2 px-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 sm:text-sm"
+                      className="block w-full py-2 px-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2] sm:text-sm"
                       required
                     >
                       <option value="">เลือกตำแหน่ง</option>
@@ -391,7 +391,7 @@ function EditUser() {
                       name="position"
                       value={userData.position || ''}
                       onChange={(e) => setUserData({ ...userData, position: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                       required
                     />
                   ) : (
@@ -404,19 +404,12 @@ function EditUser() {
                   )}
                 </div>
 
-
-
-
-
-
-
-
               </div>
 
               <div className="flex justify-center mt-6 gap-2">
-                <button type="submit" className="bg-orange-500 text-white px-4 py-2 rounded-xl hover:bg-orange-600 transition">ยืนยัน</button>
+                <button type="submit" className="bg-[#9063d2] hover:bg-[#8753d5] text-white px-4 py-2 rounded-xl transition">ยืนยัน</button>
 
-                <Link href="/admins/user-management" className="bg-orange-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-orange-300 transition">
+                <Link href="/admins/user-management" className="bg-[#f3e5f5] hover:bg-[#8753d5] text-gray-700 px-4 py-2 rounded-xl transition">
                   ย้อนกลับ
                 </Link>
               </div>

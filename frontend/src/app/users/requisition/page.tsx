@@ -109,9 +109,9 @@ function UsersRequisition() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="min-h-screen bg-[#f3e5f5]">
             <Navbar />
-            <div className="relative -mt-24 flex flex-col items-center">
+            <div className="relative  flex flex-col items-center">
                 <div className="flex-1 flex items-start justify-center p-2">
                     <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4">
                         <h2 className="text-2xl font-semibold text-gray-800 mb-4">เบิกสื่อ</h2>
@@ -172,7 +172,7 @@ function UsersRequisition() {
                                     </p>
 
                                     <button
-                                        className="mt-auto bg-[#fb8124] text-white py-2 px-4 rounded-lg w-full transition-colors"
+                                        className="mt-auto bg-[#9063d2] text-white py-2 px-4 rounded-lg w-full transition-colors"
                                         onClick={() => router.push(`/users/requisition/${item.id}`)}
                                     >
                                         เลือก
@@ -190,7 +190,7 @@ function UsersRequisition() {
                                 <button
                                     onClick={goToPreviousPage}
                                     disabled={currentPage === 1}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                 >
                                     ก่อนหน้า
                                 </button>
@@ -198,7 +198,7 @@ function UsersRequisition() {
                                     <button
                                         key={page}
                                         onClick={() => handlePageChange(page)}
-                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#fb8124] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#fb8124] hover:text-white transition`}
+                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#9063d2] hover:text-white transition`}
                                     >
                                         {page}
                                     </button>
@@ -206,7 +206,7 @@ function UsersRequisition() {
                                 <button
                                     onClick={goToNextPage}
                                     disabled={currentPage === totalPages}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                 >
                                     ถัดไป
                                 </button>

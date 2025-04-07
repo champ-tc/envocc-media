@@ -287,13 +287,13 @@ function AdminsUserManagement() {
                         <div className="flex mb-4 space-x-4">
                             <button
                                 onClick={() => setSelectedRole('user')}
-                                className={`py-2 px-4 rounded-md ${selectedRole === 'user' ? "bg-[#fb8124] text-white" : "bg-gray-200 text-gray-700"} hover:bg-[#fb8124] hover:text-white transition`}
+                                className={`py-2 px-4 rounded-md ${selectedRole === 'user' ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-700"} hover:bg-[#9063d2] hover:text-white transition`}
                             >
                                 แสดงข้อมูลผู้ใช้งาน
                             </button>
                             <button
                                 onClick={() => setSelectedRole('admin')}
-                                className={`py-2 px-4 rounded-md ${selectedRole === 'admin' ? "bg-[#fb8124] text-white" : "bg-gray-200 text-gray-700"} hover:bg-[#fb8124] hover:text-white transition`}
+                                className={`py-2 px-4 rounded-md ${selectedRole === 'admin' ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-700"} hover:bg-[#9063d2] hover:text-white transition`}
                             >
                                 แสดงข้อมูลผู้ดูแลระบบ
                             </button>
@@ -302,20 +302,20 @@ function AdminsUserManagement() {
                         <div className="overflow-x-auto w-full">
                             <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden text-sm">
                                 <thead>
-                                    <tr className="bg-gray-200 text-gray-600 text-left text-sm uppercase font-semibold tracking-wider">
+                                    <tr className="bg-[#9063d2] text-white text-left text-sm uppercase font-semibold tracking-wider">
                                         <th className="py-2 px-4 whitespace-nowrap" style={{ width: "5%" }}>รหัส</th>
                                         <th className="py-2 px-4 whitespace-nowrap" style={{ width: "10%" }}>ชื่อผู้ใช้</th>
-                                        <th className="py-2 px-4 overflow-hidden text-ellipsis" style={{ width: "15%" }}>ชื่อ-นามสกุล</th>
-                                        <th className="py-2 px-4 overflow-hidden text-ellipsis" style={{ width: "15%" }}>Email</th>
+                                        <th className="py-2 px-4 overflow-hidden text-ellipsis" style={{ width: "18%" }}>ชื่อ-นามสกุล</th>
+                                        <th className="py-2 px-4 overflow-hidden text-ellipsis" style={{ width: "12%" }}>Email</th>
                                         <th className="py-2 px-4 whitespace-nowrap" style={{ width: "10%" }}>เบอร์</th>
-                                        <th className="py-2 px-4 overflow-hidden text-ellipsis" style={{ width: "10%" }}>ประเภทผู้ใช้</th>
+                                        <th className="py-2 px-4 overflow-hidden text-ellipsis" style={{ width: "15%" }}>ประเภทผู้ใช้</th>
                                         <th className="py-2 px-4 overflow-hidden text-ellipsis" style={{ width: "15%" }}>หน่วยงาน</th>
                                         <th className="py-2 px-4 whitespace-nowrap" style={{ width: "15%" }}>จัดการ</th>
                                     </tr>
                                 </thead>
-                                <tbody className="text-gray-700 text-sm">
+                                <tbody>
                                     {paginatedUsers.map(user => (
-                                        <tr key={user.id} className="border-t border-gray-200">
+                                        <tr key={user.id} className="border-t border-gray-200 text-xs font-normal">
                                             <td className="py-2 px-4">{user.id}</td>
                                             <td className="py-2 px-4">{user.username}</td>
                                             <td className="py-2 px-4 overflow-hidden text-ellipsis min-w-0">{`${user.title}${user.firstName} ${user.lastName}`}</td>
@@ -364,7 +364,7 @@ function AdminsUserManagement() {
                                 <button
                                     onClick={goToPreviousPage}
                                     disabled={currentPage === 1}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                 >
                                     ก่อนหน้า
                                 </button>
@@ -372,8 +372,8 @@ function AdminsUserManagement() {
                                     <button
                                         key={page}
                                         onClick={() => handlePageChange(page)}
-                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#fb8124] text-white" : "bg-gray-200 text-gray-600"
-                                            } hover:bg-[#fb8124] hover:text-white transition`}
+                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-600"
+                                            } hover:bg-[#9063d2] hover:text-white transition`}
                                     >
                                         {page}
                                     </button>
@@ -381,7 +381,7 @@ function AdminsUserManagement() {
                                 <button
                                     onClick={goToNextPage}
                                     disabled={currentPage === totalPages}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                 >
                                     ถัดไป
                                 </button>

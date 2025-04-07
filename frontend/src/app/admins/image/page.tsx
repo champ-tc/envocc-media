@@ -146,22 +146,22 @@ function Adminsimage() {
 
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-    
+
         if (!editImageId) {
             showAlert('เกิดข้อผิดพลาด: ไม่พบ ID ที่ต้องการแก้ไข', 'error');
             return;
         }
-    
+
         const formData = new FormData();
         formData.append('id', editImageId.toString());
         formData.append('title', editTitle);
         if (file) {
             formData.append('newFile', file);
         }
-    
+
         try {
             const response = await axios.put(`/api/images/${editImageId}`, formData);
-    
+
             if (response.status === 200) {
                 showAlert('อัปเดตข้อมูลสำเร็จ!', 'success');
                 fetchImages(); // โหลดข้อมูลใหม่
@@ -176,7 +176,7 @@ function Adminsimage() {
             showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์', 'error');
         }
     };
-    
+
 
 
 
@@ -252,21 +252,21 @@ function Adminsimage() {
 
                         <div className="">
                             <div className="w-full">
-                                <button onClick={() => setShowModal(true)} className="mb-4 bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 transition">+เพิ่มสื่อดาวน์โหลด</button>
+                                <button onClick={() => setShowModal(true)} className="mb-4 bg-[#9063d2] hover:bg-[#8753d5] text-white py-2 px-4 rounded-md transition">+เพิ่มสื่อดาวน์โหลด</button>
                                 <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden text-sm">
                                     <thead>
-                                        <tr className="bg-gray-200 text-gray-600 text-left text-sm uppercase font-semibold tracking-wider">
-                                            <th className="px-4 py-2 border-b-2 border-gray-200">รูปภาพ</th>
-                                            <th className="px-4 py-2 border-b-2 border-gray-200">ชื่อเรื่อง</th>
-                                            <th className="px-4 py-2 border-b-2 border-gray-200">วันที่เพิ่ม</th>
-                                            <th className="px-4 py-2 border-b-2 border-gray-200">การจัดการ</th>
+                                        <tr className="bg-[#9063d2] text-white text-left text-sm uppercase font-semibold tracking-wider">
+                                            <th className="border px-4 py-2 border-b-2 border-gray-200" style={{ width: "30%" }}>รูปภาพ</th>
+                                            <th className="border px-4 py-2 border-b-2 border-gray-200" style={{ width: "30%" }}>ชื่อเรื่อง</th>
+                                            <th className="border px-4 py-2 border-b-2 border-gray-200" style={{ width: "20%" }}>วันที่เพิ่ม</th>
+                                            <th className="border px-4 py-2 border-b-2 border-gray-200" style={{ width: "20%" }}>การจัดการ</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="text-gray-700">
+                                    <tbody>
                                         {currentImages.length > 0 ? (
                                             currentImages.map(image => (
-                                                <tr key={image.id} className="hover:bg-gray-100 text-sm">
-                                                    <td className="px-4 py-2 border-b">
+                                                <tr key={image.id} className="border-t border-gray-200 text-xs font-normal">
+                                                    <td className="border px-4 py-2 border-b">
                                                         <img
                                                             src={`/uploads/${image.filename}`}
                                                             alt={image.title}
@@ -274,9 +274,9 @@ function Adminsimage() {
                                                             onClick={() => setSelectedImage(`/uploads/${image.filename}`)}
                                                         />
                                                     </td>
-                                                    <td className="px-4 py-2 border-b">{image.title}</td>
-                                                    <td className="px-4 py-2 border-b">{new Date(image.addedDate).toLocaleDateString()}</td>
-                                                    <td className="px-4 py-2 border-b">
+                                                    <td className="border px-4 py-2 border-b">{image.title}</td>
+                                                    <td className="border px-4 py-2 border-b">{new Date(image.addedDate).toLocaleDateString()}</td>
+                                                    <td className="border px-4 py-2 border-b">
                                                         <button
                                                             onClick={() => openEditConfirm(image)}
                                                             className="mb-4 py-2 px-2 mr-2 rounded-md transition"
@@ -317,7 +317,7 @@ function Adminsimage() {
                                         <button
                                             onClick={goToPreviousPage}
                                             disabled={currentPage === 1}
-                                            className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                            className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                         >
                                             ก่อนหน้า
                                         </button>
@@ -325,7 +325,7 @@ function Adminsimage() {
                                             <button
                                                 key={page}
                                                 onClick={() => handlePageChange(page)}
-                                                className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#fb8124] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#fb8124] hover:text-white transition`}
+                                                className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#9063d2] hover:text-white transition`}
                                             >
                                                 {page}
                                             </button>
@@ -333,7 +333,7 @@ function Adminsimage() {
                                         <button
                                             onClick={goToNextPage}
                                             disabled={currentPage === totalPages}
-                                            className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                            className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                         >
                                             ถัดไป
                                         </button>
@@ -349,7 +349,7 @@ function Adminsimage() {
                                                     <label className="label text-gray-700 font-semibold mb-2">ชื่อเรื่อง</label>
                                                     <input
                                                         type="text"
-                                                        className="input w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        className="input w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                                                         value={title}
                                                         onChange={(e) => setTitle(e.target.value)}
                                                         required
@@ -368,17 +368,17 @@ function Adminsimage() {
                                                 </div>
                                                 <div className="modal-action flex justify-end space-x-4">
                                                     <button
-                                                        type="button"
-                                                        onClick={() => setShowModal(false)}
-                                                        className="mb-4 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md transition"
-                                                    >
-                                                        ยกเลิก
-                                                    </button>
-                                                    <button
                                                         type="submit"
-                                                        className="mb-4 bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-md transition"
+                                                        className="mb-4 bg-[#9063d2] hover:bg-[#8753d5] text-white py-2 px-4 rounded-md transition"
                                                     >
                                                         บันทึก
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowModal(false)}
+                                                        className="mb-4 bg-[#f3e5f5] hover:bg-[#8753d5] text-white py-2 px-4 rounded-md transition"
+                                                    >
+                                                        ยกเลิก
                                                     </button>
                                                 </div>
                                             </form>
@@ -396,7 +396,7 @@ function Adminsimage() {
                                                     <label className="label text-gray-700 font-semibold mb-2">ชื่อเรื่อง</label>
                                                     <input
                                                         type="text"
-                                                        className="input w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        className="input w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                                                         value={editTitle}
                                                         onChange={(e) => setEditTitle(e.target.value)}
                                                         required
@@ -414,17 +414,17 @@ function Adminsimage() {
                                                 </div>
                                                 <div className="modal-action flex justify-end space-x-4">
                                                     <button
-                                                        type="button"
-                                                        onClick={() => setEditModalVisible(false)}
-                                                        className="mb-4 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md transition"
-                                                    >
-                                                        ยกเลิก
-                                                    </button>
-                                                    <button
                                                         type="submit"
-                                                        className="mb-4 bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-md transition"
+                                                        className="mb-4 bg-[#f3e5f5] hover:bg-[#8753d5] text-white py-2 px-4 rounded-md transition"
                                                     >
                                                         บันทึก
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setEditModalVisible(false)}
+                                                        className="mb-4 bg-[#9063d2] hover:bg-[#8753d5] text-white py-2 px-4 rounded-md transition"
+                                                    >
+                                                        ยกเลิก
                                                     </button>
                                                 </div>
                                             </form>

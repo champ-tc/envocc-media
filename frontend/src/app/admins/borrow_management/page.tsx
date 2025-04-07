@@ -124,7 +124,7 @@ function AdminsBorrow_management() {
 
     const [types, setTypes] = useState<Type[]>([]);
     const [isLoadingTypes, setIsLoadingTypes] = useState<boolean>(true); // เพิ่ม state โหลดข้อมูล
-    
+
 
     const fetchTypes = async () => {
         try {
@@ -141,12 +141,12 @@ function AdminsBorrow_management() {
             setIsLoadingTypes(false);
         }
     };
-    
+
 
     useEffect(() => {
         fetchTypes();
     }, []);
-    
+
 
 
 
@@ -296,7 +296,7 @@ function AdminsBorrow_management() {
     const openDeleteConfirm = (id: number) => {
         setSelectedId(id); // กำหนด ID ที่จะปิดการใช้งาน
         setIsDeleteConfirmOpen(true); // เปิด Modal ยืนยันการปิด
-    };  
+    };
 
 
     const handleEditSubmit = async (e: React.FormEvent) => {
@@ -415,28 +415,28 @@ function AdminsBorrow_management() {
                     <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
                         <h2 className="text-2xl font-semibold text-gray-800 mb-4">ยืม / คืน</h2>
 
-                        <button onClick={() => setShowModal(true)} className="mb-4 bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 transition">+ เพิ่ม ยืม / คืน</button>
+                        <button onClick={() => setShowModal(true)} className="mb-4 bg-[#9063d2] hover:bg-[#8753d5] text-white py-2 px-4 rounded-md transition">+ เพิ่ม ยืม / คืน</button>
 
                         <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden text-sm">
                             {/* Table Header */}
                             <thead>
-                                <tr className="bg-gray-200 text-gray-600 text-left text-sm uppercase font-semibold tracking-wider">
-                                    <th className="px-4 py-2" style={{ width: "7%" }}>รูปภาพ</th>
-                                    <th className="px-4 py-2" style={{ width: "20%" }}>ชื่อสื่อ</th>
-                                    <th className="px-4 py-2" style={{ width: "10%" }}>หน่วยนับ</th>
-                                    <th className="px-4 py-2" style={{ width: "10%" }}>ประเภท</th>
-                                    <th className="px-4 py-2" style={{ width: "10%" }}>จำนวนคงเหลือ</th>
-                                    <th className="px-4 py-2" style={{ width: "20%" }}>คำอธิบาย</th>
-                                    <th className="px-4 py-2" style={{ width: "10%" }}>สถานะเบิก</th>
-                                    <th className="px-4 py-2" style={{ width: "13%" }}>จัดการ</th>
+                                <tr className="bg-[#9063d2] text-white text-left text-sm uppercase font-semibold tracking-wider">
+                                    <th className="border px-4 py-2" style={{ width: "10%" }}>รูปภาพ</th>
+                                    <th className="border px-4 py-2" style={{ width: "20%" }}>ชื่อสื่อ</th>
+                                    <th className="border px-4 py-2" style={{ width: "10%" }}>หน่วยนับ</th>
+                                    <th className="border px-4 py-2" style={{ width: "10%" }}>ประเภท</th>
+                                    <th className="border px-4 py-2" style={{ width: "10%" }}>จำนวนคงเหลือ</th>
+                                    <th className="border px-4 py-2" style={{ width: "15%" }}>คำอธิบาย</th>
+                                    <th className="border px-4 py-2" style={{ width: "10%" }}>สถานะเบิก</th>
+                                    <th className="border px-4 py-2" style={{ width: "15%" }}>จัดการ</th>
                                 </tr>
                             </thead>
 
 
-                            <tbody className="text-gray-700 text-sm">
+                            <tbody>
                                 {Array.isArray(paginatedBorrows) && paginatedBorrows.length > 0 ? (
                                     paginatedBorrows.map((borrow) => (
-                                        <tr key={borrow.id}>
+                                        <tr key={borrow.id} className="border-t border-gray-200 text-xs font-normal">
                                             <td className="px-4 py-2 border">
                                                 {borrow.borrow_images ? (
                                                     <img
@@ -506,7 +506,7 @@ function AdminsBorrow_management() {
                                 <button
                                     onClick={goToPreviousPage}
                                     disabled={currentPage === 1}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                 >
                                     ก่อนหน้า
                                 </button>
@@ -514,7 +514,7 @@ function AdminsBorrow_management() {
                                     <button
                                         key={page}
                                         onClick={() => handlePageChange(page)}
-                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#fb8124] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#fb8124] hover:text-white transition`}
+                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#9063d2] hover:text-white transition`}
                                     >
                                         {page}
                                     </button>
@@ -522,7 +522,7 @@ function AdminsBorrow_management() {
                                 <button
                                     onClick={goToNextPage}
                                     disabled={currentPage === totalPages}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                 >
                                     ถัดไป
                                 </button>
@@ -555,7 +555,7 @@ function AdminsBorrow_management() {
                                                 placeholder="ชื่อสื่อ"
                                                 value={newBorrow.borrow_name}
                                                 onChange={(e) => setNewBorrow({ ...newBorrow, borrow_name: e.target.value })}
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-[#9063d2] focus:outline-none"
                                                 required
                                             />
                                         </div>
@@ -576,7 +576,7 @@ function AdminsBorrow_management() {
                                                     placeholder="หน่วยนับ"
                                                     value={newBorrow.unit}
                                                     onChange={(e) => setNewBorrow({ ...newBorrow, unit: e.target.value })}
-                                                    className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                    className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-[#9063d2] focus:outline-none"
                                                     required
                                                 />
                                             </div>
@@ -585,7 +585,7 @@ function AdminsBorrow_management() {
                                                 <select
                                                     value={newBorrow.type_id}
                                                     onChange={(e) => setNewBorrow({ ...newBorrow, type_id: Number(e.target.value) })}
-                                                    className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                    className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-[#9063d2] focus:outline-none"
                                                     required
                                                 >
                                                     <option value="">เลือกประเภท</option>
@@ -604,7 +604,7 @@ function AdminsBorrow_management() {
                                                 placeholder="จำนวนคงเหลือ"
                                                 value={newBorrow.quantity}
                                                 onChange={(e) => setNewBorrow({ ...newBorrow, quantity: Number(e.target.value) })}
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-[#9063d2] focus:outline-none"
                                                 required
                                             />
                                         </div>
@@ -614,22 +614,22 @@ function AdminsBorrow_management() {
                                                 placeholder="คำอธิบายเพิ่มเติม"
                                                 value={newBorrow.description}
                                                 onChange={(e) => setNewBorrow({ ...newBorrow, description: e.target.value })}
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-[#9063d2] focus:outline-none"
                                             />
                                         </div>
                                         <div className="flex justify-end space-x-2">
                                             <button
-                                                type="button"
-                                                onClick={() => setShowModal(false)}
-                                                className="mb-4 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md transition"
-                                            >
-                                                ยกเลิก
-                                            </button>
-                                            <button
                                                 type="submit"
-                                                className="mb-4 bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-md transition"
+                                                className="mb-4 bg-[#9063d2] hover:bg-[#8753d5] text-white py-2 px-4 rounded-md transition"
                                             >
                                                 บันทึก
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowModal(false)}
+                                                className="mb-4 bg-[#f3e5f5] hover:bg-[#8753d5] text-white py-2 px-4 rounded-md transition"
+                                            >
+                                                ยกเลิก
                                             </button>
                                         </div>
                                     </form>
@@ -652,7 +652,7 @@ function AdminsBorrow_management() {
                                                 onChange={(e) =>
                                                     setNewBorrow({ ...newBorrow, borrow_name: e.target.value })
                                                 }
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-[#9063d2] focus:outline-none"
                                                 required
                                             />
                                         </div>
@@ -695,7 +695,7 @@ function AdminsBorrow_management() {
                                                     onChange={(e) =>
                                                         setNewBorrow({ ...newBorrow, unit: e.target.value })
                                                     }
-                                                    className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                    className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-[#9063d2] focus:outline-none"
                                                     required
                                                 />
                                             </div>
@@ -704,7 +704,7 @@ function AdminsBorrow_management() {
                                                 <select
                                                     value={newBorrow.type_id}
                                                     onChange={(e) => setNewBorrow({ ...newBorrow, type_id: Number(e.target.value) })}
-                                                    className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                    className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-[#9063d2] focus:outline-none"
                                                     required
                                                 >
                                                     <option value="">เลือกประเภท</option>
@@ -732,7 +732,7 @@ function AdminsBorrow_management() {
                                                 onChange={(e) =>
                                                     setNewBorrow({ ...newBorrow, quantity: Number(e.target.value) })
                                                 }
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-[#9063d2] focus:outline-none"
                                                 required
                                             />
                                         </div>
@@ -744,7 +744,7 @@ function AdminsBorrow_management() {
                                                 onChange={(e) =>
                                                     setNewBorrow({ ...newBorrow, description: e.target.value })
                                                 }
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-[#9063d2] focus:outline-none"
                                             />
                                         </div>
                                         <div className="flex items-center">

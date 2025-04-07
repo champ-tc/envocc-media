@@ -256,20 +256,20 @@ function AdminsType_management() {
 
                         <div className="">
                             <div className="w-full">
-                                <button onClick={() => setShowModal(true)} className="mb-4 bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-md  transition">+ เพิ่มประเภท</button>
+                                <button onClick={() => setShowModal(true)} className="mb-4 bg-[#9063d2] hover:bg-[#8753d5] text-white py-2 px-4 rounded-md  transition">+ เพิ่มประเภท</button>
                                 <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden text-sm">
                                     <thead>
-                                        <tr className="bg-gray-200 text-gray-600 text-left text-sm uppercase font-semibold tracking-wider">
-                                            <th className="px-4 py-2 border-b-2 border-gray-200">ชื่อประเภท</th>
-                                            <th className="px-4 py-2 border-b-2 border-gray-200">รายละเอียด</th>
-                                            <th className="px-4 py-2 border-b-2 border-gray-200">วันที่เพิ่ม</th>
-                                            <th className="px-4 py-2 border-b-2 border-gray-200">การจัดการ</th>
+                                        <tr className="bg-[#9063d2] text-white text-left text-sm uppercase font-semibold tracking-wider">
+                                            <th className="border px-4 py-2 border-b-2 border-gray-200">ชื่อประเภท</th>
+                                            <th className="border px-4 py-2 border-b-2 border-gray-200">รายละเอียด</th>
+                                            <th className="border px-4 py-2 border-b-2 border-gray-200">วันที่เพิ่ม</th>
+                                            <th className="border px-4 py-2 border-b-2 border-gray-200">การจัดการ</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="text-gray-700 text-sm">
+                                    <tbody>
                                         {types.length > 0 ? (
                                             types.map(type => (
-                                                <tr key={type.id} className="hover:bg-gray-100 text-sm">
+                                                <tr key={type.id} className="border-t border-gray-200 text-xs font-normal">
                                                     <td className="px-4 py-2 border-b">{type.name}</td>
                                                     <td className="px-4 py-2 border-b">{type.description}</td>
                                                     <td className="px-4 py-2 border-b">
@@ -301,7 +301,7 @@ function AdminsType_management() {
                                         <button
                                             onClick={goToPreviousPage}
                                             disabled={currentPage === 1}
-                                            className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                            className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                         >
                                             ก่อนหน้า
                                         </button>
@@ -309,7 +309,7 @@ function AdminsType_management() {
                                             <button
                                                 key={page}
                                                 onClick={() => handlePageChange(page)}
-                                                className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#fb8124] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#fb8124] hover:text-white transition`}
+                                                className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#9063d2] hover:text-white transition`}
                                             >
                                                 {page}
                                             </button>
@@ -317,7 +317,7 @@ function AdminsType_management() {
                                         <button
                                             onClick={goToNextPage}
                                             disabled={currentPage === totalPages}
-                                            className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                            className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                         >
                                             ถัดไป
                                         </button>
@@ -365,7 +365,7 @@ function AdminsType_management() {
                                                 <label className="label text-gray-700 font-semibold mb-2">ชื่อประเภท</label>
                                                 <input
                                                     type="text"
-                                                    className="input w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    className="input w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                                                     value={name} // เปลี่ยนจาก type เป็น name
                                                     onChange={(e) => setName(e.target.value)} // เปลี่ยนจาก setType เป็น setName
                                                     required
@@ -375,7 +375,7 @@ function AdminsType_management() {
                                                 <label className="label text-gray-700 font-semibold mb-2">รายละเอียด</label>
                                                 <input
                                                     type="text"
-                                                    className="input w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    className="input w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                                                     value={description} // เปลี่ยนจาก type เป็น description
                                                     onChange={(e) => setDescription(e.target.value)} // เปลี่ยนจาก setType เป็น setDescription
                                                     required
@@ -383,17 +383,17 @@ function AdminsType_management() {
                                             </div>
                                             <div className="modal-action flex justify-end space-x-4">
                                                 <button
-                                                    type="button"
-                                                    onClick={() => setShowModal(false)}
-                                                    className="mb-4 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md transition"
-                                                >
-                                                    ยกเลิก
-                                                </button>
-                                                <button
                                                     type="submit"
-                                                    className="mb-4 bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-md transition"
+                                                    className="mb-4 bg-[#9063d2] hover:bg-[#8753d5] text-white py-2 px-4 rounded-md transition"
                                                 >
                                                     บันทึก
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowModal(false)}
+                                                    className="mb-4 bg-[#f3e5f5] hover:bg-[#8753d5] text-white py-2 px-4 rounded-md transition"
+                                                >
+                                                    ยกเลิก
                                                 </button>
                                             </div>
                                         </form>
@@ -411,7 +411,7 @@ function AdminsType_management() {
                                                 <label className="label text-gray-700 font-semibold mb-2">ชื่อประเภท</label>
                                                 <input
                                                     type="text"
-                                                    className="input w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    className="input w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                                                     value={editName}
                                                     onChange={(e) => setEditName(e.target.value)}
                                                     required
@@ -421,7 +421,7 @@ function AdminsType_management() {
                                                 <label className="label text-gray-700 font-semibold mb-2">รายละเอียด</label>
                                                 <input
                                                     type="text"
-                                                    className="input w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    className="input w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                                                     value={editDescription}
                                                     onChange={(e) => setEditDescription(e.target.value)}
                                                     required
@@ -429,17 +429,17 @@ function AdminsType_management() {
                                             </div>
                                             <div className="modal-action flex justify-end space-x-4">
                                                 <button
-                                                    type="button"
-                                                    onClick={() => setEditModalVisible(false)}
-                                                    className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-md transition"
-                                                >
-                                                    ยกเลิก
-                                                </button>
-                                                <button
                                                     type="submit"
-                                                    className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-md transition"
+                                                    className="bg-[#9063d2] hover:bg-[#8753d5] text-white py-2 px-4 rounded-md transition"
                                                 >
                                                     บันทึก
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setEditModalVisible(false)}
+                                                    className="bg-[#f3e5f5] hover:bg-[#8753d5] text-white py-2 px-4 rounded-md transition"
+                                                >
+                                                    ยกเลิก
                                                 </button>
                                             </div>
                                         </form>

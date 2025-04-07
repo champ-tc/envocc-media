@@ -80,9 +80,24 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
         );
 
         return NextResponse.json({
-            borrowLogs: Object.values(borrowLogsGrouped),
-            requisitionLogs: Object.values(requisitionLogsGrouped),
+            borrowLogs: Object.values(borrowLogsGrouped)
+                .sort((a, b) => new Date(b.logs[0].createdAt).getTime() - new Date(a.logs[0].createdAt).getTime())
+                .slice(0, 10)
+                .map((group) => ({
+                    ...group,
+                    createdAt: group.logs[0].createdAt, // ✅ เพิ่ม createdAt ของกลุ่ม
+                })),
+
+            requisitionLogs: Object.values(requisitionLogsGrouped)
+                .sort((a, b) => new Date(b.logs[0].createdAt).getTime() - new Date(a.logs[0].createdAt).getTime())
+                .slice(0, 10)
+                .map((group) => ({
+                    ...group,
+                    createdAt: group.logs[0].createdAt, // ✅ เพิ่ม createdAt ของกลุ่ม
+                })),
         });
+
+
     } catch (error) {
         console.error("Error in API route:", error);
         return NextResponse.json(

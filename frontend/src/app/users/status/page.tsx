@@ -20,11 +20,13 @@ type RequisitionLog = {
     createdAt: string;
 };
 
+
 type BorrowLogGroup = {
     borrow_groupid: string;
     logs: {
         id: number;
         status: string;
+        createdAt: string; // ✅ เพิ่มตรงนี้
         quantity?: number;
         borrow: {
             borrow_name: string;
@@ -32,15 +34,14 @@ type BorrowLogGroup = {
     }[];
 };
 
-
-
 type RequisitionLogGroup = {
     requested_groupid: string;
     logs: {
         id: number;
         status: string;
+        createdAt: string; // ✅ เพิ่มตรงนี้
         quantity?: number;
-        requested_quantity?: number; // เพิ่ม property นี้
+        requested_quantity?: number;
         requisition: {
             requisition_name: string;
         };
@@ -94,7 +95,9 @@ function UsersStatus() {
         Pending: "รอพิจารณา",
         Approved: "อนุมัติ",
         NotApproved: "ไม่อนุมัติ",
+        ApprovedReturned: "คืนแล้ว", // ✅ เพิ่มตรงนี้
     };
+
 
     if (isLoading) {
         return (
@@ -120,105 +123,104 @@ function UsersStatus() {
         <>
             <div className="min-h-screen bg-gray-100">
                 <Navbar />
-                <div className="relative -mt-24 flex flex-col items-center">
+                <div className="relative flex flex-col items-center">
                     <div className="flex-1 flex items-start justify-center p-2">
                         <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4">
-                            <h2 className="text-2xl font-semibold text-gray-800 mb-4">ตรวจสอบสถานะ</h2>
+                            <h2 className="text-2xl font-semibold text-gray-800 mb-4">ตรวจสอบสถานะ 10 อันดับ ล่าสุด</h2>
 
-                            <div className="mt-6">
-                                <h2 className="text-lg font-semibold">รายการเบิก</h2>
-                                {requisitionGroups.length > 0 ? (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                                {/* ตารางรายการเบิก */}
+                                <div>
+                                    <h2 className="text-lg font-semibold mb-2">รายการเบิก</h2>
                                     <table className="w-full border-collapse bg-white shadow rounded-lg overflow-hidden">
                                         <thead>
-                                            <tr className="bg-gray-200 text-gray-700 text-sm">
-                                                <th className="border border-gray-300 px-4 py-2">ลำดับที่</th>
-                                                <th className="border border-gray-300 px-4 py-2">สถานะ</th>
-                                                <th className="border border-gray-300 px-4 py-2">จำนวนรายการ</th>
-                                                <th className="border border-gray-300 px-4 py-2">ดูรายละเอียด</th>
+                                            <tr className="bg-[#fb8124] text-white text-sm">
+                                                <th className="border px-3 py-2">ลำดับ</th>
+                                                <th className="border px-3 py-2">สถานะ</th>
+                                                <th className="border px-3 py-2">จำนวน</th>
+                                                <th className="border px-3 py-2">วันที่</th> {/* ✅ เพิ่ม */}
+                                                <th className="border px-3 py-2">ดู</th>
                                             </tr>
                                         </thead>
                                         <tbody className="text-xs">
-                                            {requisitionGroups.map((group, index) => (
+                                            {requisitionGroups.slice(0, 10).map((group, index) => (
                                                 <tr key={group.requested_groupid}>
-                                                    {/* ลำดับที่ */}
-                                                    <td className="border border-gray-300 px-4 py-2">รายการที่ {index + 1}</td>
-
-                                                    {/* สถานะ */}
-                                                    <td className="border border-gray-300 px-4 py-2">
-                                                        {group.logs.length > 0
-                                                            ? statusMapping[group.logs[0].status] || group.logs[0].status
-                                                            : "ไม่มีข้อมูล"}
+                                                    <td className="border px-3 py-2">รายการที่ {index + 1}</td>
+                                                    <td className="border px-3 py-2">
+                                                        {group.logs[0]?.status ? statusMapping[group.logs[0].status] || group.logs[0].status : "ไม่มีข้อมูล"}
+                                                    </td>
+                                                    <td className="border px-3 py-2">{group.logs.length}</td>
+                                                    <td className="border px-3 py-2">
+                                                        {group.logs[0]?.createdAt
+                                                            ? new Date(group.logs[0].createdAt).toLocaleDateString("th-TH", {
+                                                                day: "2-digit",
+                                                                month: "short",
+                                                                year: "numeric",
+                                                            })
+                                                            : "-"}
                                                     </td>
 
-                                                    {/* จำนวนรายการ */}
-                                                    <td className="border border-gray-300 px-4 py-2">{group.logs.length}</td>
-
-                                                    {/* ปุ่มดูรายละเอียด */}
-                                                    <td className="border border-gray-300 px-4 py-2">
+                                                    <td className="border px-3 py-2">
                                                         <button
-                                                            className="bg-green-500 text-white px-4 py-2 rounded"
+                                                            className="bg-[#fb8124] text-white px-3 py-1 rounded text-sm"
                                                             onClick={() => openModal(group)}
                                                         >
-                                                            แสดงรายการ
+                                                            ดู
                                                         </button>
                                                     </td>
                                                 </tr>
                                             ))}
                                         </tbody>
-
-
                                     </table>
-                                ) : (
-                                    <p>ไม่มีข้อมูลรายการเบิก</p>
-                                )}
-                            </div>
+                                </div>
 
-                            <div className="mt-6">
-                                <h2 className="text-lg font-semibold">รายการยืม</h2>
-                                {borrowGroups.length > 0 ? (
+                                {/* ตารางรายการยืม */}
+                                <div>
+                                    <h2 className="text-lg font-semibold mb-2">รายการยืม</h2>
                                     <table className="w-full border-collapse bg-white shadow rounded-lg overflow-hidden">
                                         <thead>
-                                            <tr className="bg-gray-200 text-gray-700 text-sm">
-                                                <th className="border border-gray-300 px-4 py-2">ลำดับที่</th>
-                                                <th className="border border-gray-300 px-4 py-2">สถานะ</th>
-                                                <th className="border border-gray-300 px-4 py-2">จำนวนรายการ</th>
-                                                <th className="border border-gray-300 px-4 py-2">ดูรายละเอียด</th>
+                                            <tr className="bg-[#9063d2] text-white text-sm">
+                                                <th className="border px-3 py-2">ลำดับ</th>
+                                                <th className="border px-3 py-2">สถานะ</th>
+                                                <th className="border px-3 py-2">จำนวน</th>
+                                                <th className="border px-3 py-2">วันที่</th> {/* ✅ เพิ่ม */}
+                                                <th className="border px-3 py-2">ดู</th>
                                             </tr>
                                         </thead>
                                         <tbody className="text-xs">
-                                            {borrowGroups.map((group, index) => (
+                                            {borrowGroups.slice(0, 10).map((group, index) => (
                                                 <tr key={group.borrow_groupid}>
-                                                    <td className="border border-gray-300 px-4 py-2">รายการที่ {index + 1}</td>
-
-                                                    {/* สถานะ */}
-                                                    <td className="border border-gray-300 px-4 py-2">
-                                                        {group.logs.length > 0
-                                                            ? statusMapping[group.logs[0].status] || group.logs[0].status
-                                                            : "ไม่มีข้อมูล"}
+                                                    <td className="border px-3 py-2">รายการที่ {index + 1}</td>
+                                                    <td className="border px-3 py-2">
+                                                        {group.logs[0]?.status ? statusMapping[group.logs[0].status] || group.logs[0].status : "ไม่มีข้อมูล"}
+                                                    </td>
+                                                    <td className="border px-3 py-2">{group.logs.length}</td>
+                                                    <td className="border px-3 py-2">
+                                                        {group.logs[0]?.createdAt
+                                                            ? new Date(group.logs[0].createdAt).toLocaleDateString("th-TH", {
+                                                                day: "2-digit",
+                                                                month: "short",
+                                                                year: "numeric",
+                                                            })
+                                                            : "-"}
                                                     </td>
 
-                                                    {/* จำนวนรายการ */}
-                                                    <td className="border border-gray-300 px-4 py-2">{group.logs.length}</td>
-
-                                                    {/* ปุ่มดูรายละเอียด */}
-                                                    <td className="border border-gray-300 px-4 py-2">
+                                                    <td className="border px-3 py-2">
                                                         <button
-                                                            className="bg-blue-500 text-white px-4 py-2 rounded"
+                                                            className="bg-[#9063d2] text-white px-3 py-1 rounded text-sm"
                                                             onClick={() => openModal(group)}
                                                         >
-                                                            แสดงรายการ
+                                                            ดู
                                                         </button>
                                                     </td>
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </table>
-
-
-                                ) : (
-                                    <p>ไม่มีข้อมูลรายการยืม</p>
-                                )}
+                                </div>
                             </div>
+
+
 
 
 
@@ -240,8 +242,13 @@ function UsersStatus() {
                                             ชื่อ: {"borrow" in log ? log.borrow.borrow_name : log.requisition.requisition_name}
                                         </p>
                                         <p className="text-sm text-gray-600">
-                                            จำนวนที่ขอ: {"quantity" in log ? log.quantity : "N/A"}
+                                            จำนวนที่ขอ: {"quantity" in log && log.quantity !== undefined
+                                                ? log.quantity
+                                                : "requested_quantity" in log && log.requested_quantity !== undefined
+                                                    ? log.requested_quantity
+                                                    : "N/A"}
                                         </p>
+
                                         <p className="text-sm text-gray-600">
                                             สถานะ: {statusMapping[log.status]}
                                         </p>

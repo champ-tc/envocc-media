@@ -74,39 +74,53 @@ function AdminsConfirmBorrow() {
     const [totalPages, setTotalPages] = useState(1);
     const itemsPerPage = 10;
     const startIndex = (currentPage - 1) * itemsPerPage;
-
+    const [totalItems, setTotalItems] = useState(0);
     const currentBorrows = borrowGroups || [];
 
-    useEffect(() => {
-        const fetchBorrowLogs = async () => {
-            try {
-                if (!session || !statusFilter) return;
 
-                const url =
-                    statusFilter === "all"
-                        ? `/api/borrow_log?page=${currentPage}&limit=${itemsPerPage}`
-                        : `/api/borrow_log?page=${currentPage}&limit=${itemsPerPage}&status=${statusFilter}`;
+    const fetchBorrowLogs = async () => {
+        try {
+            if (!session || !statusFilter) return;
 
-                const response = await fetch(url);
-                const data = await response.json();
+            const url =
+                statusFilter === "all"
+                    ? `/api/borrow_log?page=${currentPage}&limit=${itemsPerPage}`
+                    : `/api/borrow_log?page=${currentPage}&limit=${itemsPerPage}&status=${statusFilter}`;
 
-                if (data.items && Array.isArray(data.items)) {
-                    setBorrowGroups(data.items);
-                    setTotalPages(data.totalPages); // ✅ ใช้ค่าจาก backend
-                }
-            } catch (error) {
-                console.error("Error fetching borrow logs:", error);
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.items && Array.isArray(data.items)) {
+                setBorrowGroups(data.items);
+                setTotalPages(data.totalPages);
+                setTotalItems(data.totalItems || 0);
             }
-        };
+        } catch (error) {
+            console.error("Error fetching borrow logs:", error);
+        }
+    };
 
+
+    useEffect(() => {
         fetchBorrowLogs();
     }, [session, statusFilter, currentPage]);
 
-    useEffect(() => {
-        if (session && statusFilter) {
-            fetchBorrowLogs();
-        }
-    }, [session, statusFilter]);
+
+
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    const goToPreviousPage = () => {
+        if (currentPage > 1) setCurrentPage(currentPage - 1);
+    };
+
+    const goToNextPage = () => {
+        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+    };
+
+
 
     if (isLoading) {
         return (
@@ -141,7 +155,7 @@ function AdminsConfirmBorrow() {
         ({ value, onClick, id, name }, ref) => (
             <input
                 type="text"
-                className="input input-bordered w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className="input input-bordered w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                 onClick={onClick} // เปิดปฏิทินเมื่อคลิก
                 value={value || ""} // กำหนดค่าให้ input
                 readOnly
@@ -309,28 +323,6 @@ function AdminsConfirmBorrow() {
     };
 
 
-
-
-    const fetchBorrowLogs = async () => {
-        try {
-            if (!statusFilter) return; // หากยังไม่ได้เลือกสถานะ ข้ามไปเลย
-            const url =
-                statusFilter === "all"
-                    ? "/api/borrow_log"
-                    : `/api/borrow_log?status=${statusFilter}`;
-            const response = await fetch(url);
-            const data = await response.json();
-
-            if (Array.isArray(data)) {
-                setBorrowGroups(data); // เก็บข้อมูลใน state
-            }
-        } catch (error) {
-            console.error("Error fetching borrow logs:", error);
-        }
-    };
-
-
-
     const handleApprove = async () => {
         if (!selectedGroup) {
             setAlertMessage("ไม่พบคำขอที่เลือก");
@@ -428,13 +420,10 @@ function AdminsConfirmBorrow() {
             return;
         }
 
-        const date = new Date(selectedReturnGroup.actual_return_date);
-        const formattedDate = date.toISOString().split("T")[0];
+        const formattedDate = new Date(selectedReturnGroup.actual_return_date).toISOString().split("T")[0];
 
         const isValid = selectedReturnGroup.logs.every(
-            (log) =>
-                log.returned_quantity !== undefined &&
-                log.returned_quantity <= log.quantity
+            (log) => log.returned_quantity !== undefined && log.returned_quantity <= log.quantity
         );
 
         if (!isValid) {
@@ -458,7 +447,7 @@ function AdminsConfirmBorrow() {
                 setAlertMessage("บันทึกข้อมูลการคืนสำเร็จ");
                 setAlertType("success");
                 closeReturnModal();
-                await fetchBorrowLogs();
+                await fetchBorrowLogs(); // ✅ ดึงข้อมูลใหม่
             } else {
                 setAlertMessage("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
                 setAlertType("error");
@@ -471,6 +460,7 @@ function AdminsConfirmBorrow() {
             autoCloseAlert();
         }
     };
+
 
     // ฟังก์ชันปิดแจ้งเตือนอัตโนมัติใน 3 วินาที
     const autoCloseAlert = () => {
@@ -501,24 +491,12 @@ function AdminsConfirmBorrow() {
     };
 
 
-    const handlePageChange = (page: number) => {
-        setCurrentPage(page);
-    };
-
-    const goToPreviousPage = () => {
-        if (currentPage > 1) setCurrentPage(currentPage - 1);
-    };
-
-    const goToNextPage = () => {
-        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-    };
-
     return (
         <div className="min-h-screen flex bg-gray-50">
             <Sidebar />
             <div className="flex-1">
                 <TopBar />
-                <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
+                <div className="bg-white rounded-lg shadow-lg max-w-5xl w-full p-8 mt-4 lg:ml-56">
                     <h1 className="text-2xl font-bold mb-6">ยืนยันการยืม-คืน</h1>
                     <div className="mb-4 flex space-x-4">
                         {[
@@ -530,8 +508,12 @@ function AdminsConfirmBorrow() {
                         ].map(({ key, label }) => (
                             <button
                                 key={key}
-                                onClick={() => setStatusFilter(key)}
-                                className={`py-2 px-4 rounded ${statusFilter === key ? "bg-[#fb8124] text-white" : "bg-gray-200"}`}
+                                onClick={() => {
+                                    setStatusFilter(key);
+                                    setCurrentPage(1);
+                                }}
+
+                                className={`py-2 px-4 rounded ${statusFilter === key ? "bg-[#9063d2] text-white" : "bg-gray-200"}`}
                             >
                                 {label}
                             </button>
@@ -545,18 +527,18 @@ function AdminsConfirmBorrow() {
 
                         <table className="w-full border-collapse bg-white shadow rounded-lg overflow-hidden">
                             <thead>
-                                <tr className="bg-gray-200 text-gray-700">
-                                    <th className="py-3 px-4 text-left">คำขอ</th>
-                                    <th className="py-3 px-4 text-left">ชื่อผู้ขอ</th>
-                                    <th className="py-3 px-4 text-left">สถานะ</th>
-                                    <th className="py-3 px-4 text-left">การจัดการ</th>
+                                <tr className="bg-[#9063d2] text-white text-left text-sm uppercase font-semibold tracking-wider">
+                                    <th className="border py-3 px-4 text-left">คำขอ</th>
+                                    <th className="border py-3 px-4 text-left">ชื่อผู้ขอ</th>
+                                    <th className="border py-3 px-4 text-left">สถานะ</th>
+                                    <th className="border py-3 px-4 text-left">การจัดการ</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {currentBorrows.length > 0 ? (
                                     currentBorrows.map((group, index) => {
                                         return (
-                                            <tr key={group.borrow_groupid} className="border-b text-xs">
+                                            <tr key={group.borrow_groupid} className="border-b text-xs font-normal">
                                                 <td className="py-3 px-4">คำขอที่ {startIndex + index + 1}</td>
                                                 <td className="py-3 px-4">
                                                     {group.user
@@ -582,7 +564,7 @@ function AdminsConfirmBorrow() {
                                                     ) : group.status === "ApprovedReturned" ? (
                                                         <button
                                                             onClick={() => openDetailModal(group)}
-                                                            className="px-4 py-2 rounded bg-green-500 text-white"
+                                                            className="px-4 py-2 rounded bg-[#9063d2] text-white"
                                                         >
                                                             ดูรายละเอียด
                                                         </button>
@@ -607,14 +589,13 @@ function AdminsConfirmBorrow() {
                     {statusFilter && (
                         <div className="flex items-center justify-between mt-6">
                             <span className="text-sm text-gray-600">
-                                รายการที่ {startIndex + 1} ถึง {Math.min(startIndex + 10, borrowGroups.length)} จาก {" "}
-                                {borrowGroups.length} รายการ
+                                รายการที่ {startIndex + 1} ถึง {Math.min(startIndex + itemsPerPage, totalItems)} จาก {totalItems} รายการ
                             </span>
                             <div className="flex space-x-2">
                                 <button
                                     onClick={goToPreviousPage}
                                     disabled={currentPage === 1}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                 >
                                     ก่อนหน้า
                                 </button>
@@ -622,8 +603,8 @@ function AdminsConfirmBorrow() {
                                     <button
                                         key={page}
                                         onClick={() => handlePageChange(page)}
-                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#fb8124] text-white" : "bg-gray-200 text-gray-600"
-                                            } hover:bg-[#fb8124] hover:text-white transition`}
+                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-600"
+                                            } hover:bg-[#9063d2] hover:text-white transition`}
                                     >
                                         {page}
                                     </button>
@@ -631,7 +612,7 @@ function AdminsConfirmBorrow() {
                                 <button
                                     onClick={goToNextPage}
                                     disabled={currentPage === totalPages}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                 >
                                     ถัดไป
                                 </button>
@@ -684,19 +665,19 @@ function AdminsConfirmBorrow() {
                             <div className="mt-6 flex justify-between items-center space-x-4">
                                 <button
                                     onClick={handleApprove}
-                                    className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg font-semibold"
+                                    className="flex-1 bg-[#9063d2] hover:bg-[#8753d5] text-white py-2 px-4 rounded-lg font-semibold"
                                 >
                                     อนุมัติ
                                 </button>
                                 <button
                                     onClick={handleReject}
-                                    className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-semibold"
+                                    className="flex-1 bg-[#f3e5f5] hover:bg-[#8753d5] text-white py-2 px-4 rounded-lg font-semibold"
                                 >
                                     ไม่อนุมัติ
                                 </button>
                                 <button
                                     onClick={closeModal}
-                                    className="flex-1 bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded-lg font-semibold"
+                                    className="flex-1 bg-[#f3e5f5] hover:bg-[#8753d5] text-white py-2 px-4 rounded-lg font-semibold"
                                 >
                                     ปิด
                                 </button>
@@ -753,24 +734,27 @@ function AdminsConfirmBorrow() {
                                 <ul className="divide-y divide-gray-200">
                                     {selectedReturnGroup.logs?.length > 0 ? (
                                         selectedReturnGroup.logs.map((log, index) => (
-                                            <li key={log.id} className="py-4">
-                                                <div className="flex flex-col space-y-2">
-                                                    <p className="font-semibold text-gray-700">
-                                                        ชื่อ: {log.borrow.borrow_name}
+                                            <li key={log.id} className="py-5">
+                                                <div className="flex flex-col gap-2">
+                                                    <p className="text-base font-medium text-gray-800">
+                                                        ชื่อสื่อ: <span className="font-semibold">{log.borrow.borrow_name}</span>
                                                     </p>
+
                                                     <p className="text-sm text-gray-600">
-                                                        จำนวนที่ให้ยืม: {log.quantity}
+                                                        จำนวนที่ให้ยืม: <span className="font-semibold text-gray-800">{log.quantity}</span>
                                                     </p>
-                                                    <div className="flex items-center justify-between">
-                                                        <label className="block text-sm font-medium text-gray-600">
+
+                                                    <div className="flex items-center gap-x-2">
+                                                        <label htmlFor={`return-${log.id}`} className="text-sm text-gray-600 whitespace-nowrap">
                                                             จำนวนที่คืน:
                                                         </label>
                                                         <input
+                                                            id={`return-${log.id}`}
                                                             type="number"
                                                             min="0"
                                                             max={log.quantity}
                                                             value={log.returned_quantity || ""}
-                                                            placeholder="กรอกจำนวนที่คืน"
+                                                            placeholder="0"
                                                             onChange={(e) =>
                                                                 setSelectedReturnGroup((prev) => {
                                                                     if (!prev) return null;
@@ -779,22 +763,24 @@ function AdminsConfirmBorrow() {
                                                                     return { ...prev, logs: updatedLogs };
                                                                 })
                                                             }
-                                                            className="block w-24 px-2 py-1 border rounded-md text-sm"
+                                                            className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#9063d2] focus:outline-none"
                                                         />
                                                     </div>
+
                                                 </div>
                                             </li>
                                         ))
                                     ) : (
-                                        <p className="text-gray-600 text-sm text-center">ไม่มีข้อมูลรายการที่ยืม</p>
+                                        <p className="text-center text-gray-500 text-sm py-4">ไม่มีข้อมูลรายการที่ยืม</p>
                                     )}
                                 </ul>
+
 
                                 <div className="mt-6 flex justify-end items-center space-x-4">
                                     {/* ปุ่มบันทึก */}
                                     <button
                                         onClick={handleReturn}
-                                        className="bg-green-500 text-white py-2 px-4 rounded"
+                                        className="bg-[#9063d2] hover:bg-[#8753d5] text-white py-2 px-4 rounded"
                                     >
                                         บันทึก
                                     </button>
@@ -802,7 +788,7 @@ function AdminsConfirmBorrow() {
                                     {/* ปุ่มปิด */}
                                     <button
                                         onClick={closeReturnModal}
-                                        className="bg-gray-300 text-black py-2 px-4 rounded"
+                                        className="bg-[#f3e5f5] hover:bg-[#8753d5] text-white py-2 px-4 rounded"
                                     >
                                         ปิด
                                     </button>

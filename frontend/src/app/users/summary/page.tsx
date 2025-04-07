@@ -156,7 +156,7 @@ function UsersSummary() {
         ({ value, onClick, id, name }, ref) => (
             <input
                 type="text"
-                className="input input-bordered w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className="input input-bordered w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                 onClick={onClick} // เปิดปฏิทินเมื่อคลิก
                 value={value || ""} // กำหนดค่าให้ input
                 readOnly
@@ -405,7 +405,7 @@ function UsersSummary() {
         <>
             <div className="min-h-screen bg-gray-100">
                 <Navbar />
-                <div className="relative -mt-24 flex flex-col items-center">
+                <div className="relative flex flex-col items-center">
                     <div className="flex-1 flex items-start justify-center p-2">
                         <div
                             className="bg-white rounded-lg shadow-lg w-[800px] p-8 mt-4"
@@ -416,7 +416,7 @@ function UsersSummary() {
                                 <button
                                     onClick={() => setSelectedAction("requisition")}
                                     className={`py-2 px-4 rounded-md text-white ${selectedAction === "requisition"
-                                        ? "bg-orange-500"
+                                        ? "bg-[#9063d2]"
                                         : "bg-gray-300 hover:bg-gray-400"
                                         }`}
                                 >
@@ -425,7 +425,7 @@ function UsersSummary() {
                                 <button
                                     onClick={() => setSelectedAction("borrow")}
                                     className={`py-2 px-4 rounded-md text-white ${selectedAction === "borrow"
-                                        ? "bg-orange-500"
+                                        ? "bg-[#9063d2]"
                                         : "bg-gray-300 hover:bg-gray-400"
                                         }`}
                                 >
@@ -437,7 +437,7 @@ function UsersSummary() {
                                 <>
                                     <table className="w-full border-collapse bg-white shadow rounded-lg overflow-hidden">
                                         <thead>
-                                            <tr className="bg-gray-200 text-gray-700">
+                                            <tr className="bg-[#9063d2] text-white">
                                                 <th className="py-3 px-4 text-left">ชื่อรายการ</th>
                                                 <th className="py-3 px-4 text-left">จำนวน</th>
                                                 <th className="py-3 px-4 text-left">ลบ</th>
@@ -596,7 +596,7 @@ function UsersSummary() {
                                         disabled={filteredOrders.length === 0}
                                         className={`mt-6 py-2 px-4 rounded-md transition ${filteredOrders.length === 0
                                             ? "bg-gray-300 cursor-not-allowed text-gray-500"
-                                            : "bg-green-500 text-white hover:bg-green-600"
+                                            : "bg-[#9063d2] hover:bg-[#8753d5] text-white"
                                             }`}
                                     >
                                         {selectedAction === "requisition" ? "บันทึกการเบิก" : "บันทึกการยืม"}

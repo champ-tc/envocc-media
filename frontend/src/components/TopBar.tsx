@@ -39,14 +39,14 @@ function TopBar() {
                         onClick={toggleDropdown}
                         className="text-dark py-1 px-1 rounded-md hover:bg-gray-200 flex items-center space-x-3"
                     >
-                        <img src="/images/profile.png" alt="menu" className="h-8 w-8 rounded-full" />
+                        <img src="/images/profile.png" alt="menu" className="h-8 w-6 rounded-full" />
                         <span>{session?.user?.name || "User"}</span>
                         <img src="/images/right-arrow.png" alt="menu" className="h-4 w-4 rounded-full" />
                     </button>
 
                     {dropdownOpen && (
                         <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-md shadow-lg w-48">
-                            <div className="p-2">
+                            <div>
                                 <Link href={`/admins/personal/${user?.id}`}>
                                     <button className="w-full text-left px-4 py-2 hover:bg-slate-200">
                                         ข้อมูลส่วนตัว

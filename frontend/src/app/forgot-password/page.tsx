@@ -57,39 +57,47 @@ function ForgotPasswordPage() {
     return (
         <>
             <Navbar />
-            <div className="max-w-lg mx-auto mt-16 p-6 border rounded-lg shadow-lg bg-white">
-                <h1 className="text-3xl font-bold mb-6 text-center text-blue-700">ลืมรหัสผ่าน</h1>
-
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    {!isSent && (
-                        <>
-                            <input
-                                type="email"
-                                required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="กรอกอีเมลที่ลงทะเบียนไว้"
-                                className="w-full border px-4 py-2 rounded focus:outline-none focus:ring focus:border-blue-500"
-                            />
-
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition duration-200 disabled:opacity-50"
-                            >
-                                {loading ? 'กำลังส่ง...' : 'ส่งลิงก์รีเซ็ตรหัสผ่าน'}
-                            </button>
-                        </>
-                    )}
-
-                    {message && (
-                        <p className={`text-center text-sm ${isError ? 'text-red-600' : 'text-green-600'}`}>
-                            {message}
+            <div className="flex flex-col items-center justify-center py-8 min-h-screen bg-[#f3e5f5]">
+                <div className="max-w-md w-full mx-auto mt-4 px-6 py-8 rounded-2xl bg-white">
+                    <div className="flex flex-col items-center mb-6">
+                        <h1 className="text-2xl font-bold text-[#9063d2]">ลืมรหัสผ่าน</h1>
+                        <p className="text-sm text-gray-500 mt-1 text-center">
+                            กรอกอีเมลที่คุณใช้สมัครสมาชิก เราจะส่งลิงก์ให้คุณ
                         </p>
-                    )}
-                </form>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {!isSent && (
+                            <>
+                                <input
+                                    type="email"
+                                    required
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="example@email.com"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
+                                />
+
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full bg-[#9063d2] hover:bg-[#8753d5] text-white py-3 rounded-lg transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {loading ? 'กำลังส่ง...' : 'ส่งลิงก์รีเซ็ตรหัสผ่าน'}
+                                </button>
+                            </>
+                        )}
+
+                        {message && (
+                            <p className={`text-center text-sm mt-3 ${isError ? 'text-red-600' : 'text-green-600'}`}>
+                                {message}
+                            </p>
+                        )}
+                    </form>
+                </div>
             </div>
-            <div className="h-32" />
+
+
             <Footer />
         </>
     );

@@ -48,13 +48,14 @@ function LoginPage() {
 
   return (
     <>
-      <div className="flex items-center justify-center min-h-screen bg-orange-500/10 px-2">
+      <div className="flex items-center justify-center min-h-screen bg-[#f3e5f5] px-2">
         <div className="flex w-full max-w-3xl bg-white shadow-lg min-h-[0vh] rounded-lg overflow-hidden">
-          <div className="w-2/4 px-4 py-2  m-2 rounded-lg text-white flex flex-col justify-center items-center">
+
+          <div className="w-2/4 text-white flex flex-col justify-center items-center">
             <img src="/images/login.png" alt="banner" className="w-80" />
           </div>
 
-          <div className="w-2/4 p-10">
+          <div className="w-3/4 p-10">
             <div className="mb-20 text-center">
             </div>
 
@@ -85,7 +86,7 @@ function LoginPage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Username"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                   required
                 />
               </div>
@@ -96,7 +97,7 @@ function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Password"
                   maxLength={20}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 pr-10"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#9063d2] pr-10"
                   required
                 />
                 <img
@@ -107,7 +108,7 @@ function LoginPage() {
                 />
               </div>
 
-              <div className="flex justify-between text-orange-600 text-sm mt-2 mb-6">
+              <div className="flex justify-between text-[#9063d2] text-sm mt-2 mb-6 font-bold">
                 <Link href="forgot-password">
                   ลืมรหัสผ่าน
                 </Link>
@@ -118,7 +119,7 @@ function LoginPage() {
               <div className="flex">
                 <button
                   type="submit"
-                  className="bg-orange-500 text-white px-6 py-3 flex w-full justify-center items-center text-center rounded-md hover:bg-orange-600 transition"
+                  className="bg-[#9063d2] text-white px-6 py-3 flex w-full justify-center items-center text-center rounded-md hover:bg-[#8753d5] transition"
                 >
                   เข้าสู่ระบบ
                 </button>
@@ -127,7 +128,7 @@ function LoginPage() {
 
             <div className="flex justify-center text-sm mt-4">
               <Link href="/register">
-                ยังไม่เป็นสมาชิก  <span className="text-orange-600">คลิกเพื่อลงทะเบียน</span>
+                ยังไม่เป็นสมาชิก  <span className="text-[#9063d2]">คลิกเพื่อลงทะเบียน</span>
               </Link>
             </div>
 

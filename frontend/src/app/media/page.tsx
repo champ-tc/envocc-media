@@ -50,8 +50,8 @@ function MediaPage() {
   return (
     <>
       <Navbar />
-      <div className="flex flex-col items-center bg-white p-10 min-h-screen">
-        <h1 className="text-4xl font-bold mb-8 text-gray-700">Media Gallery</h1>
+      <div className="flex flex-col items-center bg-[#f3e5f5] p-10 min-h-screen">
+        <h1 className="text-4xl font-bold mb-8 text-gray-700">สื่อเผยแพร่</h1>
         <div className="w-full max-w-7xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-4 justify-center">
           {currentImages.map((image) => (
             <div
@@ -88,7 +88,7 @@ function MediaPage() {
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className={`px-4 py-2 rounded-md bg-[#fb8124] text-white hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50" ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`px-4 py-2 rounded-md bg-[#9063d2] text-white hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50" ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             ก่อนหน้า
           </button>
@@ -96,7 +96,7 @@ function MediaPage() {
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={indexOfLastImage >= images.length}
-            className={`px-4 py-2 rounded-md bg-[#fb8124] text-white hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50" ${indexOfLastImage >= images.length ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`px-4 py-2 rounded-md bg-[#9063d2] text-white hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50" ${indexOfLastImage >= images.length ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             ถัดไป
           </button>

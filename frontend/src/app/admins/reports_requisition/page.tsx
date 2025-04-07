@@ -112,36 +112,35 @@ function AdminsReports_requisition() {
     }
 
     const exportToExcel = () => {
-        const dataForExcel = currentGroups.map(([groupId, groupLogs], index) => {
+        const dataForExcel = groupArray.map(([groupId, groupLogs], index) => {
             const firstLog = groupLogs[0];
-
-            // รวมรายการที่เบิก
+    
             const itemMap = new Map<string, { requested: number; approved: number }>();
             groupLogs.forEach((log) => {
                 const name = log.requisition.requisition_name;
                 const requested = log.requested_quantity;
                 const approved = log.approved_quantity ?? 0;
-
+    
                 if (!itemMap.has(name)) {
                     itemMap.set(name, { requested: 0, approved: 0 });
                 }
-
+    
                 const current = itemMap.get(name)!;
                 itemMap.set(name, {
                     requested: current.requested + requested,
                     approved: current.approved + approved,
                 });
             });
-
+    
             const requisitionText = Array.from(itemMap.entries())
                 .map(
                     ([name, { requested, approved }]) =>
                         `${name} - ขอ ${requested} / อนุมัติ ${approved}`
                 )
                 .join("\n");
-
+    
             return {
-                ลำดับ: startIndex + index + 1,
+                ลำดับ: index + 1,
                 "ชื่อ - นามสกุล": [...new Set(groupLogs.map(
                     (log) => `${log.user.title}${log.user.firstName} ${log.user.lastName}`
                 ))].join(", "),
@@ -151,15 +150,16 @@ function AdminsReports_requisition() {
                 สถานะ: getStatusLabel(firstLog.status),
             };
         });
-
+    
         const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Report");
-
+    
         const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
         const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
         saveAs(blob, `รายงานการขอเบิก.xlsx`);
     };
+    
 
     return (
         <div className="flex min-h-screen bg-gray-50">
@@ -173,16 +173,16 @@ function AdminsReports_requisition() {
                         <div className="flex justify-end mb-4">
                             <button
                                 onClick={exportToExcel}
-                                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+                                className="px-4 py-2 bg-[#9063d2] hover:bg-[#8753d5] text-white rounded transition"
                             >
-                                Export
+                                ส่งออก
                             </button>
                         </div>
 
                         <div className="overflow-x-auto">
-                            <table className="min-w-full border text-sm">
+                            <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden text-sm">
                                 <thead>
-                                    <tr className="bg-gray-200 text-gray-700">
+                                    <tr className="bg-[#9063d2] text-white">
                                         <th className="border px-4 py-2">ลำดับ</th>
                                         <th className="border px-4 py-2">ชื่อ - นามสกุล</th>
                                         <th className="border px-4 py-2">หน่วยงาน</th>
@@ -195,7 +195,7 @@ function AdminsReports_requisition() {
                                     {currentGroups.map(([groupId, groupLogs], index) => {
                                         const firstLog = groupLogs[0];
                                         return (
-                                            <tr key={groupId}>
+                                            <tr key={groupId} className="text-xs font-normal">
                                                 <td className="border px-4 py-2">{startIndex + index + 1}</td>
                                                 <td className="border px-4 py-2">
                                                     {[...new Set(groupLogs.map(
@@ -253,7 +253,7 @@ function AdminsReports_requisition() {
                                 <button
                                     onClick={goToPreviousPage}
                                     disabled={currentPage === 1}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                 >
                                     ก่อนหน้า
                                 </button>
@@ -262,9 +262,9 @@ function AdminsReports_requisition() {
                                         key={page}
                                         onClick={() => handlePageChange(page)}
                                         className={`px-4 py-2 rounded-md ${currentPage === page
-                                            ? "bg-[#fb8124] text-white"
+                                            ? "bg-[#9063d2] text-white"
                                             : "bg-gray-200 text-gray-600"
-                                            } hover:bg-[#fb8124] hover:text-white transition`}
+                                            } hover:bg-[#9063d2] hover:text-white transition`}
                                     >
                                         {page}
                                     </button>
@@ -272,7 +272,7 @@ function AdminsReports_requisition() {
                                 <button
                                     onClick={goToNextPage}
                                     disabled={currentPage === totalPages}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                 >
                                     ถัดไป
                                 </button>

@@ -2,7 +2,7 @@ import React from 'react'
 
 function Footer() {
   return (
-    <footer className="bg-gradient-to-r from-[#fb8124] via-[#fb8124] to-[#f5b83c] text-white py-8 mr-10 ml-10 rounded-md shadow-md">
+    <footer className="bg-gradient-to-r from-[#fdb7fe] via-[#c78ee8] to-[#9063d2] text-white py-8  shadow-md">
       <div className="container mx-auto px-4">
         <h3 className="text-lg font-bold text-white">
           กองโรคจากการประกอบอาชีพและสิ่งแวดล้อม
@@ -15,7 +15,6 @@ function Footer() {
         </p>
       </div>
     </footer>
-
   )
 }
 

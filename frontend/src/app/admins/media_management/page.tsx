@@ -136,7 +136,7 @@ function AdminsMedia_management() {
     const fetchTypes = async () => {
         try {
             const response = await axios.get("/api/type");
-            if (response.status === 200 && Array.isArray(response.data.items)) { 
+            if (response.status === 200 && Array.isArray(response.data.items)) {
                 setTypes(response.data.items); // ✅ ใช้ response.data.items ซึ่งเป็น array
             } else {
                 setTypes([]); // ป้องกัน error ถ้าข้อมูลผิด
@@ -145,8 +145,8 @@ function AdminsMedia_management() {
             setTypes([]); // กำหนดค่าเริ่มต้นเป็นอาร์เรย์ว่าง
         }
     };
-    
-    
+
+
 
 
 
@@ -501,20 +501,20 @@ function AdminsMedia_management() {
                     <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
                         <h2 className="text-2xl font-semibold text-gray-800 mb-4">เบิกสื่อ</h2>
 
-                        <button onClick={() => setShowModal(true)} className="mb-4 bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 transition">+เพิ่มเบิก</button>
+                        <button onClick={() => setShowModal(true)} className="mb-4 bg-[#9063d2] hover:bg-[#8753d5] text-white py-2 px-4 rounded-md transition">+เพิ่มเบิก</button>
 
                         <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden text-sm">
                             <thead>
-                                <tr className="bg-gray-200 text-gray-600 text-left text-sm uppercase font-semibold tracking-wider">
-                                    <th className="px-4 py-2" style={{ width: "7%" }}>รูปภาพ</th>
-                                    <th className="px-4 py-2" style={{ width: "13%" }}>ชื่อสื่อ</th>
-                                    <th className="px-4 py-2" style={{ width: "10%" }}>หน่วยนับ</th>
-                                    <th className="px-4 py-2" style={{ width: "15%" }}>ประเภท</th>
-                                    <th className="px-4 py-2" style={{ width: "10%" }}>จำนวนคงเหลือ</th>
-                                    <th className="px-4 py-2" style={{ width: "10%" }}>จำนวนที่เก็บ</th>
-                                    <th className="px-4 py-2" style={{ width: "13%" }}>คำอธิบาย</th>
-                                    <th className="px-4 py-2" style={{ width: "10%" }}>เบิก</th>
-                                    <th className="px-4 py-2" style={{ width: "12%" }}>จัดการ</th>
+                                <tr className="bg-[#9063d2] text-white text-left text-sm uppercase font-semibold tracking-wider">
+                                    <th className="border px-4 py-2" style={{ width: "7%" }}>รูปภาพ</th>
+                                    <th className="border px-4 py-2" style={{ width: "13%" }}>ชื่อสื่อ</th>
+                                    <th className="border px-4 py-2" style={{ width: "10%" }}>หน่วยนับ</th>
+                                    <th className="border px-4 py-2" style={{ width: "15%" }}>ประเภท</th>
+                                    <th className="border px-4 py-2" style={{ width: "10%" }}>จำนวนคงเหลือ</th>
+                                    <th className="border px-4 py-2" style={{ width: "10%" }}>จำนวนที่เก็บ</th>
+                                    <th className="border px-4 py-2" style={{ width: "13%" }}>คำอธิบาย</th>
+                                    <th className="border px-4 py-2" style={{ width: "10%" }}>เบิก</th>
+                                    <th className="border px-4 py-2" style={{ width: "12%" }}>จัดการ</th>
                                 </tr>
                             </thead>
                             <tbody className="text-gray-700 text-sm">
@@ -595,7 +595,7 @@ function AdminsMedia_management() {
                                 <button
                                     onClick={goToPreviousPage}
                                     disabled={currentPage === 1}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                 >
                                     ก่อนหน้า
                                 </button>
@@ -603,7 +603,7 @@ function AdminsMedia_management() {
                                     <button
                                         key={page}
                                         onClick={() => handlePageChange(page)}
-                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#fb8124] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#fb8124] hover:text-white transition`}
+                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#9063d2] hover:text-white transition`}
                                     >
                                         {page}
                                     </button>
@@ -611,7 +611,7 @@ function AdminsMedia_management() {
                                 <button
                                     onClick={goToNextPage}
                                     disabled={currentPage === totalPages}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#fb8124] hover:text-white transition disabled:opacity-50"
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
                                 >
                                     ถัดไป
                                 </button>
@@ -646,7 +646,7 @@ function AdminsMedia_management() {
                                                 onChange={(e) =>
                                                     setNewRequisition({ ...newRequisition, requisition_name: e.target.value })
                                                 }
-                                                className="w-full border border-gray-300 rounded px-3 py-1 focus:ring focus:ring-blue-400 focus:outline-none"
+                                                className="w-full border border-gray-300 rounded px-3 py-1 focus:ring focus:ring-[#9063d2] focus:outline-none"
                                                 required
                                             />
                                         </div>
@@ -669,7 +669,7 @@ function AdminsMedia_management() {
                                                     onChange={(e) =>
                                                         setNewRequisition({ ...newRequisition, unit: e.target.value })
                                                     }
-                                                    className="w-full border border-gray-300 rounded px-3 py-1 focus:ring focus:ring-blue-400 focus:outline-none"
+                                                    className="w-full border border-gray-300 rounded px-3 py-1 focus:ring focus:ring-[#9063d2] focus:outline-none"
                                                     required
                                                 />
                                             </div>
@@ -680,7 +680,7 @@ function AdminsMedia_management() {
                                                     onChange={(e) =>
                                                         setNewRequisition({ ...newRequisition, type_id: Number(e.target.value) })
                                                     }
-                                                    className="w-full border border-gray-300 rounded px-3 py-1 focus:ring focus:ring-blue-400 focus:outline-none"
+                                                    className="w-full border border-gray-300 rounded px-3 py-1 focus:ring focus:ring-[#9063d2] focus:outline-none"
                                                     required
                                                 >
                                                     <option value="">เลือกประเภท</option>
@@ -701,7 +701,7 @@ function AdminsMedia_management() {
                                                     minLength={0}
                                                     value={newRequisition.quantity}
                                                     onChange={(e) => handleQuantityChange(Number(e.target.value))}
-                                                    className="w-full border border-gray-300 rounded px-3 py-1 focus:ring focus:ring-blue-400 focus:outline-none"
+                                                    className="w-full border border-gray-300 rounded px-3 py-1 focus:ring focus:ring-[#9063d2] focus:outline-none"
                                                     required
                                                 />
                                             </div>
@@ -726,22 +726,22 @@ function AdminsMedia_management() {
                                                 onChange={(e) =>
                                                     setNewRequisition({ ...newRequisition, description: e.target.value })
                                                 }
-                                                className="w-full border border-gray-300 rounded px-3 py-1 focus:ring focus:ring-blue-400 focus:outline-none"
+                                                className="w-full border border-gray-300 rounded px-3 py-1 focus:ring focus:ring-[#9063d2] focus:outline-none"
                                             />
                                         </div>
                                         <div className="flex justify-end space-x-2">
                                             <button
-                                                type="button"
-                                                onClick={() => setShowModal(false)}
-                                                className="mb-4 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md transition"
-                                            >
-                                                ยกเลิก
-                                            </button>
-                                            <button
                                                 type="submit"
-                                                className="mb-4 bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-md transition"
+                                                className="mb-4 bg-[#9063d2] hover:bg-[#8753d5] text-white py-2 px-4 rounded-md transition"
                                             >
                                                 บันทึก
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowModal(false)}
+                                                className="mb-4 bg-[#f3e5f5] hover:bg-[#8753d5] text-white py-2 px-4 rounded-md transition"
+                                            >
+                                                ยกเลิก
                                             </button>
                                         </div>
                                     </form>
@@ -753,10 +753,12 @@ function AdminsMedia_management() {
                         )}
 
                         {editModal && (
-                            <div className="modal fixed inset-0 flex items-center justify-center bg-gray-600 bg-opacity-50">
-                                <div className="modal-box w-full max-w-md bg-white p-6 rounded-lg shadow-md max-h-[95vh]">
-                                    <h2 className="text-lg font-medium mb-4 text-center text-gray-800">แก้ไข Requisition</h2>
+                            <div className="modal fixed inset-0 flex items-center justify-center bg-gray-600 bg-opacity-50 z-50">
+                                <div className="modal-box w-full sm:max-w-lg md:max-w-xl bg-white p-4 sm:p-6 rounded-lg shadow-md h-[90vh] overflow-y-auto">
+                                    <h2 className="text-xl font-semibold mb-4 text-center text-gray-800">แก้ไข Requisition</h2>
+
                                     <form onSubmit={handleEditSubmit} className="space-y-4 text-sm">
+                                        {/* ชื่อสื่อ */}
                                         <div>
                                             <label className="block text-gray-700 font-medium mb-1">ชื่อสื่อ</label>
                                             <input
@@ -766,36 +768,41 @@ function AdminsMedia_management() {
                                                 onChange={(e) =>
                                                     setNewRequisition({ ...newRequisition, requisition_name: e.target.value })
                                                 }
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#9063d2] focus:outline-none"
                                                 required
                                             />
                                         </div>
+
+                                        {/* อัปโหลดรูป */}
                                         <div>
                                             <label className="block text-gray-700 font-medium mb-1">อัปโหลดรูปภาพใหม่</label>
                                             <input
                                                 type="file"
                                                 onChange={(e) => handleImageChange(e, setEditedImage)}
-                                                className="block w-full text-sm p-2 text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none  dark:placeholder-gray-400"
+                                                className="block w-full text-sm p-2 border border-gray-300 rounded-lg bg-gray-50"
                                             />
-                                            <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">PNG, JPG (10MB)</p>
-                                            {currentImage && !editedImage && (
-                                                <img src={`/requisitions/${currentImage}`} alt="Current" className="w-16 h-16 mt-2 rounded-md border" />
-                                            )}
-                                            {editedImage && (
-                                                <img src={URL.createObjectURL(editedImage)} alt="New" className="w-16 h-16 mt-2 rounded-md border" />
+                                            <p className="mt-1 text-xs text-gray-500">PNG, JPG (10MB)</p>
+
+                                            {(currentImage || editedImage) && (
+                                                <img
+                                                    src={editedImage ? URL.createObjectURL(editedImage) : `/requisitions/${currentImage}`}
+                                                    alt="Preview"
+                                                    className="w-20 h-20 mt-2 rounded-md border object-cover"
+                                                />
                                             )}
                                         </div>
+
+                                        {/* หน่วยนับ + ประเภท */}
                                         <div className="grid grid-cols-2 gap-3">
                                             <div>
                                                 <label className="block text-gray-700 font-medium mb-1">หน่วยนับ</label>
                                                 <input
                                                     type="text"
-                                                    placeholder="หน่วยนับ"
                                                     value={newRequisition.unit}
                                                     onChange={(e) =>
                                                         setNewRequisition({ ...newRequisition, unit: e.target.value })
                                                     }
-                                                    className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#9063d2] focus:outline-none"
                                                     required
                                                 />
                                             </div>
@@ -806,78 +813,78 @@ function AdminsMedia_management() {
                                                     onChange={(e) =>
                                                         setNewRequisition({ ...newRequisition, type_id: Number(e.target.value) })
                                                     }
-                                                    className="w-full border border-gray-300 rounded px-3 py-1 focus:ring focus:ring-blue-400 focus:outline-none"
+                                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#9063d2] focus:outline-none"
                                                     required
                                                 >
                                                     <option value="">เลือกประเภท</option>
-                                                    {Array.isArray(types) && types.length > 0 ? (
-                                                        types.map((type) => (
-                                                            <option key={type.id} value={type.id}>
-                                                                {type.name}
-                                                            </option>
-                                                        ))
-                                                    ) : (
-                                                        <option disabled>กำลังโหลด...</option> // ✅ แสดงข้อความเมื่อข้อมูลยังไม่มา
-                                                    )}
+                                                    {types?.map((type) => (
+                                                        <option key={type.id} value={type.id}>
+                                                            {type.name}
+                                                        </option>
+                                                    ))}
                                                 </select>
-
                                             </div>
                                         </div>
+
+                                        {/* จำนวนคงเหลือ + ห้ามเบิก */}
                                         <div className="grid grid-cols-2 gap-3">
                                             <div>
                                                 <label className="block text-gray-700 font-medium mb-1">จำนวนคงเหลือ</label>
                                                 <input
                                                     type="number"
-                                                    placeholder="จำนวนคงเหลือ"
                                                     value={newRequisition.quantity}
                                                     onChange={(e) =>
                                                         setNewRequisition({ ...newRequisition, quantity: Number(e.target.value) })
                                                     }
-                                                    className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#9063d2] focus:outline-none"
                                                     required
                                                 />
                                             </div>
-                                            <div>
-                                                <label className="block text-gray-700 font-medium mb-1">ห้ามเบิกหรือไม่</label>
+                                            <div className="flex items-center gap-2 mt-6">
                                                 <input
                                                     type="checkbox"
                                                     checked={newRequisition.is_borro_restricted}
                                                     onChange={(e) =>
                                                         setNewRequisition({ ...newRequisition, is_borro_restricted: e.target.checked })
                                                     }
-                                                    className="ml-2"
+                                                    className="h-4 w-4"
                                                 />
+                                                <label className="text-sm text-gray-700">ห้ามเบิก</label>
                                             </div>
                                         </div>
+
+                                        {/* คำอธิบาย */}
                                         <div>
                                             <label className="block text-gray-700 font-medium mb-1">คำอธิบายเพิ่มเติม</label>
                                             <textarea
-                                                placeholder="คำอธิบายเพิ่มเติม"
                                                 value={newRequisition.description}
                                                 onChange={(e) =>
                                                     setNewRequisition({ ...newRequisition, description: e.target.value })
                                                 }
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#9063d2] focus:outline-none"
                                             />
                                         </div>
-                                        <div className="flex justify-end space-x-2">
+
+                                        {/* ปุ่ม */}
+                                        <div className="flex justify-end space-x-2 pt-4">
+                                            <button
+                                                type="submit"
+                                                className="bg-[#9063d2] hover:bg-[#8753d5] text-white py-2 px-4 rounded transition"
+                                            >
+                                                บันทึก
+                                            </button>
                                             <button
                                                 type="button"
                                                 onClick={() => setEditModal(false)}
-                                                className="mb-4 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md transition"
+                                                className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded transition"
                                             >
                                                 ยกเลิก
-                                            </button>
-                                            <button
-                                                type="submit"
-                                                className="mb-4 bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-md transition"
-                                            >
-                                                บันทึก
                                             </button>
                                         </div>
                                     </form>
                                 </div>
                             </div>
+
                         )}
 
                         {isDeleteConfirmOpen && (

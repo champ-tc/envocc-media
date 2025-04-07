@@ -53,63 +53,65 @@ function ResetPasswordPage() {
     return (
         <>
             <Navbar />
-            <div className="max-w-md mx-auto mt-16 p-6 border rounded shadow bg-white relative">
-                <h1 className="text-2xl font-bold mb-6 text-center text-green-700">ตั้งรหัสผ่านใหม่</h1>
+            <div className="min-h-screen bg-[#f3e5f5] flex items-center justify-center px-4">
+                <div className="max-w-md w-full bg-white p-6 sm:p-8 rounded-2xl border border-gray-200">
+                    <h1 className="text-2xl font-bold text-center text-[#9063d2] mb-6">ตั้งรหัสผ่านใหม่</h1>
 
-                {done ? (
-                    <p className="text-green-600 text-center">รีเซ็ตรหัสผ่านเรียบร้อยแล้ว ✅</p>
-                ) : (
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Password Field */}
-                        <div className="relative">
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                required
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="รหัสผ่านใหม่"
-                                maxLength={20}
-                                className="w-full border px-3 py-2 rounded pr-10"
-                            />
-                            <img
-                                src={showPassword ? '/images/hide.png' : '/images/eye.png'}
-                                alt="toggle password"
-                                onClick={() => setShowPassword((prev) => !prev)}
-                                className="w-5 h-5 absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer"
-                            />
-                        </div>
+                    {done ? (
+                        <p className="text-green-600 text-center text-sm">รีเซ็ตรหัสผ่านเรียบร้อยแล้ว ✅</p>
+                    ) : (
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            {/* Password */}
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    required
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="รหัสผ่านใหม่"
+                                    maxLength={20}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9063d2] focus:outline-none pr-10"
+                                />
+                                <img
+                                    src={showPassword ? '/images/hide.png' : '/images/eye.png'}
+                                    alt="toggle password"
+                                    onClick={() => setShowPassword((prev) => !prev)}
+                                    className="w-5 h-5 absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer"
+                                />
+                            </div>
 
-                        {/* Confirm Password Field */}
-                        <div className="relative">
-                            <input
-                                type={showConfirmPassword ? 'text' : 'password'}
-                                required
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                placeholder="ยืนยันรหัสผ่าน"
-                                maxLength={20}
-                                className="w-full border px-3 py-2 rounded pr-10"
-                            />
-                            <img
-                                src={showConfirmPassword ? '/images/hide.png' : '/images/eye.png'}
-                                alt="toggle confirm"
-                                onClick={() => setShowConfirmPassword((prev) => !prev)}
-                                className="w-5 h-5 absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer"
-                            />
-                        </div>
+                            {/* Confirm Password */}
+                            <div className="relative">
+                                <input
+                                    type={showConfirmPassword ? 'text' : 'password'}
+                                    required
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    placeholder="ยืนยันรหัสผ่าน"
+                                    maxLength={20}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9063d2] focus:outline-none pr-10"
+                                />
+                                <img
+                                    src={showConfirmPassword ? '/images/hide.png' : '/images/eye.png'}
+                                    alt="toggle confirm"
+                                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                                    className="w-5 h-5 absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer"
+                                />
+                            </div>
 
-                        <button
-                            type="submit"
-                            className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition"
-                        >
-                            ตั้งรหัสผ่านใหม่
-                        </button>
+                            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
-                        {error && <p className="text-red-500 text-sm">{error}</p>}
-                    </form>
-                )}
+                            <button
+                                type="submit"
+                                className="w-full bg-[#9063d2] hover:bg-[#8753d5] text-white py-3 rounded-lg font-medium transition"
+                            >
+                                ตั้งรหัสผ่านใหม่
+                            </button>
+                        </form>
+                    )}
+                </div>
             </div>
-            <div className="h-32" />
+
             <Footer />
         </>
     );

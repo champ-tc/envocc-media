@@ -80,7 +80,7 @@ function MediaDetailPage() {
   return (
     <>
       <Navbar />
-      <div className="flex flex-col items-center justify-center py-16 min-h-screen bg-white">
+      <div className="flex flex-col items-center justify-center py-16 min-h-screen bg-[#f3e5f5]">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-4xl">
           <Image
             src={`/uploads/${image.filename}`}
@@ -112,7 +112,7 @@ function MediaDetailPage() {
                 link.download = image.title;
                 link.click();
               }}
-              className="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition"
+              className="bg-[#9063d2] hover:bg-[#8753d5] text-white px-6 py-2 rounded-md transition"
             >
               ดาวน์โหลดรูป
             </button>
