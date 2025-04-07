@@ -17,9 +17,9 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
     }
 
     try {
-        const { userId, orders, deliveryMethod, address, returnDate } = await req.json();
+        const { userId, orders, deliveryMethod, address, returnDate, usageReason } = await req.json();
 
-        if (!userId || !orders || orders.length === 0 || !returnDate) {
+        if (!userId || !orders || orders.length === 0 || !returnDate || !usageReason) {
             return NextResponse.json({ message: "Invalid data" }, { status: 400 });
         }
 
@@ -39,6 +39,7 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
                             delivery_method: deliveryMethod,
                             delivery_address: deliveryMethod === "delivery" ? address : null,
                             borrow_groupid: borrowGroupId,
+                            usageReason: Number(usageReason), // ✅ แก้ตรงนี้เป็น number
                         },
                     })
                 )
@@ -61,6 +62,7 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
         return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
     }
 }
+
 
 // GET: ดึงข้อมูล BorrowLog ตาม ID
 export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {

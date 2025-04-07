@@ -15,9 +15,9 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { userId, orders, deliveryMethod, address } = await req.json();
+        const { userId, orders, deliveryMethod, address, usageReason } = await req.json();
 
-        if (!userId || !orders || orders.length === 0) {
+        if (!userId || !orders || orders.length === 0 || !usageReason) {
             return NextResponse.json({ message: "Invalid data" }, { status: 400 });
         }
 
@@ -34,6 +34,7 @@ export async function POST(req: Request) {
                             requested_groupid: `group${Math.floor(Math.random() * 10000)}`,
                             delivery_method: deliveryMethod,
                             delivery_address: deliveryMethod === "delivery" ? address : null,
+                            usageReason: Number(usageReason), // ✅ เพิ่มตรงนี้
                         },
                     })
                 )
@@ -55,6 +56,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
     }
 }
+
 
 // ดึงข้อมูล requisition log ตาม ID
 export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
