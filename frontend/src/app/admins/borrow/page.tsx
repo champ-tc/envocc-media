@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
-import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
+import Image from 'next/image';
 
 interface Borrow {
     id: number;
@@ -20,15 +20,6 @@ interface Borrow {
 
 function AdminsBorrow() {
     const { session, isLoading } = useAuthCheck("admin");
-    const router = useRouter();
-    // const [borrows, setBorrows] = useState<Borrow[]>([]);
-    // const [searchQuery, setSearchQuery] = useState("");
-
-    // const [filterType, setFilterType] = useState("");
-
-    // const [currentPage, setCurrentPage] = useState(1);
-    // const [totalPages, setTotalPages] = useState(1);
-    // const itemsPerPage = 10;
 
     const [borrows, setBorrows] = useState<Borrow[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
@@ -73,60 +64,22 @@ function AdminsBorrow() {
         );
     }
 
-    const updateQuantity = async (id: number, newQuantity: number) => {
-        try {
-            const response = await fetch(`/api/borrows/${id}`, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ quantity: newQuantity }),
-            });
 
-            if (!response.ok) {
-                throw new Error("Failed to update quantity");
-            }
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, totalRecords);
+    const currentBorrows = borrows || [];
 
-            const updatedBorrow = await response.json();
-
-            setBorrows((prev) =>
-                prev.map((borrow) =>
-                    borrow.id === id ? { ...borrow, quantity: updatedBorrow.quantity } : borrow
-                )
-            );
-        } catch (error) {
-            console.error("Error updating quantity:", error);
-            alert("ไม่สามารถเพิ่มจำนวนได้");
-        }
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
     };
 
+    const goToPreviousPage = () => {
+        if (currentPage > 1) setCurrentPage(currentPage - 1);
+    };
 
-    const filteredBorrows = Array.isArray(borrows)
-        ? borrows.filter((item) => {
-            const matchesSearch = item.borrow_name
-                .toLowerCase()
-                .includes(searchQuery.toLowerCase());
-            const matchesType = filterType ? item.type.name === filterType : true;
-            return matchesSearch && matchesType;
-        })
-        : [];
-
-
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = Math.min(startIndex + itemsPerPage, totalRecords);
-        const currentBorrows = borrows || [];
-
-        const handlePageChange = (page: number) => {
-            setCurrentPage(page);
-        };
-    
-        const goToPreviousPage = () => {
-            if (currentPage > 1) setCurrentPage(currentPage - 1);
-        };
-    
-        const goToNextPage = () => {
-            if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-        };
+    const goToNextPage = () => {
+        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+    };
 
 
     return (
@@ -168,10 +121,12 @@ function AdminsBorrow() {
                                     className="bg-white p-4 rounded-xl shadow-lg border transition-transform transform hover:scale-105 flex flex-col"
                                 >
                                     {item.borrow_images ? (
-                                        <img
+                                        <Image
                                             src={`/borrows/${item.borrow_images}`}
                                             alt={item.borrow_name}
-                                            className="w-full h-60 object-cover rounded-lg mb-4"
+                                            width={24}
+                                            height={24}
+                                            className="w-full h-60 object-cover rounded-lg mb-4" // ใช้ Tailwind ได้ตามปกติ
                                         />
                                     ) : (
                                         <div className="w-full h-60 bg-gray-200 flex items-center justify-center rounded-lg mb-4">

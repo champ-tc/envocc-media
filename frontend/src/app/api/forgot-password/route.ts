@@ -42,26 +42,34 @@ export async function POST(req: Request) {
 
     // ✅ ส่งอีเมล HTML แบบสวยงาม
     const htmlContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
-        <h2 style="color: #D91A1A; font-size: 24px;">รีเซ็ตรหัสผ่านของคุณ</h2>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
+        <h2 style="color: #8753d5; font-size: 24px;">รีเซ็ตรหัสผ่านของคุณ</h2>
         <p>สวัสดีค่ะ</p>
-        <p>ระบบได้รับแจ้งเพื่อขอเปลี่ยนแปลงรหัสผ่านของท่าน ท่านสามารถเปลี่ยนแปลงรหัสผ่านได้โดยคลิกลิงก์ด้านล่างนี้</p>
+        <p>คุณสามารถรีเซ็ตรหัสผ่านของคุณได้โดยคลิกที่ปุ่มด้านล่าง</p>
         <div style="text-align: center; margin: 20px 0;">
-          <a href="${resetUrl}" style="background-color: #D91A1A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
+        <a href="${resetUrl}" style="background-color: #8753d5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
             รีเซ็ตรหัสผ่าน
-          </a>
+        </a>
         </div>
-        <p style="font-size: 14px; color: #666;">หากคุณไม่ได้ขอรีเซ็ตรหัสผ่าน โปรดตรวจสอบการใช้งานบัญชีของคุณ</p>
+        <p style="font-size: 14px; color: #666;">หากคุณไม่ได้เป็นผู้ร้องขอ โปรดเพิกเฉยต่ออีเมลฉบับนี้</p>
         <p style="font-size: 12px; color: #999;">ลิงก์นี้จะหมดอายุใน 5 นาที</p>
-        <p style="font-size: 14px;">ขอบคุณ,<br/>ทีมงาน Media_Envocc</p>
-      </div>
+        <hr style="margin-top: 30px; border: none; border-top: 1px solid #ccc;" />
+        <p style="font-size: 12px; color: #999; text-align: center;">
+        อีเมลฉบับนี้ถูกส่งโดยระบบอัตโนมัติจากเว็บไซต์ Media Envocc กรุณาอย่าตอบกลับ<br/>
+        หากคุณมีคำถาม กรุณาติดต่อ 02-590-3867
+        </p>
+    </div>
     `;
+
 
     await sendEmail({
         to: email,
-        subject: 'รีเซ็ตรหัสผ่าน เว็บไซต์ Media_Envocc',
+        subject: 'รีเซ็ตรหัสผ่าน เว็บไซต์ Media Envocc',
+        text: `คลิกลิงก์เพื่อรีเซ็ตรหัสผ่าน: ${resetUrl}`,
         html: htmlContent,
     });
+
+
 
     return NextResponse.json({ success: true, message: 'ส่งอีเมลเรียบร้อยแล้ว' });
 }

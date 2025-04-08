@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const Sidebar = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -29,7 +30,7 @@ const Sidebar = () => {
         <>
             <div className="lg:hidden fixed top-4 left-4 z-50">
                 <button onClick={() => setIsOpen(!isOpen)} aria-label="Toggle Menu">
-                    <img src="/images/hamburger.png" alt="menu" className="h-8 w-8" />
+                    <Image src="/images/hamburger.png" alt="menu" width={32} height={32} />
                 </button>
             </div>
 
@@ -40,7 +41,7 @@ const Sidebar = () => {
 
             >
                 <div className="p-4 flex justify-center">
-                    <img src="/images/icon_media.png" alt="icon" className="h-10" />
+                    <Image src="/images/icon_media.png" alt="icon" width={90} height={90} />
                 </div>
 
 
@@ -51,13 +52,13 @@ const Sidebar = () => {
                             <React.Fragment key={index}>
                                 <li
                                     className={`p-2 rounded-lg transition-colors duration-300 flex items-center cursor-pointer ${activePath.includes('/admins/type_management') ||
-                                            activePath.includes('/admins/media_management') ||
-                                            activePath.includes('/admins/borrow_management') ||
-                                            activePath.includes('/admins/imagse') ? 'bg-[#b8a0f5]' : 'hover:bg-[#b8a0f5]'
+                                        activePath.includes('/admins/media_management') ||
+                                        activePath.includes('/admins/borrow_management') ||
+                                        activePath.includes('/admins/imagse') ? 'bg-[#b8a0f5]' : 'hover:bg-[#b8a0f5]'
                                         }`}
                                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                 >
-                                    <img src={item.src} alt="จัดการสื่อ" className="h-5 mr-4" />
+                                    <Image src={item.src} alt="จัดการสื่อ" width={20} height={20} className="mr-4" />
                                     <span className="font-semibold">{item.label}</span>
                                 </li>
                                 {isDropdownOpen && (
@@ -96,11 +97,13 @@ const Sidebar = () => {
                                     }`}
                             >
                                 <Link href={item.href ?? '#'} className="flex items-center text-white w-full">
-                                    <img
+                                    <Image
                                         src={item.src}
-                                        style={{ filter: 'brightness(0) invert(1)' }}
                                         alt="icon"
-                                        className="h-5 mr-4"
+                                        width={20}
+                                        height={20}
+                                        className="mr-4"
+                                        style={{ filter: 'brightness(0) invert(1)' }}
                                     />
                                     <span className="font-semibold">{item.label}</span>
                                 </Link>

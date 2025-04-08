@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
+import { type NextRequest } from "next/server";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
@@ -18,14 +19,15 @@ const borrowSchema = z.object({
 
 
 // ฟังก์ชันตรวจสอบสิทธิ์
-async function checkAdminSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
+async function checkAdminSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
     return !!(token && token.role === "admin");
 }
 
 
+
 // GET: ดึงข้อมูล Borrow ตาม ID
-export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     const { id } = await context.params; // Unwrap params
 
     try {
@@ -55,7 +57,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
 }
 
 // PUT: อัปเดตข้อมูล Borrow
-export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     const { id } = await context.params; // Unwrap params
 
     try {
@@ -143,7 +145,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 
 
 // DELETE: ลบข้อมูล Borrow
-export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     const { id } = await context.params; // Unwrap params
 
     try {

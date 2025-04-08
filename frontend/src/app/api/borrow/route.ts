@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getToken } from 'next-auth/jwt';
+import { getToken } from "next-auth/jwt";
+import { type NextRequest } from "next/server";
 import { z } from 'zod';
 import fs from 'fs';
 import path from 'path';
@@ -22,9 +23,9 @@ const borrowSchema = z.object({
 });
 
 // ฟังก์ชันตรวจสอบสิทธิ์
-async function checkAdminSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
-    return !!(token && token.role === 'admin');
+async function checkAdminSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
+    return !!(token && token.role === "admin");
 }
 
 // ฟังก์ชัน sanitizeInput สำหรับล้างข้อมูลที่ไม่ปลอดภัย
@@ -33,7 +34,7 @@ function sanitizeInput(input: string): string {
 }
 
 // POST: เพิ่มข้อมูล Borrow ใหม่
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     try {
 
         if (!(await checkAdminSession(request))) {
@@ -107,7 +108,7 @@ export async function POST(request: Request) {
 
 
 // GET: ดึงข้อมูล Borrow ทั้งหมด
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
     try {
         if (!(await checkAdminSession(request))) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });

@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getToken } from 'next-auth/jwt';
 import { Prisma } from '@prisma/client';
+import { getToken } from "next-auth/jwt";
+import { type NextRequest } from "next/server";
+
 
 
 interface Order {
@@ -11,12 +13,12 @@ interface Order {
 }
 
 
-async function checkAdminSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
+async function checkAdminSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
     return !!(token && token.role === "admin");
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
 
     if (!(await checkAdminSession(request))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });

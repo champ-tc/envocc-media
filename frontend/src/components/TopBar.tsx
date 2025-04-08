@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 function TopBar() {
     const { data: session } = useSession();
@@ -31,7 +32,13 @@ function TopBar() {
             <div className="flex items-center space-x-4 relative">
                 <Link href="/admins/requisition_summary">
                     <button className="py-1 px-1 rounded-md hover:bg-gray-200 font-semibold">
-                        <img src="/images/basket.png" alt="menu" className="h-8 w-8" />
+                        <Image
+                            src="/images/basket.png"
+                            alt="menu"
+                            width={20}
+                            height={20}
+                            className="w-10 h-10"
+                        />
                     </button>
                 </Link>
                 <div ref={dropdownRef} className="relative">
@@ -39,9 +46,21 @@ function TopBar() {
                         onClick={toggleDropdown}
                         className="text-dark py-1 px-1 rounded-md hover:bg-gray-200 flex items-center space-x-3"
                     >
-                        <img src="/images/profile.png" alt="menu" className="h-8 w-6 rounded-full" />
+                        <Image
+                            src="/images/profile.png"
+                            alt="menu"
+                            width={20}
+                            height={20}
+                            className="h-8 w-6"
+                        />
                         <span>{session?.user?.name || "User"}</span>
-                        <img src="/images/right-arrow.png" alt="menu" className="h-4 w-4 rounded-full" />
+                        <Image
+                            src="/images/right-arrow.png"
+                            alt="menu"
+                            width={20}
+                            height={20}
+                            className="h-4 w-4"
+                        />
                     </button>
 
                     {dropdownOpen && (

@@ -1,6 +1,9 @@
+'use client';
+
 import React, { useState, useRef, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
+import Image from "next/image";
 
 function Navbar() {
     const { data: session } = useSession();
@@ -28,8 +31,8 @@ function Navbar() {
             <div className="flex justify-between items-center py-3 px-6 h-16 relative">
                 {/* โลโก้ */}
                 <div className="flex items-center space-x-6">
-                    <img src="/images/logoddc.png" alt="โลโก้" className="h-10" />
-                    <img src="/images/icon_media.png" alt="โลโก้ media" className="h-10" />
+                    <Image src="/images/logoddc.png" alt="โลโก้" width={40} height={40} />
+                    <Image src="/images/icon_media.png" alt="โลโก้ media" width={80} height={80} />
                 </div>
 
                 {/* เมนู Desktop */}
@@ -44,7 +47,7 @@ function Navbar() {
                         href: "/users/status", label: "ตรวจสอบสถานะ", icon: "/images/status.png"
                     }].map(({ href, label, icon }) => (
                         <Link key={href} href={href} className="flex items-center space-x-2 px-4 py-2 rounded-md hover:bg-white/30 transition">
-                            <img src={icon} alt={label} className="h-5" />
+                            <Image src={icon} alt={label} width={20} height={20} />
                             <span>{label}</span>
                         </Link>
                     ))}
@@ -56,7 +59,8 @@ function Navbar() {
                         onClick={() => setUserMenuOpen(!userMenuOpen)}
                         className="flex items-center bg-white/20 px-4 py-2 rounded-md text-sm font-medium hover:bg-white/30 transition"
                     >
-                        <img src="/images/profile.png" alt="menu" className="h-8 w-6 rounded-full" /> : {session?.user?.name || "Guest"}
+                        <Image src="/images/profile.png" alt="menu" width={24} height={24} className="rounded-full" />
+                        <span className="ml-2">: {session?.user?.name || "Guest"}</span>
                     </button>
                     {userMenuOpen && (
                         <ul ref={menuRef} className="absolute right-0 mt-12 w-44 bg-white text-gray-800 rounded-lg shadow-lg z-50 overflow-hidden">
@@ -87,7 +91,7 @@ function Navbar() {
                 {/* Hamburger สำหรับ Mobile */}
                 <div className="lg:hidden">
                     <button onClick={() => setIsOpen(!isOpen)} aria-label="Toggle Menu">
-                        <img src="/images/hamburger.png" alt="เมนู" className="h-8 w-8" />
+                        <Image src="/images/hamburger.png" alt="เมนู" width={32} height={32} />
                     </button>
                 </div>
             </div>

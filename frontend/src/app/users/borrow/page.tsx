@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
-import { useRouter } from "next/navigation";
 import Navbar from "@/components/NavbarUser";
 
 interface Borrow {
@@ -19,12 +18,6 @@ interface Borrow {
 
 function UsersBorrow() {
     const { session, isLoading } = useAuthCheck("user");
-    const router = useRouter();
-    // const [borrows, setBorrows] = useState<Borrow[]>([]);
-    // const [searchQuery, setSearchQuery] = useState("");
-    // const [filterType, setFilterType] = useState("");
-    // const [currentPage, setCurrentPage] = useState(1);
-    // const itemsPerPage = 10;
 
     const [borrows, setBorrows] = useState<Borrow[]>([]);
     const [searchQuery, setSearchQuery] = useState("");

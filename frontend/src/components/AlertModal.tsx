@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 
 interface AlertModalProps {
     isOpen: boolean;
@@ -15,7 +16,7 @@ const AlertModal: React.FC<AlertModalProps> = ({ isOpen, message, type, iconSrc 
             <div className={`relative bg-white p-8 rounded-2xl shadow-xl w-96 h-70 max-w-5xl border-2 ${type === 'success' ? 'border-green-500' : 'border-red-500'}`}>
                 <div className="text-center">
                     <div className={`${type === 'success' ? 'text-green-500' : 'text-red-500'} mb-4`}>
-                        <img src={iconSrc} alt="Alert Icon" className="h-28 w-28 mx-auto" />
+                        <Image src={iconSrc} alt="Alert Icon" width={112} height={112} className="mx-auto" />
                     </div>
                     <p className={`text-2xl font-semibold mt-10 ${type === 'success' ? 'text-green-500' : 'text-red-500'}`}>
                         {message}

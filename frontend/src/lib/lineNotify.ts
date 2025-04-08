@@ -86,6 +86,6 @@ export const sendLineGroupMessage = async (
         console.log("✅ LINE Flex message sent");
         return response.data;
     } catch (error) {
-        console.error("❌ Error sending LINE Flex message:");
+        console.error('LINE Notify Error:', error);
     }
 };
