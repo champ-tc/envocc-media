@@ -2,19 +2,19 @@
 
 import { useEffect, useState } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import React from "react";
 import axios from "axios";
 import ConfirmModal from "@/components/ConfirmModal";
 import AlertModal from "@/components/AlertModal";
-import dynamic from "next/dynamic";
 import { registerLocale } from "react-datepicker";
 import { th } from "date-fns/locale/th";
 import "react-datepicker/dist/react-datepicker.css";
 import type { ReactDatePickerCustomHeaderProps } from "react-datepicker";
 import Navbar from "@/components/NavbarUser";
-
+import Image from 'next/image'
+import dynamic from "next/dynamic";
+import { forwardRef } from "react";
+import type { DatePickerProps } from "react-datepicker";
 
 registerLocale("th", th);
 
@@ -56,7 +56,6 @@ type Reason = {
 
 function UsersSummary() {
     const { session, isLoading } = useAuthCheck("user");
-    const router = useRouter();
 
     const [selectedAction, setSelectedAction] = useState<string | null>(null);
 
@@ -72,6 +71,7 @@ function UsersSummary() {
 
     const [usageReasonId, setUsageReasonId] = useState<number | null>(null);
     const [customUsageReasonError, setCustomUsageReasonError] = useState<string | null>(null);
+
 
     const [customUsageReason, setCustomUsageReason] = useState(""); // เก็บค่าที่พิมพ์เมื่อเลือก "อื่นๆ"
     const [reasons, setReasons] = useState<Reason[]>([]);
@@ -104,7 +104,7 @@ function UsersSummary() {
                 if (!response.ok) throw new Error("Error fetching orders");
                 const data = await response.json();
                 setOrders(data);
-            } catch (error) {
+            } catch {
                 showAlert("เกิดข้อผิดพลาดในการลบรายการ", "error");
             }
         };
@@ -120,7 +120,7 @@ function UsersSummary() {
             if (!response.ok) throw new Error("Error fetching orders");
             const data = await response.json();
             setOrders(data);
-        } catch (error) {
+        } catch {
             showAlert("เกิดข้อผิดพลาดในการลบรายการ", "error");
         }
     };
@@ -133,10 +133,23 @@ function UsersSummary() {
         );
     }
 
-    const DynamicDatePicker = dynamic<any>(() => import("react-datepicker"), {
+
+
+
+
+    const DynamicDatePicker = dynamic(() =>
+        import("react-datepicker").then((mod) => {
+            const DatePicker = forwardRef<never, DatePickerProps>((props, ref) => (
+                <mod.default {...props} ref={ref} />
+            ));
+            DatePicker.displayName = "DatePicker";
+            return { default: DatePicker };
+        }), {
         ssr: false,
         loading: () => <p>Loading...</p>,
     });
+
+
 
     function formatDisplayDate(date: Date): string {
         return date.toLocaleDateString("th-TH", {
@@ -255,7 +268,7 @@ function UsersSummary() {
 
             setOrders((prev) => prev.filter((order) => order.id !== selectedOrderId));
             showAlert("ลบรายการสำเร็จ", "success");
-        } catch (error) {
+        } catch {
             showAlert("เกิดข้อผิดพลาดในการลบรายการ", "error");
         } finally {
             setIsDeleteConfirmOpen(false);
@@ -278,16 +291,20 @@ function UsersSummary() {
         }
 
         if (usageReasonId === 0 && !customUsageReason.trim()) {
+            setCustomUsageReasonError("กรุณาระบุรายละเอียดเพิ่มเติม");
             showAlert("กรุณาระบุรายละเอียดเพิ่มเติม", "error");
             return;
+        } else {
+            setCustomUsageReasonError(null); // reset error
         }
+
 
 
         if (deliveryMethod === "delivery" && !address.trim()) {
             showAlert("กรุณากรอกที่อยู่สำหรับการจัดส่ง", "error");
             return;
         }
-        
+
 
 
 
@@ -313,7 +330,7 @@ function UsersSummary() {
             }
 
             // ส่งคำขอไปยัง API
-            const response = await axios.post("/api/requisition_log", {
+            await axios.post("/api/requisition_log", {
                 userId: session?.user?.id,
                 orders: formattedOrders,
                 deliveryMethod,
@@ -322,12 +339,13 @@ function UsersSummary() {
                 customUsageReason: usageReasonId === 0 ? customUsageReason : null,
             });
 
+
             showAlert("บันทึกการเบิกสำเร็จ!", "success");
             setOrders([]);
             setAddress("");
             setSelectedAction(null);
             await fetchOrders();
-        } catch (error) {
+        } catch {
             showAlert("เกิดข้อผิดพลาดในการเบิกของ", "error");
         }
     };
@@ -336,27 +354,27 @@ function UsersSummary() {
 
     const handleSubmitBorrow = async (e: React.FormEvent) => {
         e.preventDefault();
-    
+
         if (!returnDate) {
             showAlert("กรุณากรอกวันที่คืน", "error");
             return;
         }
-    
+
         if (deliveryMethod === "delivery" && !address.trim()) {
             showAlert("กรุณากรอกข้อมูลที่อยู่สำหรับการจัดส่ง", "error");
             return;
         }
-    
+
         if (usageReasonId === null) {
             showAlert("กรุณาเลือกเหตุผลในการนำไปใช้", "error");
             return;
         }
-    
+
         if (usageReasonId === 0 && !customUsageReason.trim()) {
             showAlert("กรุณาระบุรายละเอียดเพิ่มเติม", "error");
             return;
         }
-    
+
         try {
             const formattedOrders = orders
                 .filter((order: Order) => order.borrow?.id && order.quantity > 0)
@@ -364,13 +382,13 @@ function UsersSummary() {
                     borrowId: order.borrow!.id,
                     quantity: order.quantity,
                 }));
-    
+
             if (formattedOrders.length === 0) {
                 showAlert("ไม่มีรายการยืมที่ถูกต้อง", "error");
                 return;
             }
-    
-            const response = await axios.post("/api/borrowlog", {
+
+            await axios.post("/api/borrowlog", {
                 userId: session?.user?.id,
                 orders: formattedOrders,
                 deliveryMethod,
@@ -379,18 +397,18 @@ function UsersSummary() {
                 usageReasonId,
                 customUsageReason: usageReasonId === 0 ? customUsageReason : null,
             });
-    
+
             showAlert("บันทึกการยืมสำเร็จ!", "success");
-    
+
             setOrders([]);
             setAddress("");
-            setSelectedAction(null); 
+            setSelectedAction(null);
             await fetchOrders();
-        } catch (error) {
+        } catch {
             showAlert("เกิดข้อผิดพลาดในการยืมของ", "error");
         }
     };
-    
+
 
 
     const filteredOrders: Order[] =
@@ -458,9 +476,12 @@ function UsersSummary() {
                                                                 onClick={() => handleDeleteOrder(order.id)}
                                                                 className="mb-4 py-2 px-2 rounded-md transition"
                                                             >
-                                                                <img
+                                                                <Image
                                                                     src="/images/delete.png"
                                                                     alt="Delete Icon"
+                                                                    width={400}
+                                                                    height={600}
+                                                                    priority
                                                                     className="h-6 w-6"
                                                                 />
                                                             </button>
@@ -543,6 +564,7 @@ function UsersSummary() {
                                                     <p className="text-red-500 text-sm mt-1">{customUsageReasonError}</p>
                                                 )}
                                             </>
+
                                         )}
 
 

@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import Image from "next/image";
 
 function ResetPasswordForm() {
     const searchParams = useSearchParams();
@@ -72,11 +73,13 @@ function ResetPasswordForm() {
                                     maxLength={20}
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9063d2] focus:outline-none pr-10"
                                 />
-                                <img
+                                <Image
                                     src={showPassword ? '/images/hide.png' : '/images/eye.png'}
                                     alt="toggle password"
                                     onClick={() => setShowPassword((prev) => !prev)}
                                     className="w-5 h-5 absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer"
+                                    width={24}
+                                    height={24}
                                 />
                             </div>
 
@@ -91,11 +94,13 @@ function ResetPasswordForm() {
                                     maxLength={20}
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9063d2] focus:outline-none pr-10"
                                 />
-                                <img
+                                <Image
                                     src={showConfirmPassword ? '/images/hide.png' : '/images/eye.png'}
                                     alt="toggle confirm"
                                     onClick={() => setShowConfirmPassword((prev) => !prev)}
                                     className="w-5 h-5 absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer"
+                                    width={24}
+                                    height={24}
                                 />
                             </div>
 

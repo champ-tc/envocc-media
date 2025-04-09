@@ -5,6 +5,7 @@ import useAuthCheck from "@/hooks/useAuthCheck";
 import { useRouter, useParams } from "next/navigation"; // เพิ่ม useParams
 import Navbar from "@/components/NavbarUser";
 import AlertModal from "@/components/AlertModal";
+import Image from "next/image";
 
 interface Borrow {
     id: number;
@@ -123,10 +124,12 @@ function UsersBorrowDetail() {
                             <div className="w-1/2 pr-4">
                                 <div className="relative overflow-hidden rounded-lg shadow-md h-full">
                                     {borrow.borrow_images ? (
-                                        <img
+                                        <Image
                                             src={`/borrows/${borrow.borrow_images}`}
                                             alt={borrow.borrow_name}
                                             className="w-full h-full object-cover"
+                                            width={24}
+                                            height={24}
                                         />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-gray-600">

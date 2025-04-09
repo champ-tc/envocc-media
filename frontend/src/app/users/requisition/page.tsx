@@ -4,6 +4,7 @@ import useAuthCheck from "@/hooks/useAuthCheck";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/NavbarUser";
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 
 interface Requisition {
     id: number;
@@ -22,12 +23,6 @@ function UsersRequisition() {
 
     const { session, isLoading } = useAuthCheck("user");
     const router = useRouter();
-
-    // const [requisitions, setRequisitions] = useState<Requisition[]>([]);
-    // const [searchQuery, setSearchQuery] = useState("");
-    // const [filterType, setFilterType] = useState("");
-    // const [currentPage, setCurrentPage] = useState(1);
-    // const itemsPerPage = 10;
 
     const [requisitions, setRequisitions] = useState<Requisition[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
@@ -151,10 +146,12 @@ function UsersRequisition() {
                                     className="bg-white p-4 rounded-xl shadow-lg border border-gray-200 transition-transform transform hover:scale-105 flex flex-col"
                                 >
                                     {item.requisition_images ? (
-                                        <img
+                                        <Image
                                             src={`/requisitions/${item.requisition_images}`}
                                             alt={item.requisition_name}
                                             className="w-full h-60 object-cover rounded-lg mb-4"
+                                            width={24}
+                                            height={24}
                                         />
                                     ) : (
                                         <div className="w-full h-60 bg-gray-200 flex items-center justify-center rounded-lg mb-4">

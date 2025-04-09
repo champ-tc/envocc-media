@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
 import Navbar from "@/components/NavbarUser";
+import Image from "next/image";
 
 interface Borrow {
     id: number;
@@ -62,32 +63,32 @@ function UsersBorrow() {
         );
     }
 
-    const updateQuantity = async (id: number, newQuantity: number) => {
-        try {
-            const response = await fetch(`/api/borrows/${id}`, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ quantity: newQuantity }),
-            });
+    // const updateQuantity = async (id: number, newQuantity: number) => {
+    //     try {
+    //         const response = await fetch(`/api/borrows/${id}`, {
+    //             method: "PATCH",
+    //             headers: {
+    //                 "Content-Type": "application/json",
+    //             },
+    //             body: JSON.stringify({ quantity: newQuantity }),
+    //         });
 
-            if (!response.ok) {
-                throw new Error("Failed to update quantity");
-            }
+    //         if (!response.ok) {
+    //             throw new Error("Failed to update quantity");
+    //         }
 
-            const updatedBorrow = await response.json();
+    //         const updatedBorrow = await response.json();
 
-            setBorrows((prev) =>
-                prev.map((borrow) =>
-                    borrow.id === id ? { ...borrow, quantity: updatedBorrow.quantity } : borrow
-                )
-            );
-        } catch (error) {
-            console.error("Error updating quantity:", error);
-            alert("ไม่สามารถเพิ่มจำนวนได้");
-        }
-    };
+    //         setBorrows((prev) =>
+    //             prev.map((borrow) =>
+    //                 borrow.id === id ? { ...borrow, quantity: updatedBorrow.quantity } : borrow
+    //             )
+    //         );
+    //     } catch (error) {
+    //         console.error("Error updating quantity:", error);
+    //         alert("ไม่สามารถเพิ่มจำนวนได้");
+    //     }
+    // };
 
 
     const filteredBorrows = Array.isArray(borrows)
@@ -155,10 +156,12 @@ function UsersBorrow() {
                                     className="bg-white p-4 rounded-xl shadow-lg border transition-transform transform hover:scale-105 flex flex-col"
                                 >
                                     {item.borrow_images ? (
-                                        <img
+                                        <Image
                                             src={`/borrows/${item.borrow_images}`}
                                             alt={item.borrow_name}
                                             className="w-full h-60 object-cover rounded-lg mb-4"
+                                            width={24}
+                                            height={24}
                                         />
                                     ) : (
                                         <div className="w-full h-60 bg-gray-200 flex items-center justify-center rounded-lg mb-4">

@@ -46,7 +46,7 @@ function ForgotPasswordPage() {
                 setMessage(data.message || 'เกิดข้อผิดพลาด');
                 setIsError(true);
             }
-        } catch (err) {
+        } catch {
             setMessage('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
             setIsError(true);
         } finally {

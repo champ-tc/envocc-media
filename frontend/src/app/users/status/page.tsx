@@ -1,24 +1,9 @@
 "use client";
 
 import useAuthCheck from "@/hooks/useAuthCheck";
-import { useRouter } from "next/navigation";
 import Navbar from "@/components/NavbarUser";
 import React, { useState, useEffect } from "react";
 
-
-type BorrowLog = {
-    id: number;
-    borrow_groupid: string;
-    status: string;
-    createdAt: string;
-};
-
-type RequisitionLog = {
-    id: number;
-    requested_groupid: string;
-    status: string;
-    createdAt: string;
-};
 
 
 type BorrowLogGroup = {
@@ -52,8 +37,7 @@ type RequisitionLogGroup = {
 
 function UsersStatus() {
     const { session, isLoading } = useAuthCheck("user");
-    const router = useRouter();
-    const [statusFilter, setStatusFilter] = useState("all");
+    const [statusFilter] = useState<string>("all");
     const [borrowGroups, setBorrowGroups] = useState<BorrowLogGroup[]>([]);
     const [requisitionGroups, setRequisitionGroups] = useState<RequisitionLogGroup[]>([]);
 

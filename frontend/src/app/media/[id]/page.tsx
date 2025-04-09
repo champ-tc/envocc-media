@@ -1,47 +1,27 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 
+interface ImageData {
+  filename: string;
+  title: string;
+  addedDate?: string;
+  viewCount?: number;
+}
+
 function MediaDetailPage() {
   const params = useParams();
   const filename = params?.id;
-  const [image, setImage] = useState<any | null>(null);
+  const [image, setImage] = useState<ImageData | null>(null);
   const [viewCount, setViewCount] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const hasIncremented = useRef(false); // ใช้ useRef เพื่อตรวจสอบว่าทำการเพิ่ม viewCount แล้วหรือยัง
+  const hasIncremented = useRef(false);
 
-  useEffect(() => {
-    if (filename) {
-      fetchImageDetails();
-    }
-  }, [filename]);
-
-  const fetchImageDetails = async () => {
-    try {
-      const response = await fetch(`/api/images/${filename}`);
-      if (!response.ok) {
-        throw new Error(`Image not found: ${response.statusText}`);
-      }
-      const data = await response.json();
-      setImage(data);
-      setViewCount(data.viewCount || 0);
-
-      // ตรวจสอบและเพิ่ม viewCount ถ้ายังไม่ได้เพิ่ม
-      if (!hasIncremented.current) {
-        incrementViewCount();
-        hasIncremented.current = true; // ตั้งค่าว่าเพิ่มแล้ว
-      }
-    } catch (error) {
-      console.error('Error fetching image details:', error);
-      setErrorMessage('ไม่พบข้อมูลรูปภาพ หรือเกิดข้อผิดพลาดในการดึงข้อมูล');
-    }
-  };
-
-  const incrementViewCount = async () => {
+  const incrementViewCount = useCallback(async () => {
     try {
       const response = await fetch(`/api/images/${filename}`, { method: 'POST' });
       if (!response.ok) {
@@ -51,11 +31,37 @@ function MediaDetailPage() {
     } catch (error) {
       console.error('Error incrementing view count:', error);
     }
-  };
+  }, [filename]);
+
+  const fetchImageDetails = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/images/${filename}`);
+      if (!response.ok) {
+        throw new Error(`Image not found: ${response.statusText}`);
+      }
+      const data = await response.json();
+      setImage(data);
+      setViewCount(data.viewCount || 0);
+
+      if (!hasIncremented.current) {
+        incrementViewCount();
+        hasIncremented.current = true;
+      }
+    } catch (error) {
+      console.error('Error fetching image details:', error);
+      setErrorMessage('ไม่พบข้อมูลรูปภาพ หรือเกิดข้อผิดพลาดในการดึงข้อมูล');
+    }
+  }, [filename, incrementViewCount]);
+
+  useEffect(() => {
+    if (filename) {
+      fetchImageDetails();
+    }
+  }, [filename, fetchImageDetails]);
 
   if (errorMessage) {
     return (
-      <div className='flex items-center justify-center min-h-screen'>
+      <div className="flex items-center justify-center min-h-screen">
         <p className="text-red-600">{errorMessage}</p>
       </div>
     );
@@ -63,7 +69,7 @@ function MediaDetailPage() {
 
   if (!filename) {
     return (
-      <div className='flex items-center justify-center min-h-screen'>
+      <div className="flex items-center justify-center min-h-screen">
         <p>Invalid Image ID</p>
       </div>
     );
@@ -71,7 +77,7 @@ function MediaDetailPage() {
 
   if (!image) {
     return (
-      <div className='flex items-center justify-center min-h-screen'>
+      <div className="flex items-center justify-center min-h-screen">
         <p>Loading...</p>
       </div>
     );
@@ -95,10 +101,10 @@ function MediaDetailPage() {
               วันที่เพิ่ม:{' '}
               {image.addedDate
                 ? new Date(image.addedDate).toLocaleDateString('th-TH', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })
                 : 'วันที่ไม่ถูกต้อง'}
             </p>
             <h3 className="text-2xl font-bold mt-2 mb-2">{image.title}</h3>

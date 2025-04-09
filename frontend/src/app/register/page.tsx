@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import Link from 'next/link';
+import Image from "next/image";
 
 const departmentOptions = [
   { value: '', label: 'เลือกประเภทผู้ใช้' },
@@ -216,11 +217,15 @@ function RegisterPage() {
           router.push("/login");
         }, 1000);
       }
-    } catch (error: any) {
-      if (error.response && error.response.status === 400) {
-        setError(error.response.data.error); // แสดงข้อความ Error สำหรับผู้ใช้
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 400) {
+          setError(error.response.data.error);
+        } else {
+          setError("เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่ภายหลัง");
+        }
       } else {
-        setError("เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่ภายหลัง"); // ข้อความทั่วไป
+        setError("เกิดข้อผิดพลาดที่ไม่รู้จัก");
       }
     }
   };
@@ -266,11 +271,13 @@ function RegisterPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2] pr-10"
                     required
                   />
-                  <img
+                  <Image
                     src={showPassword ? '/images/hide.png' : '/images/eye.png'}
                     alt="toggle password"
                     onClick={() => setShowPassword(!showPassword)}
                     className="w-5 h-5 absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer"
+                    width={24}
+                    height={24}
                   />
                 </div>
 

@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation"; // เพิ่ม usePa
 import Navbar from "@/components/NavbarUser";
 import React, { useState, useEffect } from "react";
 import AlertModal from "@/components/AlertModal";
+import Image from "next/image";
 
 interface Requisition {
     id: number;
@@ -93,7 +94,7 @@ function UsersRequisitionDetail() {
             setTimeout(() => {
                 router.push("/users/requisition");
             }, 3000);
-        } catch (error) {
+        } catch {
             showAlert("เกิดข้อผิดพลาดในการเพิ่มรายการ", "error");
         }
     };
@@ -112,10 +113,12 @@ function UsersRequisitionDetail() {
                             <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 flex">
                                 <div className="w-1/2 pr-4">
                                     <div className="relative overflow-hidden rounded-lg shadow-md h-full">
-                                        <img
+                                        <Image
                                             src={requisition.requisition_images}
                                             alt={requisition.requisition_name}
                                             className="w-full h-full object-cover"
+                                            width={24}
+                                            height={24}
                                         />
                                     </div>
                                 </div>

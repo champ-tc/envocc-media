@@ -2,24 +2,25 @@
 
 import React, { useState, useEffect } from 'react';
 import useAuthCheck from '@/hooks/useAuthCheck';
-import { useSession } from "next-auth/react";
-import NavbarUser from "@/components/NavbarUser";
 import AlertModal from "@/components/AlertModal";
 import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/NavbarUser"
+import { useCallback } from "react";
 
-interface User {
-    id: string | number;
+type UserData = {
+    password: string;
+    confirm_password: string;
     title: string;
     firstName: string;
     lastName: string;
-    email: string;
     tel: string;
-    department: string; // หรือใช้ number ถ้า department เป็นหมายเลข
+    email: string;
+    department: string;
     position: string;
     role: string;
-}
+};
+
 
 const departmentOptions = [
     { value: '1', label: 'สำนักงานสาธารณสุขจังหวัด' },
@@ -137,8 +138,7 @@ function PersonalPage() {
     const router = useRouter();
     const params = useParams();
     const id = params?.id || "default-id";
-    const [users, setUsers] = useState([]);
-    const [userData, setUserData] = useState({
+    const [userData, setUserData] = useState<UserData>({
         password: "",
         confirm_password: "",
         title: "",
@@ -151,9 +151,9 @@ function PersonalPage() {
         role: "user",
     });
 
+
     const [showPasswordInput, setShowPasswordInput] = useState(false);
 
-    const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
     const [loading, setLoading] = useState(true);
     const [showPassword, setShowPassword] = useState(false);
 
@@ -171,35 +171,41 @@ function PersonalPage() {
         }, 3000);
     };
 
-    // ฟังก์ชันดึงข้อมูลผู้ใช้
-    const fetchUserData = async (url: string, setData: Function, errorMessage: string) => {
-        try {
-            const res = await fetch(url, {
-                method: "GET",
-                headers: {
-                    Authorization: `Bearer ${session?.token}`,
-                },
-            });
 
-            if (!res.ok) {
-                throw new Error(`API Error: ${res.status} ${res.statusText}`);
+
+    const fetchUserData = useCallback(
+        async (url: string, setData: (data: UserData) => void, errorMessage: string) => {
+            try {
+                const res = await fetch(url, {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${session?.token}`,
+                    },
+                });
+
+                if (!res.ok) {
+                    throw new Error(`API Error: ${res.status} ${res.statusText}`);
+                }
+
+                const data = await res.json();
+                setData(data);
+            } catch {
+                showAlert(errorMessage, "error");
+            } finally {
+                setLoading(false);
             }
+        },
+        [session?.token] // ✅ ใส่ dependency ที่จำเป็น
+    );
 
-            const data = await res.json();
-            setData(data); // อัปเดตข้อมูลใน state
-        } catch (err) {
-            showAlert(errorMessage, "error");
-        } finally {
-            setLoading(false);
-        }
-    };
 
-    // ใช้ useEffect เพื่อดึงข้อมูล
+
+
     useEffect(() => {
         if (session) {
             fetchUserData(`/api/users/${id}`, setUserData, "ไม่สามารถดึงข้อมูลส่วนตัวได้");
         }
-    }, [session, id]);
+    }, [session, id, fetchUserData]);
 
     if (isLoading || loading) {
         return (
@@ -232,7 +238,6 @@ function PersonalPage() {
             }
         }
 
-        // ตรวจสอบฟิลด์ที่จำเป็น
         if (!title || !firstName || !lastName || !tel || !email || !department || !position) {
             showAlert("กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน", "error");
             return;
@@ -250,7 +255,7 @@ function PersonalPage() {
         }
 
         try {
-            const response = await axios.put(
+            await axios.put(
                 `/api/users/${id}`,
                 {
                     title,
@@ -275,241 +280,248 @@ function PersonalPage() {
                     router.push("/admins/user-management");
                 }
             }, 3000);
-        } catch (err: any) {
-            showAlert(err.response?.data?.message || "เกิดข้อผิดพลาดในการอัปเดตข้อมูล", "error");
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err)) {
+                showAlert(err.response?.data?.message || "เกิดข้อผิดพลาดในการอัปเดตข้อมูล", "error");
+            } else {
+                showAlert("เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ", "error");
+            }
         }
     };
 
 
     return (
-        <div className="min-h-screen bg-[#f3e5f5]">
+        <>
             <Navbar />
-            <div className="relative flex flex-col items-center">
-                <div className="flex-1 flex items-start justify-center p-2">
-                    <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4">
-                        <h1 className="text-2xl font-bold mb-4">ข้อมูลส่วนตัว</h1>
 
-                        {alertMessage && (
-                            <AlertModal
-                                isOpen={!!alertMessage}
-                                message={alertMessage}
-                                type={alertType ?? "error"}
-                                iconSrc={alertType === "success" ? "/images/check.png" : "/images/close.png"}
-                            />
-                        )}
+            <div className="min-h-screen bg-[#f3e5f5]">
+                <div className="relative flex flex-col items-center">
+                    <div className="flex-1 flex items-start justify-center p-2">
+                        <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4">
+                            <h1 className="text-2xl font-bold mb-4">ข้อมูลส่วนตัว</h1>
 
-                        <form onSubmit={handleSubmit}>
-                            <div className="grid grid-cols-1 gap-4 mt-2 sm:grid-cols-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPasswordInput(!showPasswordInput)}
-                                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-300 transition mt-4"
-                                >
-                                    {showPasswordInput ? "ยกเลิกเปลี่ยนรหัสผ่าน" : "เปลี่ยนรหัสผ่าน"}
-                                </button>
+                            {alertMessage && (
+                                <AlertModal
+                                    isOpen={!!alertMessage}
+                                    message={alertMessage}
+                                    type={alertType ?? "error"}
+                                    iconSrc={alertType === "success" ? "/images/check.png" : "/images/close.png"}
+                                />
+                            )}
 
-
-                            </div>
-
-                            <div>
-                                {showPasswordInput && (
-                                    <>
-                                        <div className="grid grid-cols-1 gap-4 mt-2 sm:grid-cols-3">
-                                            {/* Input for Password */}
-                                            <div className="w-full">
-                                                <label
-                                                    htmlFor="password"
-                                                    className="block text-sm font-medium text-gray-700 mb-1"
-                                                >
-                                                    Password
-                                                </label>
-                                                <input
-                                                    type={showPassword ? "text" : "password"} // แสดงหรือซ่อนรหัสผ่าน
-                                                    maxLength={20}
-                                                    id="password"
-                                                    name="password"
-                                                    onChange={(e) =>
-                                                        setUserData((prev) => ({ ...prev, password: e.target.value }))
-                                                    }
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
-                                                />
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    ต้องมีความยาวอย่างน้อย 8 ตัว A-Z, a-z และตัวเลข
-                                                </p>
-                                            </div>
-
-                                            <div className="w-full">
-                                                <label
-                                                    htmlFor="confirm_password"
-                                                    className="block text-sm font-medium text-gray-700 mb-1"
-                                                >
-                                                    Confirm Password
-                                                </label>
-                                                <input
-                                                    type={showPassword ? "text" : "password"} // แสดงหรือซ่อนรหัสผ่าน
-                                                    maxLength={20}
-                                                    id="confirm_password"
-                                                    name="confirm_password"
-                                                    onChange={(e) =>
-                                                        setUserData((prev) => ({
-                                                            ...prev,
-                                                            confirm_password: e.target.value,
-                                                        }))
-                                                    }
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
-                                                />
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    ต้องกรอกรหัสผ่านอีกครั้งให้ตรงกับ Password
-                                                </p>
-                                            </div>
-
-                                            {/* Button to Show/Hide Password */}
-                                            <div className="w-full">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowPassword(!showPassword)} // สลับสถานะการแสดง/ซ่อนรหัสผ่าน
-                                                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-300 transition mt-4"
-                                                >
-                                                    {showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-5">
-                                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1 col-span-5">ชื่อ - นามสกุล</label>
-                                <div className="w-full col-span-5 md:col-span-1">
-                                    <select
-                                        id="title"
-                                        name="title"
-                                        value={userData.title}
-                                        onChange={(e) => setUserData({ ...userData, title: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
-                                        required
+                            <form onSubmit={handleSubmit}>
+                                <div className="grid grid-cols-1 gap-4 mt-2 sm:grid-cols-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPasswordInput(!showPasswordInput)}
+                                        className="bg-gray-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-300 transition mt-4"
                                     >
-                                        <option value="">คำนำหน้า</option>
-                                        <option value="Mr">นาย</option>
-                                        <option value="Ms">นางสาว</option>
-                                        <option value="Mrs">นาง</option>
-                                    </select>
-                                </div>
-                                <div className="w-full col-span-5 md:col-span-2">
-                                    <input
-                                        type="text"
-                                        maxLength={20}
-                                        id="firstName"
-                                        name="firstName"
-                                        value={userData.firstName}
-                                        onChange={(e) => setUserData({ ...userData, firstName: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
-                                        required
-                                    />
-                                </div>
-                                <div className="w-full col-span-5 md:col-span-2">
-                                    <input
-                                        type="text"
-                                        maxLength={20}
-                                        id="lastName"
-                                        name="lastName"
-                                        value={userData.lastName}
-                                        onChange={(e) => setUserData({ ...userData, lastName: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
-                                        required
-                                    />
-                                </div>
-                            </div>
+                                        {showPasswordInput ? "ยกเลิกเปลี่ยนรหัสผ่าน" : "เปลี่ยนรหัสผ่าน"}
+                                    </button>
 
-                            <div className="grid grid-cols-1 gap-2 mt-4 sm:grid-cols-2">
-                                <div className="w-full mt-2 col-span-2 md:col-span-1">
-                                    <label htmlFor="tel" className="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร</label>
-                                    <input
-                                        type="tel"
-                                        maxLength={10}
-                                        id="tel"
-                                        name="tel"
-                                        value={userData.tel}
-                                        onChange={(e) => setUserData({ ...userData, tel: e.target.value })}
-                                        pattern="[0-9]*"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
-                                        required
-                                    />
-                                </div>
-                                <div className="w-full mt-2 col-span-2 md:col-span-1">
-                                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                                    <input
-                                        type="email"
-                                        maxLength={30}
-                                        id="email"
-                                        name="email"
-                                        value={userData.email}
-                                        onChange={(e) => setUserData({ ...userData, email: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
-                                        required
-                                    />
+
                                 </div>
 
-                                <div className="w-full mt-2 col-span-2 md:col-span-1">
-                                    <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1">เลือกประเภทผู้ใช้</label>
-                                    <select
-                                        id="department"
-                                        name="department"
-                                        value={userData.department}
-                                        onChange={(e) => {
-                                            setUserData({ ...userData, department: e.target.value, position: '' });
-                                        }}
-                                        className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#9063d2] sm:text-sm"
-                                        required
-                                    >
-                                        <option value="">เลือกประเภทผู้ใช้</option>
-                                        {departmentOptions.map((option) => (
-                                            <option key={option.value} value={option.value}>{option.label}</option>
-                                        ))}
-                                    </select>
+                                <div>
+                                    {showPasswordInput && (
+                                        <>
+                                            <div className="grid grid-cols-1 gap-4 mt-2 sm:grid-cols-3">
+                                                {/* Input for Password */}
+                                                <div className="w-full">
+                                                    <label
+                                                        htmlFor="password"
+                                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                                    >
+                                                        Password
+                                                    </label>
+                                                    <input
+                                                        type={showPassword ? "text" : "password"} // แสดงหรือซ่อนรหัสผ่าน
+                                                        maxLength={20}
+                                                        id="password"
+                                                        name="password"
+                                                        onChange={(e) =>
+                                                            setUserData((prev) => ({ ...prev, password: e.target.value }))
+                                                        }
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
+                                                    />
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        ต้องมีความยาวอย่างน้อย 8 ตัว A-Z, a-z และตัวเลข
+                                                    </p>
+                                                </div>
+
+                                                <div className="w-full">
+                                                    <label
+                                                        htmlFor="confirm_password"
+                                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                                    >
+                                                        Confirm Password
+                                                    </label>
+                                                    <input
+                                                        type={showPassword ? "text" : "password"} // แสดงหรือซ่อนรหัสผ่าน
+                                                        maxLength={20}
+                                                        id="confirm_password"
+                                                        name="confirm_password"
+                                                        onChange={(e) =>
+                                                            setUserData((prev) => ({
+                                                                ...prev,
+                                                                confirm_password: e.target.value,
+                                                            }))
+                                                        }
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
+                                                    />
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        ต้องกรอกรหัสผ่านอีกครั้งให้ตรงกับ Password
+                                                    </p>
+                                                </div>
+
+                                                {/* Button to Show/Hide Password */}
+                                                <div className="w-full">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPassword(!showPassword)} // สลับสถานะการแสดง/ซ่อนรหัสผ่าน
+                                                        className="bg-gray-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-300 transition mt-4"
+                                                    >
+                                                        {showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
-                                <div className="w-full mt-2 col-span-2 md:col-span-1">
-                                    <label htmlFor="position" className="block text-sm font-medium text-gray-700 mb-1">หน่วยงาน</label>
-                                    {['1', '2'].includes(userData.department) ? (
+
+                                <div className="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-5">
+                                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1 col-span-5">ชื่อ - นามสกุล</label>
+                                    <div className="w-full col-span-5 md:col-span-1">
                                         <select
-                                            id="position"
-                                            name="position"
-                                            value={userData.position}
-                                            onChange={(e) => setUserData({ ...userData, position: e.target.value })}
-                                            className="block w-full py-2 px-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2] sm:text-sm"
+                                            id="title"
+                                            name="title"
+                                            value={userData.title}
+                                            onChange={(e) => setUserData({ ...userData, title: e.target.value })}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                                             required
                                         >
-                                            <option value="">เลือกตำแหน่ง</option>
-                                            {positionOptions[userData.department]?.map((option) => (
-                                                <option key={option.value} value={option.value}>{option.label}</option>
-                                            ))}
+                                            <option value="">คำนำหน้า</option>
+                                            <option value="Mr">นาย</option>
+                                            <option value="Ms">นางสาว</option>
+                                            <option value="Mrs">นาง</option>
                                         </select>
-                                    ) : ['3', '4', '5', '6', '7', '9'].includes(userData.department) ? (
+                                    </div>
+                                    <div className="w-full col-span-5 md:col-span-2">
                                         <input
                                             type="text"
-                                            maxLength={30}
-                                            id="position"
-                                            name="position"
-                                            value={userData.position}
-                                            onChange={(e) => setUserData({ ...userData, position: e.target.value })}
+                                            maxLength={20}
+                                            id="firstName"
+                                            name="firstName"
+                                            value={userData.firstName}
+                                            onChange={(e) => setUserData({ ...userData, firstName: e.target.value })}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
                                             required
                                         />
-                                    ) : null}
+                                    </div>
+                                    <div className="w-full col-span-5 md:col-span-2">
+                                        <input
+                                            type="text"
+                                            maxLength={20}
+                                            id="lastName"
+                                            name="lastName"
+                                            value={userData.lastName}
+                                            onChange={(e) => setUserData({ ...userData, lastName: e.target.value })}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
+                                            required
+                                        />
+                                    </div>
                                 </div>
 
+                                <div className="grid grid-cols-1 gap-2 mt-4 sm:grid-cols-2">
+                                    <div className="w-full mt-2 col-span-2 md:col-span-1">
+                                        <label htmlFor="tel" className="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร</label>
+                                        <input
+                                            type="tel"
+                                            maxLength={10}
+                                            id="tel"
+                                            name="tel"
+                                            value={userData.tel}
+                                            onChange={(e) => setUserData({ ...userData, tel: e.target.value })}
+                                            pattern="[0-9]*"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="w-full mt-2 col-span-2 md:col-span-1">
+                                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                        <input
+                                            type="email"
+                                            maxLength={30}
+                                            id="email"
+                                            name="email"
+                                            value={userData.email}
+                                            onChange={(e) => setUserData({ ...userData, email: e.target.value })}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
+                                            required
+                                        />
+                                    </div>
 
-                            </div>
+                                    <div className="w-full mt-2 col-span-2 md:col-span-1">
+                                        <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1">เลือกประเภทผู้ใช้</label>
+                                        <select
+                                            id="department"
+                                            name="department"
+                                            value={userData.department}
+                                            onChange={(e) => {
+                                                setUserData({ ...userData, department: e.target.value, position: '' });
+                                            }}
+                                            className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#9063d2] sm:text-sm"
+                                            required
+                                        >
+                                            <option value="">เลือกประเภทผู้ใช้</option>
+                                            {departmentOptions.map((option) => (
+                                                <option key={option.value} value={option.value}>{option.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="w-full mt-2 col-span-2 md:col-span-1">
+                                        <label htmlFor="position" className="block text-sm font-medium text-gray-700 mb-1">หน่วยงาน</label>
+                                        {['1', '2'].includes(userData.department) ? (
+                                            <select
+                                                id="position"
+                                                name="position"
+                                                value={userData.position}
+                                                onChange={(e) => setUserData({ ...userData, position: e.target.value })}
+                                                className="block w-full py-2 px-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2] sm:text-sm"
+                                                required
+                                            >
+                                                <option value="">เลือกตำแหน่ง</option>
+                                                {positionOptions[userData.department]?.map((option) => (
+                                                    <option key={option.value} value={option.value}>{option.label}</option>
+                                                ))}
+                                            </select>
+                                        ) : ['3', '4', '5', '6', '7', '9'].includes(userData.department) ? (
+                                            <input
+                                                type="text"
+                                                maxLength={30}
+                                                id="position"
+                                                name="position"
+                                                value={userData.position}
+                                                onChange={(e) => setUserData({ ...userData, position: e.target.value })}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
+                                                required
+                                            />
+                                        ) : null}
+                                    </div>
 
-                            <div className="flex justify-center mt-6 gap-2">
-                                <button type="submit" className="bg-[#9063d2] hover:bg-[#8753d5] text-white px-4 py-2 rounded-xl transition">ยืนยัน</button>
-                            </div>
 
-                        </form>
+                                </div>
+
+                                <div className="flex justify-center mt-6 gap-2">
+                                    <button type="submit" className="bg-[#9063d2] hover:bg-[#8753d5] text-white px-4 py-2 rounded-xl transition">ยืนยัน</button>
+                                </div>
+
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

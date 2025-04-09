@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 
 type ImageData = {
@@ -16,7 +15,6 @@ type ImageData = {
 
 
 export default function Home() {
-  const pathname = usePathname();
   const [images, setImages] = useState<ImageData[]>([]);
 
 

@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from 'next/link';
+import Image from "next/image";
 
 function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [successMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -52,7 +53,13 @@ function LoginPage() {
         <div className="flex w-full max-w-3xl bg-white shadow-lg min-h-[0vh] rounded-lg overflow-hidden">
 
           <div className="w-2/4 text-white flex flex-col justify-center items-center">
-            <img src="/images/login.png" alt="banner" className="w-80" />
+            <Image
+              src="/images/login.png"
+              alt="login"
+              className="w-80"
+              width={24}
+              height={24}
+            />
           </div>
 
           <div className="w-3/4 p-10">
@@ -100,11 +107,13 @@ function LoginPage() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#9063d2] pr-10"
                   required
                 />
-                <img
+                <Image
                   src={showPassword ? '/images/hide.png' : '/images/eye.png'}
                   alt="toggle password"
                   onClick={() => setShowPassword(!showPassword)}
                   className="w-5 h-5 absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer"
+                  width={24}
+                  height={24}
                 />
               </div>
 
