@@ -1,26 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { z } from 'zod';
 
 const prisma = new PrismaClient();
 
-export async function POST(req: NextRequest) {
-  
-  const {
-    username,
-    email,
-    password,
-    title,
-    firstName,
-    lastName,
-    phoneNumber,
-    department,
-    position,
-    checkOnly,
-  } = await req.json();
+// Schema สำหรับตรวจสอบข้อมูลที่ส่งเข้ามา
+const registerSchema = z.object({
+  username: z.string().min(3, "Username ต้องมีอย่างน้อย 3 ตัวอักษร"),
+  email: z.string().email("รูปแบบ Email ไม่ถูกต้อง"),
+  password: z.string().min(6, "Password ต้องมีอย่างน้อย 6 ตัวอักษร"),
+  title: z.string().min(1),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  phoneNumber: z.string().min(1),
+  department: z.string().min(1),
+  position: z.string().optional(),
+  checkOnly: z.boolean().optional(),
+});
 
+export async function POST(req: NextRequest) {
   try {
+    const body = await req.json();
+
+    // ตรวจสอบข้อมูลด้วย zod
+    const {
+      username,
+      email,
+      password,
+      title,
+      firstName,
+      lastName,
+      phoneNumber,
+      department,
+      position,
+      checkOnly,
+    } = registerSchema.parse(body);
+
     // ตรวจสอบว่ามี Email หรือ Username ซ้ำหรือไม่
     const existingUser = await prisma.user.findFirst({
       where: {
@@ -29,7 +45,6 @@ export async function POST(req: NextRequest) {
     });
 
     if (checkOnly) {
-      // หากมี CheckOnly ให้ตรวจสอบและส่ง Error
       if (existingUser) {
         const errorField = existingUser.email === email ? 'Email' : 'Username';
         return NextResponse.json(
@@ -37,7 +52,6 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
-      // หากไม่มีปัญหา ส่งข้อความว่าใช้ได้
       return NextResponse.json(
         { message: "สามารถใช้ข้อมูลนี้ได้" },
         { status: 200 }
@@ -47,8 +61,8 @@ export async function POST(req: NextRequest) {
     // สร้างรหัสผ่าน Hash
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // สร้างผู้ใช้ใหม่
-    const newUser = await prisma.user.create({
+    // บันทึกผู้ใช้ใหม่ในระบบ
+    await prisma.user.create({
       data: {
         username,
         email,
@@ -63,27 +77,24 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const jwtSecret = process.env.NEXTAUTH_SECRET || 'fallback-secret-key';
-
-    // สร้าง JWT
-    // const token = jwt.sign(
-    //   {
-    //     id: newUser.id,
-    //     name: newUser.username,
-    //     role: newUser.role,
-    //   },
-    //   jwtSecret,
-    //   { expiresIn: '1h' }
-    // );
-
     return NextResponse.json(
-      { message: 'User created successfully'},
+      { message: 'User created successfully' },
       { status: 201 }
     );
-  } catch (error) {
-    // if (process.env.NODE_ENV === "development") {
-    //   console.error("System Error:", error); // แสดง Error ในโหมดพัฒนา
-    // }
+
+  } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "ข้อมูลที่ส่งมาไม่ถูกต้อง", details: error.errors },
+        { status: 400 }
+      );
+    }
+
+    if (error instanceof Error) {
+      console.error("❌ User registration error:", error.message);
+    } else {
+      console.error("❌ Unknown error during registration:", error);
+    }
 
     return NextResponse.json(
       { error: "เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่ภายหลัง" },

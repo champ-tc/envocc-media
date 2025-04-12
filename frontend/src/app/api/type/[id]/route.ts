@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod"; // ใช้เพื่อทำ validation
@@ -10,13 +10,13 @@ const typeSchema = z.object({
 });
 
 // ฟังก์ชันตรวจสอบสิทธิ์
-async function checkAdminSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
+async function checkAdminSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
     return !!(token && token.role === "admin");
 }
 
 // API สำหรับแก้ไขข้อมูล
-export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     const { id } = await context.params; // Unwrap params
 
     try {
@@ -75,7 +75,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
 }
 
 // API สำหรับลบข้อมูล
-export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     const { id } = await context.params; // Unwrap params
 
     try {

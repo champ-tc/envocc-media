@@ -1,6 +1,4 @@
-// src/api/auth/[...nextauth].ts
-
-import NextAuth, { NextAuthOptions, User as NextAuthUser } from 'next-auth';
+import NextAuth, { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
@@ -20,7 +18,7 @@ declare module 'next-auth' {
       role: string;
       name: string;
     };
-    token?: any; // เพิ่ม token ลงใน Session
+    token?: unknown;
   }
 
   interface User {

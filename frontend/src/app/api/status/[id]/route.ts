@@ -1,13 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 
-async function checkUserSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
+async function checkUserSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
     return !!(token && token.role === "user");
 }
 
-export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
+
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     const { id } = await context.params; // Unwrap params
 
     if (!(await checkUserSession(req))) {

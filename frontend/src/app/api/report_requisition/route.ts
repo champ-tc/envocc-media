@@ -1,12 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from 'next-auth/jwt';
 
-async function checkAdminSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
+async function checkAdminSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
     return !!(token && token.role === "admin");
 }
-export async function GET(request: Request) {
+
+export async function GET(request: NextRequest) {
 
     if (!(await checkAdminSession(request))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
@@ -40,8 +41,13 @@ export async function GET(request: Request) {
             totalRecords: logs.length,
             totalPages: 1,
         });
-    } catch (error: any) {
-        console.error("🔥 Prisma error:", error.message);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error("🔥 Prisma error:", error.message);
+            return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        console.error("🔥 Unknown error:", error);
+        return NextResponse.json({ error: "Unknown server error" }, { status: 500 });
     }
 }

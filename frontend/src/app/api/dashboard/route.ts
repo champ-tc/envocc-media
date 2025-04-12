@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from "next/server";
 import { PrismaClient } from '@prisma/client';
 import { getToken } from 'next-auth/jwt';
 
@@ -18,12 +18,12 @@ const departmentOptions = [
     'ประชาชนทั่วไป',
 ];
 
-async function checkAdminSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
+async function checkAdminSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
     return !!(token && token.role === "admin");
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
 
     if (!(await checkAdminSession(request))) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });

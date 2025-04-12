@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from '@/lib/prisma';
 import { getToken } from 'next-auth/jwt';
-import { z } from 'zod';  // ใช้เพื่อทำ validation
+import { z } from 'zod';
 
 // Schema สำหรับตรวจสอบข้อมูล
 const typeSchema = z.object({
@@ -10,27 +10,13 @@ const typeSchema = z.object({
 });
 
 // ฟังก์ชันตรวจสอบสิทธิ์
-async function checkAdminSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
-    return !!(token && token.role === 'admin');
+async function checkAdminSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
+    return !!(token && token.role === "admin");
 }
 
-// API สำหรับ GET ข้อมูล
-// export async function GET(request: Request) {
-//     try {
 
-//         if (!(await checkAdminSession(request))) {
-//             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-//         }
-
-//         const types = await prisma.type.findMany();
-//         return NextResponse.json(types);
-//     } catch (error) {
-//         return NextResponse.json({ error: "Error fetching type" }, { status: 500 });
-//     }
-// }
-
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
     try {
         if (!(await checkAdminSession(req))) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
@@ -53,14 +39,14 @@ export async function GET(req: Request) {
 
         return NextResponse.json({ items: types, totalPages, totalRecords });
     } catch (error) {
-
+        console.error("Error fetching types:", error);
         return NextResponse.json({ error: "Error fetching types" }, { status: 500 });
     }
 }
 
 
 // เพิ่มข้อมูล
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     try {
         if (!(await checkAdminSession(request))) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });

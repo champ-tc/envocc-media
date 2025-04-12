@@ -1,16 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from '@/lib/prisma';
 import { v4 as uuidv4 } from 'uuid'; // Import uuidv4
 import fs from 'fs';
 import path from 'path';
 import { getToken } from "next-auth/jwt";
 
-async function checkAdminSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
-    return !!(token && token.role === 'admin');
+async function checkAdminSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
+    return !!(token && token.role === "admin");
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
 
     if (!(await checkAdminSession(request))) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
@@ -47,6 +47,7 @@ export async function POST(request: Request) {
 
         return NextResponse.json({ message: 'Image added successfully', image: newImage });
     } catch (error) {
+        console.error("Error uploading image:", error);
         return NextResponse.json({ error: 'Error uploading image' }, { status: 500 });
     }
 }
@@ -54,11 +55,30 @@ export async function POST(request: Request) {
 
 // API สำหรับ GET ข้อมูล
 export async function GET() {
-
     try {
-        const images = await prisma.image.findMany();
+        const images = await prisma.image.findMany({
+            select: {
+                id: true,
+                title: true,
+                filename: true,
+                addedDate: true,
+                viewCount: true, // ✅ เพิ่มให้ตรงกับ model
+            },
+            orderBy: {
+                addedDate: "desc",
+            },
+        });
+
         return NextResponse.json(images);
-    } catch (error) {
-        return NextResponse.json({ error: "Error fetching image" }, { status: 500 });
+    } catch (error: unknown) {
+        const errMessage =
+            error instanceof Error ? error.message : "Unknown error";
+
+        console.error("❌ Error in GET /api/images:", errMessage);
+
+        return NextResponse.json(
+            { error: "Error fetching image", detail: errMessage },
+            { status: 500 }
+        );
     }
 }

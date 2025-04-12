@@ -1,15 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 
 // ฟังก์ชันตรวจสอบสิทธิ์
-async function checkAdminSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
+async function checkAdminSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
     return !!(token && token.role === "admin");
 }
 
 // เพิ่มข้อมูลใน RequisitionLog
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+
     if (!(await checkAdminSession(req))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
@@ -59,7 +60,12 @@ export async function POST(req: Request) {
 
 
 // ดึงข้อมูล requisition log ตาม ID
-export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+
+    if (!(await checkAdminSession(req))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
     const { id } = await context.params; // Unwrap params
     try {
         const items = await prisma.requisitionLog.findMany({
@@ -90,7 +96,13 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
 }
 
 // อัปเดต requisition log
-export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+
+    if (!(await checkAdminSession(req))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+
     const { id } = await context.params; // Unwrap params
     const body = await req.json();
 
@@ -107,7 +119,12 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 }
 
 // ลบ requisition log
-export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+
+    if (!(await checkAdminSession(req))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
     const { id } = await context.params; // Unwrap params
     try {
         await prisma.requisitionLog.delete({

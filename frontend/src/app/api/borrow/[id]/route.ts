@@ -2,20 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 import { type NextRequest } from "next/server";
-import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
-
-// สร้าง schema สำหรับตรวจสอบข้อมูลด้วย zod
-const borrowSchema = z.object({
-    borrow_name: z.string().min(1, "ชื่อสื่อเป็นข้อมูลที่จำเป็น"),
-    unit: z.string().min(1, "หน่วยนับเป็นข้อมูลที่จำเป็น"),
-    type_id: z.number().int(),
-    quantity: z.number().int().min(0, "จำนวนคงเหลือต้องเป็นค่าบวก"),
-    is_borro_restricted: z.boolean(),
-    description: z.string().optional(),
-});
 
 
 // ฟังก์ชันตรวจสอบสิทธิ์

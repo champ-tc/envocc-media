@@ -1,16 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { v4 as uuidv4 } from 'uuid';
 import { getToken } from "next-auth/jwt";
 import { sendLineGroupMessage } from "@/lib/lineNotify";
 
-async function checkAdminOrUserSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
+async function checkAdminOrUserSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
     return !!(token && (token.role === 'admin' || token.role === 'user'));
 }
 
+
 // ใช้สำหรับ requisition_summary
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     if (!(await checkAdminOrUserSession(req))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
@@ -105,7 +106,7 @@ export async function POST(req: Request) {
 
 
 // ดึงข้อมูล requisition log
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
     if (!(await checkAdminOrUserSession(req))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
@@ -184,7 +185,7 @@ export async function GET(req: Request) {
 
 
 // อัปเดตสถานะ requisition log
-export async function PUT(req: Request) {
+export async function PUT(req: NextRequest) {
 
     if (!(await checkAdminOrUserSession(req))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
@@ -208,6 +209,7 @@ export async function PUT(req: Request) {
             updatedLog,
         });
     } catch (error) {
+        console.error("Internal Server Error:", error);
         return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
     }
 }

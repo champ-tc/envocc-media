@@ -4,16 +4,16 @@ import fs from "fs";
 import path from "path";
 import { getToken } from "next-auth/jwt";
 import cookie from "cookie";
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
 // ฟังก์ชันตรวจสอบสิทธิ์
-async function checkAdminSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
+async function checkAdminSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
     return !!(token && token.role === "admin");
 }
 
 // DELETE: ลบข้อมูลภาพ
-export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     const { id } = await context.params; // Unwrap params
 
     if (!(await checkAdminSession(request))) {
@@ -40,12 +40,13 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
 
         return new Response(JSON.stringify({ message: "Image and file deleted successfully" }), { status: 200 });
     } catch (error) {
+        console.error("Error deleting image or file:", error);
         return new Response(JSON.stringify({ error: "Error deleting image or file" }), { status: 500 });
     }
 }
 
 // PUT: แก้ไขข้อมูลภาพ
-export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     const { id } = await context.params; // Unwrap params
 
     if (!(await checkAdminSession(request))) {
@@ -95,12 +96,13 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
             { status: 200 }
         );
     } catch (error) {
+        console.error("Error updating image:", error);
         return new Response(JSON.stringify({ error: "Error updating image" }), { status: 500 });
     }
 }
 
 // GET: ดึงข้อมูลภาพ
-export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     const { id } = await context.params; // Unwrap params
 
     if (!id) {
@@ -115,12 +117,13 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
         return new Response(JSON.stringify(image), { status: 200 });
     } catch (error) {
+        console.error("Error fetching image:", error);
         return new Response(JSON.stringify({ error: "Error fetching image" }), { status: 500 });
     }
 }
 
 // POST: เพิ่ม viewCount
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     const { id } = await context.params; // Unwrap params
 
     if (!id) {
@@ -159,6 +162,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
         return response;
     } catch (error) {
+        console.error("Error updating view count:", error);
         return new Response(JSON.stringify({ error: "Error updating view count" }), { status: 500 });
     }
 }

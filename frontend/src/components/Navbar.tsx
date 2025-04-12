@@ -23,12 +23,27 @@ function Navbar() {
             <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
                 <div className="flex items-center space-x-2">
                     <Link href="/">
-                        <Image src="/images/logoddc.png" alt="Media Icon" width={40} height={40} />
+                        <Image
+                            src="/images/logoddc.png"
+                            alt="Media Icon"
+                            width={35}
+                            height={40}
+                            style={{ height: "40px", width: "35px" }} // ✅ เพิ่มทั้ง 2 ฝั่ง
+                            priority
+                        />
                     </Link>
                     <Link href="/">
-                        <Image src="/images/icon_media.png" alt="icon" width={80} height={80} />
+                        <Image
+                            src="/images/icon_media.png"
+                            alt="icon"
+                            width={80}
+                            height={40}
+                            style={{ height: "40px", width: "80px" }} // ✅ เช่นเดียวกัน
+                            priority
+                        />
                     </Link>
                 </div>
+
 
                 <button
                     onClick={toggleMenu}

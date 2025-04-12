@@ -1,29 +1,29 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
-
-
+import type { JWT } from "next-auth/jwt";
 
 // ฟังก์ชันจัดการข้อผิดพลาด
-const handleError = (error: any, message = "An error occurred", status = 500) => {
+const handleError = (error: unknown, message = "An error occurred", status = 500) => {
     console.error(message, error);
     return NextResponse.json({ error: message }, { status });
 };
 
-// ฟังก์ชันตรวจสอบสิทธิ์
-async function checkAdminSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
-    return !!(token && token.role === 'admin');
+// ฟังก์ชันตรวจสอบสิทธิ์ admin
+async function checkAdminSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
+    return !!(token && (token as JWT).role === 'admin');
 }
 
-async function checkAdminOrUserSession(request: Request): Promise<boolean> {
+// ฟังก์ชันตรวจสอบสิทธิ์ admin หรือ user
+async function checkAdminOrUserSession(request: NextRequest): Promise<boolean> {
     try {
-        const token = await getToken({ req: request as any, secret: process.env.NEXTAUTH_SECRET });
-        return !!(token && (token.role === "admin" || token.role === "user"));
+        const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+        return !!(token && ((token as JWT).role === "admin" || (token as JWT).role === "user"));
     } catch (error) {
         console.error("Error in checkAdminOrUserSession:", error);
-        return false; // หากมีข้อผิดพลาด ให้ถือว่าไม่มีสิทธิ์
+        return false;
     }
 }
 
@@ -36,11 +36,10 @@ const userUpdateSchema = z.object({
     email: z.string().email("Invalid email format"),
     department: z.string().min(1, "Department is required"),
     position: z.string().optional().nullable(),
-    role: z.string().optional(), // role เป็น optional
+    role: z.string().optional(),
 });
 
-export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
-
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     const { id } = await context.params;
 
     if (!(await checkAdminOrUserSession(req))) {
@@ -57,8 +56,9 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
     }
 }
 
-export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     const { id } = await context.params;
+
     if (!(await checkAdminOrUserSession(req))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
@@ -68,9 +68,8 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     }
 
     try {
-        let data = await req.json();
+        const data = await req.json();
 
-        // ตรวจสอบว่ามี position หรือไม่ ถ้าไม่มีให้ตั้งค่าเป็นค่าว่าง
         if (!("position" in data) || data.position === null) {
             data.position = "";
         }
@@ -86,7 +85,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
                 tel: validatedData.tel,
                 email: validatedData.email,
                 department: validatedData.department,
-                position: validatedData.position,  // รองรับค่าว่าง
+                position: validatedData.position,
                 role: validatedData.role,
             },
         });
@@ -99,23 +98,20 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
                 { status: 400 }
             );
         }
-        console.error("Error in PUT API:", error);
-        return NextResponse.json({ error: "Update failed" }, { status: 500 });
+
+        return handleError(error, "Update failed");
     }
 }
 
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+    const { id } = await context.params;
 
-// ฟังก์ชัน DELETE สำหรับลบข้อมูลผู้ใช้ตาม id
-export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
-    const { id } = await context.params; // Unwrap params
-
-    // ตรวจสอบสิทธิ์การเข้าถึง
     if (!(await checkAdminSession(req))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     try {
-        const numericId = Number(id); // แปลง id ให้เป็น Number
+        const numericId = Number(id);
         if (isNaN(numericId)) {
             return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
         }

@@ -1,26 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
-import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
 import path from "path";
 
-// Schema สำหรับตรวจสอบข้อมูลในฟังก์ชัน PUT
-const requisitionUpdateSchema = z.object({
-    requisition_name: z.string().min(1, "ชื่อสื่อเป็นข้อมูลจำเป็น"),
-    unit: z.string().min(1, "หน่วยนับเป็นข้อมูลจำเป็น"),
-    type_id: z.number().int(),
-    quantity: z.number().positive("จำนวนคงเหลือควรมากกว่า 0"),
-    reserved_quantity: z.number().optional(),
-    description: z.string().optional(),
-    is_borro_restricted: z.boolean().optional(),
-});
-
-
 // ฟังก์ชันสำหรับตรวจสอบสิทธิ์ของผู้ใช้
-async function checkAdminSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
+async function checkAdminSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
     return !!(token && token.role === "admin");
 }
 
@@ -99,7 +86,7 @@ async function updateRequisitionStatus(id: number, request: Request) {
 }
 
 // ตัวควบคุมหลัก
-export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     const { id } = await context.params; // Unwrap params
 
     if (!(await checkAdminSession(request))) {

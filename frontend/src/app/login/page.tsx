@@ -59,6 +59,7 @@ function LoginPage() {
               className="w-80"
               width={24}
               height={24}
+              priority
             />
           </div>
 
@@ -114,6 +115,7 @@ function LoginPage() {
                   className="w-5 h-5 absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer"
                   width={24}
                   height={24}
+                  priority
                 />
               </div>
 

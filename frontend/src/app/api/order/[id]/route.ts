@@ -1,14 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 
-async function checkAdminOrUserSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
+async function checkAdminOrUserSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
     return !!(token && (token.role === "admin" || token.role === "user"));
 }
 
 // สร้าง Order
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     if (!(await checkAdminOrUserSession(req))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
 }
 
 // ลบ Order
-export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     const { id } = await context.params; // Unwrap params
 
     if (!(await checkAdminOrUserSession(req))) {

@@ -7,10 +7,10 @@ import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
-interface Token {
-    role?: string;
-    [key: string]: any;
-}
+// interface Token {
+//     role?: string;
+//     [key: string]: any;
+// }
 
 // Schema สำหรับตรวจสอบข้อมูลด้วย zod
 const borrowSchema = z.object({

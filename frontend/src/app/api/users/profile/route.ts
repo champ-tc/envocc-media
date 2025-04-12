@@ -1,8 +1,7 @@
 import { getServerSession } from "next-auth";
-import { getToken } from "next-auth/jwt"; // เปลี่ยนการนำเข้า
-import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
+import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 // Schema สำหรับตรวจสอบข้อมูล
@@ -18,15 +17,21 @@ const profileUpdateSchema = z.object({
     password: z.string().optional(), // Password เป็น optional
 });
 
-async function checkAdminSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
-    return !!(token && token.role === 'admin');
+async function checkAdminSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
+    return !!(token && token.role === "admin");
 }
 
 // ฟังก์ชัน GET สำหรับดึงข้อมูลผู้ใช้
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
+
+    if (!(await checkAdminSession(req))) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+
     const session = await getServerSession();
-    
+
     if (!session || !session.user || !session.user.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -81,6 +86,7 @@ export async function PUT(req: Request) {
 
         return NextResponse.json({ message: "User updated successfully", user: updatedUser });
     } catch (error) {
+        console.error("Update user profile failed:", error);
         return NextResponse.json({ error: "Update failed" }, { status: 500 });
-    }
+    }    
 }

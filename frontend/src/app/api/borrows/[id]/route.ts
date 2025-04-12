@@ -1,15 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 
 // ฟังก์ชันตรวจสอบสิทธิ์
-async function checkAdminOrUserSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
+async function checkAdminOrUserSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
     return !!(token && (token.role === "admin" || token.role === "user"));
 }
 
 // GET: ดึงข้อมูล Borrow ตาม ID
-export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
         // Unwrap params
         const { id } = await context.params;

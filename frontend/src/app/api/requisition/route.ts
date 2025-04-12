@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from '@/lib/prisma';
 import { getToken } from 'next-auth/jwt';
 import { z } from 'zod';
@@ -6,25 +6,15 @@ import { v4 as uuidv4 } from 'uuid'; // สำหรับสร้างชื�
 import fs from 'fs';
 import path from 'path';
 
-// Schema สำหรับตรวจสอบความถูกต้องของข้อมูล
-const requisitionSchema = z.object({
-    requisition_name: z.string().min(1, "ชื่อสื่อเป็นข้อมูลจำเป็น"),
-    unit: z.string().min(1, "หน่วยนับเป็นข้อมูลจำเป็น"),
-    type_id: z.number().int(),
-    quantity: z.number().positive("จำนวนคงเหลือควรมากกว่า 0"),
-    reserved_quantity: z.number().optional(),
-    description: z.string().optional(),
-    is_borro_restricted: z.boolean().optional(),
-});
 
 // ฟังก์ชันสำหรับตรวจสอบสิทธิ์ของผู้ใช้
-async function checkAdminSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
-    return !!(token && token.role === 'admin');
+async function checkAdminSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
+    return !!(token && token.role === "admin");
 }
 
 // ฟังก์ชัน POST สำหรับเพิ่มข้อมูล requisition ใหม่พร้อมอัปโหลดรูปภาพ
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     try {
         if (!(await checkAdminSession(request))) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
@@ -88,7 +78,7 @@ export async function POST(request: Request) {
 
 
 // ฟังก์ชัน GET สำหรับดึงข้อมูล requisition ทั้งหมด
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
     try {
         if (!(await checkAdminSession(request))) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });

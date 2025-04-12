@@ -1,13 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 
-async function checkAdminSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
+async function checkAdminSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
     return !!(token && token.role === "admin");
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
 
     if (!(await checkAdminSession(req))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
 
     try {
         // ตรวจสอบสิทธิ์ admin
-        const token = await getToken({ req: req as any });
+        const token = await getToken({ req });
         if (!token || token.role !== "admin") {
             return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
         }

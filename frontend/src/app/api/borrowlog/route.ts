@@ -1,15 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 import { sendLineGroupMessage } from "@/lib/lineNotify";
 
-async function checkAdminOrUserSession(request: Request): Promise<boolean> {
-    const token = await getToken({ req: request as any });
-    return !!(token && (token.role === 'admin' || token.role === 'user'));
+async function checkAdminOrUserSession(request: NextRequest): Promise<boolean> {
+    const token = await getToken({ req: request });
+    return !!(token && (token.role === "admin" || token.role === "user"));
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     if (!(await checkAdminOrUserSession(request))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
