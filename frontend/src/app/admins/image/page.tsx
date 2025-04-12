@@ -1,16 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 import axios from "axios";
 import ConfirmModal from "@/components/ConfirmModal";
 import AlertModal from "@/components/AlertModal";
 import ConfirmEditModal from "@/components/ConfirmEditModal";
-
+import Image from "next/image";
 
 interface Image {
     id: number;
@@ -21,16 +19,12 @@ interface Image {
 
 
 function Adminsimage() {
-    const { session, isLoading } = useAuthCheck("admin");
-    const router = useRouter();
-
+    const { isLoading } = useAuthCheck("admin");
 
     const [images, setImages] = useState<Image[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [title, setTitle] = useState('');
     const [file, setFile] = useState<File | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [editTitle, setEditTitle] = useState('');
@@ -49,19 +43,22 @@ function Adminsimage() {
     const endIndex = startIndex + itemsPerPage;
     const currentImages = images.slice(startIndex, endIndex);
 
-    useEffect(() => {
-        fetchImages();
+
+    const fetchImages = useCallback(async () => {
+        try {
+            const res = await fetch("/api/images");
+            const data = await res.json();
+            setImages(data);
+        } catch (error) {
+            console.error("Failed to fetch images", error);
+        }
     }, []);
 
-    const fetchImages = async () => {
-        const response = await fetch('/api/images');
-        if (response.ok) {
-            const data = await response.json();
-            setImages(Array.isArray(data) ? data : []);
-        } else {
-            showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์', 'error');
-        }
-    };
+    useEffect(() => {
+        fetchImages();
+    }, [fetchImages]);
+
+
 
     if (isLoading) {
         return (
@@ -118,7 +115,7 @@ function Adminsimage() {
                 const errorData = await response.json();
                 showAlert(`เกิดข้อผิดพลาดในการเพิ่มรูปภาพ: ${errorData.error}`, 'error');
             }
-        } catch (error) {
+        } catch {
             showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์', 'error');
         }
     };
@@ -172,7 +169,7 @@ function Adminsimage() {
             } else {
                 showAlert('เกิดข้อผิดพลาดในการอัปเดตข้อมูล', 'error');
             }
-        } catch (error) {
+        } catch {
             showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์', 'error');
         }
     };
@@ -267,11 +264,14 @@ function Adminsimage() {
                                             currentImages.map(image => (
                                                 <tr key={image.id} className="border-t border-gray-200 text-xs font-normal">
                                                     <td className="border px-4 py-2 border-b">
-                                                        <img
+                                                        <Image
                                                             src={`/uploads/${image.filename}`}
                                                             alt={image.title}
                                                             className="w-16 h-16 object-cover cursor-pointer"
                                                             onClick={() => setSelectedImage(`/uploads/${image.filename}`)}
+                                                            width={40}
+                                                            height={40}
+                                                            priority
                                                         />
                                                     </td>
                                                     <td className="border px-4 py-2 border-b">{image.title}</td>
@@ -281,10 +281,13 @@ function Adminsimage() {
                                                             onClick={() => openEditConfirm(image)}
                                                             className="mb-4 py-2 px-2 mr-2 rounded-md transition"
                                                         >
-                                                            <img
+                                                            <Image
                                                                 src="/images/edit.png"
                                                                 alt="Edit Icon"
                                                                 className="h-6 w-6"
+                                                                width={40}
+                                                                height={40}
+                                                                priority
                                                             />
                                                         </button>
 
@@ -293,10 +296,13 @@ function Adminsimage() {
                                                             onClick={() => openDeleteConfirm(image.id)}
                                                             className="mb-4  py-2 px-2 rounded-md htransition"
                                                         >
-                                                            <img
+                                                            <Image
                                                                 src="/images/delete.png"
                                                                 alt="Success Icon"
                                                                 className="h-6 w-6"
+                                                                width={40}
+                                                                height={40}
+                                                                priority
                                                             />
                                                         </button>
 
@@ -436,7 +442,14 @@ function Adminsimage() {
                                 {selectedImage && (
                                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                                         <div className="bg-white p-4 rounded-lg w-full max-w-md flex flex-col items-center">
-                                            <img src={selectedImage} alt="Selected" className="w-96 h-auto mb-4" />
+                                            <Image
+                                                src={selectedImage}
+                                                alt="Selected"
+                                                className="w-96 h-auto mb-4"
+                                                width={40}
+                                                height={40}
+                                                priority
+                                            />
                                             <button
                                                 onClick={() => setSelectedImage(null)}
                                                 className="bg-red-500 text-white py-2 px-4 rounded-lg"

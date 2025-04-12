@@ -1,20 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import React from "react";
 import axios from "axios";
 import ConfirmModal from "@/components/ConfirmModal";
 import AlertModal from "@/components/AlertModal";
-import dynamic from "next/dynamic";
 import { registerLocale } from "react-datepicker";
 import { th } from "date-fns/locale/th";
 import "react-datepicker/dist/react-datepicker.css";
 import type { ReactDatePickerCustomHeaderProps } from "react-datepicker";
+import Image from "next/image";
+import dynamic from "next/dynamic";
+import { forwardRef } from "react";
+import type { DatePickerProps } from "react-datepicker";
 
 registerLocale("th", th);
 
@@ -56,10 +56,8 @@ type Reason = {
 
 function RequisitionSummary() {
     const { session, isLoading } = useAuthCheck("admin");
-    const router = useRouter();
 
     const [selectedAction, setSelectedAction] = useState<string | null>(null);
-
     const [returnDate, setReturnDate] = useState("");
     const [deliveryMethod, setDeliveryMethod] = useState("self");
     const [address, setAddress] = useState("");
@@ -86,9 +84,6 @@ function RequisitionSummary() {
         }
     };
 
-
-
-
     useEffect(() => {
         fetch("/api/reason")
             .then((res) => res.json())
@@ -96,34 +91,21 @@ function RequisitionSummary() {
             .catch((error) => console.error("Error fetching reasons:", error));
     }, []);
 
-
-    useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                const response = await fetch(`/api/order?userId=${session?.user?.id}`);
-                if (!response.ok) throw new Error("Error fetching orders");
-                const data = await response.json();
-                setOrders(data);
-            } catch (error) {
-                showAlert("เกิดข้อผิดพลาดในการลบรายการ", "error");
-            }
-        };
-
-        if (session?.user?.id) {
-            fetchOrders();
-        }
-    }, [session?.user?.id]);
-
-    const fetchOrders = async () => {
+    const fetchOrders = useCallback(async () => {
         try {
             const response = await fetch(`/api/order?userId=${session?.user?.id}`);
             if (!response.ok) throw new Error("Error fetching orders");
             const data = await response.json();
             setOrders(data);
-        } catch (error) {
-            showAlert("เกิดข้อผิดพลาดในการลบรายการ", "error");
+        } catch {
+            showAlert("เกิดข้อผิดพลาดในการโหลดรายการ", "error");
         }
-    };
+    }, [session?.user?.id]); // dependency ที่จำเป็น
+
+    useEffect(() => {
+        if (!session?.user?.id) return;
+        fetchOrders();
+    }, [session?.user?.id, fetchOrders]);
 
     if (isLoading) {
         return (
@@ -133,7 +115,14 @@ function RequisitionSummary() {
         );
     }
 
-    const DynamicDatePicker = dynamic<any>(() => import("react-datepicker"), {
+    const DynamicDatePicker = dynamic(() =>
+        import("react-datepicker").then((mod) => {
+            const DatePicker = forwardRef<never, DatePickerProps>((props, ref) => (
+                <mod.default {...props} ref={ref} />
+            ));
+            DatePicker.displayName = "DatePicker";
+            return { default: DatePicker };
+        }), {
         ssr: false,
         loading: () => <p>Loading...</p>,
     });
@@ -247,15 +236,13 @@ function RequisitionSummary() {
         if (!selectedOrderId) return;
 
         try {
-            const response = await fetch(`/api/order/${selectedOrderId}`, {
+            await fetch(`/api/order/${selectedOrderId}`, {
                 method: "DELETE",
             });
 
-            if (!response.ok) throw new Error("Failed to delete order");
-
             setOrders((prev) => prev.filter((order) => order.id !== selectedOrderId));
             showAlert("ลบรายการสำเร็จ", "success");
-        } catch (error) {
+        } catch {
             showAlert("เกิดข้อผิดพลาดในการลบรายการ", "error");
         } finally {
             setIsDeleteConfirmOpen(false);
@@ -278,8 +265,10 @@ function RequisitionSummary() {
         }
 
         if (usageReasonId === 0 && !customUsageReason.trim()) {
-            showAlert("กรุณาระบุรายละเอียดเพิ่มเติม", "error");
+            setCustomUsageReasonError("กรุณาระบุรายละเอียดเพิ่มเติม");
             return;
+        } else {
+            setCustomUsageReasonError(null); // เคลียร์ error ถ้าระบุแล้ว
         }
 
 
@@ -287,7 +276,6 @@ function RequisitionSummary() {
             showAlert("กรุณากรอกที่อยู่สำหรับการจัดส่ง", "error");
             return;
         }
-        
 
 
 
@@ -313,7 +301,7 @@ function RequisitionSummary() {
             }
 
             // ส่งคำขอไปยัง API
-            const response = await axios.post("/api/requisition_log", {
+            await axios.post("/api/requisition_log", {
                 userId: session?.user?.id,
                 orders: formattedOrders,
                 deliveryMethod,
@@ -327,7 +315,7 @@ function RequisitionSummary() {
             setAddress("");
             setSelectedAction(null);
             await fetchOrders();
-        } catch (error) {
+        } catch {
             showAlert("เกิดข้อผิดพลาดในการเบิกของ", "error");
         }
     };
@@ -336,27 +324,27 @@ function RequisitionSummary() {
 
     const handleSubmitBorrow = async (e: React.FormEvent) => {
         e.preventDefault();
-    
+
         if (!returnDate) {
             showAlert("กรุณากรอกวันที่คืน", "error");
             return;
         }
-    
+
         if (deliveryMethod === "delivery" && !address.trim()) {
             showAlert("กรุณากรอกข้อมูลที่อยู่สำหรับการจัดส่ง", "error");
             return;
         }
-    
+
         if (usageReasonId === null) {
             showAlert("กรุณาเลือกเหตุผลในการนำไปใช้", "error");
             return;
         }
-    
+
         if (usageReasonId === 0 && !customUsageReason.trim()) {
             showAlert("กรุณาระบุรายละเอียดเพิ่มเติม", "error");
             return;
         }
-    
+
         try {
             const formattedOrders = orders
                 .filter((order: Order) => order.borrow?.id && order.quantity > 0)
@@ -364,13 +352,13 @@ function RequisitionSummary() {
                     borrowId: order.borrow!.id,
                     quantity: order.quantity,
                 }));
-    
+
             if (formattedOrders.length === 0) {
                 showAlert("ไม่มีรายการยืมที่ถูกต้อง", "error");
                 return;
             }
-    
-            const response = await axios.post("/api/borrowlog", {
+
+            await axios.post("/api/borrowlog", {
                 userId: session?.user?.id,
                 orders: formattedOrders,
                 deliveryMethod,
@@ -379,18 +367,18 @@ function RequisitionSummary() {
                 usageReasonId,
                 customUsageReason: usageReasonId === 0 ? customUsageReason : null,
             });
-    
+
             showAlert("บันทึกการยืมสำเร็จ!", "success");
-    
+
             setOrders([]);
             setAddress("");
-            setSelectedAction(null); 
+            setSelectedAction(null);
             await fetchOrders();
-        } catch (error) {
+        } catch {
             showAlert("เกิดข้อผิดพลาดในการยืมของ", "error");
         }
     };
-    
+
 
 
     const filteredOrders: Order[] =
@@ -458,10 +446,13 @@ function RequisitionSummary() {
                                                         onClick={() => handleDeleteOrder(order.id)}
                                                         className="mb-4 py-2 px-2 rounded-md transition"
                                                     >
-                                                        <img
+                                                        <Image
                                                             src="/images/delete.png"
                                                             alt="Delete Icon"
                                                             className="h-6 w-6"
+                                                            width={40}
+                                                            height={40}
+                                                            priority
                                                         />
                                                     </button>
                                                 </td>
@@ -544,11 +535,7 @@ function RequisitionSummary() {
                                         )}
                                     </>
                                 )}
-
-
                             </div>
-
-
 
                             {/* ตัวเลือกจัดส่ง */}
                             <div className="mt-6">

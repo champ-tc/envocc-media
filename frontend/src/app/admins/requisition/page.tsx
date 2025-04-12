@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
+import Image from "next/image";
 
 interface Requisition {
     id: number;
@@ -147,10 +147,13 @@ function AdminsRequisition() {
                                     className="bg-white p-4 rounded-xl shadow-lg border border-gray-200 transition-transform transform hover:scale-105 flex flex-col"
                                 >
                                     {item.requisition_images ? (
-                                        <img
+                                        <Image
                                             src={`/requisitions/${item.requisition_images}`}
                                             alt={item.requisition_name}
                                             className="w-full h-60 object-cover rounded-lg mb-4"
+                                            width={40}
+                                            height={40}
+                                            priority
                                         />
                                     ) : (
                                         <div className="w-full h-60 bg-gray-200 flex items-center justify-center rounded-lg mb-4">

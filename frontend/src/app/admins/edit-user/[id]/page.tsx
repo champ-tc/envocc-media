@@ -1,24 +1,24 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 import Link from 'next/link';
 import AlertModal from "@/components/AlertModal";
-import axios from "axios";
 
-// กำหนดประเภทข้อมูลสำหรับ User ใน Session
-interface SessionUser {
-  name?: string | null;
-  email?: string | null;
-  role?: string;
-}
-interface EditUserProps {
-  params: { id: string };
+
+interface UserData {
+  title: string;
+  firstName: string;
+  lastName: string;
+  tel: string;
+  email: string;
+  department: string;
+  position: string;
+  role: string;
 }
 
 const departmentOptions = [
@@ -134,10 +134,10 @@ const positionOptions: Record<string, { value: string; label: string }[]> = {
 function EditUser() {
   const { session, isLoading } = useAuthCheck("admin");
   const router = useRouter();
-  const params = useParams(); // ใช้ useParams เพื่อดึง params.id
-  const id = params?.id; // ดึง id จาก params
+  const params = useParams();
+  const id = params?.id;
 
-  const [userData, setUserData] = useState({
+  const [userData, setUserData] = useState<UserData>({
     title: "",
     firstName: "",
     lastName: "",
@@ -148,7 +148,7 @@ function EditUser() {
     role: "",
   });
 
-  const [loading, setLoading] = useState(true);
+  const [loading] = useState(true);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [alertType, setAlertType] = useState<"success" | "error" | null>(null);
 
@@ -163,34 +163,36 @@ function EditUser() {
   };
 
   // ฟังก์ชันดึงข้อมูลผู้ใช้
-  const fetchUserData = async (url: string, setData: Function, errorMessage: string) => {
-    try {
-      const res = await fetch(url, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${session?.token}`,
-        },
-      });
+  const fetchUserData = useCallback(
+    async (url: string, setData: (data: UserData) => void, errorMessage: string) => {
+      try {
+        const res = await fetch(url, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${session?.token}`,
+          },
+        });
 
-      if (!res.ok) {
-        throw new Error(`API Error: ${res.status} ${res.statusText}`);
+        if (!res.ok) {
+          throw new Error(`API Error: ${res.status} ${res.statusText}`);
+        }
+
+        const data = await res.json();
+        setData(data);
+      } catch {
+        showAlert(errorMessage, "error");
       }
+    },
+    [session] // ✅ ระบุ dependencies เท่าที่จำเป็น
+  );
 
-      const data = await res.json();
-      setData(data);
-    } catch (err) {
-      showAlert(errorMessage, "error");
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  // ใช้ useEffect เพื่อดึงข้อมูลผู้ใช้
   useEffect(() => {
     if (session) {
       fetchUserData(`/api/users/${id}`, setUserData, "ไม่สามารถดึงข้อมูลส่วนตัวได้");
     }
-  }, [session, id]);
+  }, [session, id, fetchUserData]); // ✅ warning หาย
+
 
   if (isLoading || loading) {
     return (
@@ -217,7 +219,6 @@ function EditUser() {
       });
 
       if (!res.ok) {
-        const errorResponse = await res.json();
         throw new Error("Error updating user");
       }
 
@@ -225,7 +226,7 @@ function EditUser() {
       setTimeout(() => {
         router.push("/admins/user-management");
       }, 3000);
-    } catch (err) {
+    } catch {
       showAlert("เกิดข้อผิดพลาดในการอัปเดตข้อมูล", "error");
     }
   };

@@ -1,25 +1,26 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
-import { useSession } from "next-auth/react";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 import AlertModal from "@/components/AlertModal";
 import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
 
-interface User {
-    id: string | number;
+interface UserData {
+    password: string;
+    confirm_password: string;
     title: string;
     firstName: string;
     lastName: string;
-    email: string;
     tel: string;
-    department: string; // หรือใช้ number ถ้า department เป็นหมายเลข
+    email: string;
+    department: string;
     position: string;
     role: string;
 }
+
 
 const departmentOptions = [
     { value: '1', label: 'สำนักงานสาธารณสุขจังหวัด' },
@@ -136,10 +137,9 @@ function PersonalPage() {
     const router = useRouter();
     const params = useParams();
     const id = params?.id || "default-id";
-    const [users, setUsers] = useState([]);
-    const [userData, setUserData] = useState({
+    const [userData, setUserData] = useState<UserData>({
         password: "",
-        confirm_password: "", // เพิ่ม confirm_password
+        confirm_password: "",
         title: "",
         firstName: "",
         lastName: "",
@@ -150,9 +150,9 @@ function PersonalPage() {
         role: "user",
     });
 
+
     const [showPasswordInput, setShowPasswordInput] = useState(false); // ซ่อน/แสดง password input
 
-    const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
     const [loading, setLoading] = useState(true);
     const [showPassword, setShowPassword] = useState(false);
 
@@ -170,8 +170,12 @@ function PersonalPage() {
         }, 3000);
     };
 
-    // ฟังก์ชันดึงข้อมูลผู้ใช้
-    const fetchUserData = async (url: string, setData: Function, errorMessage: string) => {
+
+    const fetchUserData = useCallback(async (
+        url: string,
+        setData: (data: UserData) => void,
+        errorMessage: string
+    ) => {
         try {
             const res = await fetch(url, {
                 method: "GET",
@@ -180,25 +184,21 @@ function PersonalPage() {
                 },
             });
 
-            if (!res.ok) {
-                throw new Error(`API Error: ${res.status} ${res.statusText}`);
-            }
-
+            if (!res.ok) throw new Error(`API Error: ${res.status} ${res.statusText}`);
             const data = await res.json();
-            setData(data); // อัปเดตข้อมูลใน state
-        } catch (err) {
+            setData(data);
+        } catch {
             showAlert(errorMessage, "error");
         } finally {
             setLoading(false);
         }
-    };
+    }, [session?.token]);
 
-    // ใช้ useEffect เพื่อดึงข้อมูล
     useEffect(() => {
         if (session) {
             fetchUserData(`/api/users/${id}`, setUserData, "ไม่สามารถดึงข้อมูลส่วนตัวได้");
         }
-    }, [session, id]);
+    }, [session, id, fetchUserData]);
 
     if (isLoading || loading) {
         return (
@@ -212,7 +212,7 @@ function PersonalPage() {
         e.preventDefault();
 
         try {
-            const response = await axios.put(`/api/users/profile`, {
+            await axios.put(`/api/users/profile`, {
                 ...userData,
                 id: id, // ส่ง ID ผ่าน body
             }, {
@@ -223,18 +223,15 @@ function PersonalPage() {
             setTimeout(() => {
                 router.push("/admins/user-management");
             }, 3000);
-        } catch (error: any) {
-            showAlert(error.response?.data?.error || "เกิดข้อผิดพลาดในการอัปเดตข้อมูล", "error");
+        } catch (error: unknown) {
+            if (axios.isAxiosError(error)) {
+                showAlert(error.response?.data?.error || "เกิดข้อผิดพลาดในการอัปเดตข้อมูล", "error");
+            } else {
+                showAlert("เกิดข้อผิดพลาดที่ไม่รู้จัก", "error");
+            }
         }
+
     };
-
-
-
-
-
-
-
-
 
 
     return (

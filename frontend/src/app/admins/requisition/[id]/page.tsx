@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 import AlertModal from "@/components/AlertModal";
+import Image from "next/image";
 
 interface Requisition {
     id: number;
@@ -40,8 +41,8 @@ function RequisitionDetail() {
                 }
                 const data = await response.json();
                 setRequisition(data);
-            } catch (error) {
-                console.error("Error fetching requisition:", error);
+            } catch {
+                console.log("Error fetching requisition:");
             }
         };
         fetchRequisition();
@@ -91,14 +92,14 @@ function RequisitionDetail() {
                 throw new Error("Failed to add to order");
             }
 
-            const data = await response.json();
+            await response.json();
 
             showAlert("เพิ่มรายการสำเร็จ!", "success");
 
             setTimeout(() => {
                 router.push("/admins/requisition");
             }, 3000);
-        } catch (error) {
+        } catch {
             showAlert("เกิดข้อผิดพลาดในการเพิ่มรายการ", "error");
         }
     };
@@ -120,10 +121,13 @@ function RequisitionDetail() {
                         {/* Image Section */}
                         <div className="w-1/2 pr-4">
                             <div className="relative overflow-hidden rounded-lg shadow-md h-full">
-                                <img
+                                <Image
                                     src={requisition.requisition_images}
                                     alt={requisition.requisition_name}
                                     className="w-full h-full object-cover"
+                                    width={40}
+                                    height={40}
+                                    priority
                                 />
                             </div>
                         </div>

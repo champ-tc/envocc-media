@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+
+import React, { useEffect, useState, useCallback } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
@@ -8,7 +9,7 @@ import ConfirmModal from "@/components/ConfirmModal";
 import AlertModal from "@/components/AlertModal";
 import ConfirmEditModal from "@/components/ConfirmEditModal";
 import axios from "axios";
-
+import Image from "next/image";
 
 interface User {
     id: string | number;
@@ -124,22 +125,9 @@ function AdminsUserManagement() {
     const { session, isLoading } = useAuthCheck("admin");
     const router = useRouter();
 
-    // การจัดการ Modal
-    const [showModal, setShowModal] = useState(false); // Modal สำหรับเพิ่มข้อมูล
-    const [editModalVisible, setEditModalVisible] = useState(false); // Modal สำหรับแก้ไขข้อมูล
-
     // การจัดการข้อความแจ้งเตือน
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [alertType, setAlertType] = useState<"success" | "error" | null>(null);
-
-    // ข้อมูลฟอร์มสำหรับเพิ่มข้อมูลใหม่
-    const [name, setName] = useState("");
-    const [description, setDescription] = useState("");
-
-    // ข้อมูลฟอร์มสำหรับการแก้ไข**
-    const [editId, setEditId] = useState<number | null>(null);
-    const [editName, setEditName] = useState("");
-    const [editDescription, setEditDescription] = useState("");
 
     // การจัดการการยืนยัน (Confirm Actions)
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false); // Modal ยืนยันการลบ
@@ -149,9 +137,6 @@ function AdminsUserManagement() {
 
 
     const [users, setUsers] = useState<User[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedRole, setSelectedRole] = useState<string | null>(null);
     const itemsPerPage = 10;
@@ -162,29 +147,28 @@ function AdminsUserManagement() {
     const startIndex = (currentPage - 1) * itemsPerPage + 1;
     const endIndex = Math.min(startIndex + itemsPerPage - 1, filteredUsers.length);
 
-    useEffect(() => {
-        if (!isLoading) {
-            fetchUsers(); // เรียกฟังก์ชันที่ถูกต้อง
-        }
-    }, [isLoading]);
-
-
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         try {
             const res = await fetch("/api/users", {
                 headers: {
-                    Authorization: `Bearer ${session?.token}`, // ส่ง token เพื่อยืนยันตัวตน
+                    Authorization: `Bearer ${session?.token}`,
                 },
             });
             if (!res.ok) throw new Error("Failed to fetch users");
             const data = await res.json();
-            setUsers(data || []); // ตั้งค่าข้อมูลผู้ใช้งานใน state
-            setLoading(false);
-        } catch (error) {
-            setError("ไม่สามารถดึงข้อมูลผู้ใช้งานได้");
-            setLoading(false);
+            setUsers(data || []);
+        } catch {
+            setAlertMessage("ไม่สามารถดึงข้อมูลผู้ใช้งานได้");
+            setAlertType("error");
         }
-    };
+    }, [session?.token]);
+    
+    useEffect(() => {
+        if (!isLoading) {
+            fetchUsers();
+        }
+    }, [isLoading, fetchUsers]);
+    
 
 
     if (isLoading) {
@@ -238,11 +222,8 @@ function AdminsUserManagement() {
             } else {
                 throw new Error(res.data?.message || "Failed to delete user");
             }
-        } catch (error: any) {
+        } catch {
             showAlert("เกิดข้อผิดพลาด: ไม่สามารถลบข้อมูลได้", "error"); // แสดงข้อความเมื่อเกิดข้อผิดพลาด
-        } finally {
-            setIsDeleteConfirmOpen(false);
-            setSelectedId(null);
         }
     };
 
@@ -334,20 +315,26 @@ function AdminsUserManagement() {
                                                 <button
                                                     onClick={() => openEditConfirm(user)}
                                                     className="mb-4 py-2 px-2 mr-2 rounded-md transition">
-                                                    <img
+                                                    <Image
                                                         src="/images/edit.png"
                                                         alt="Edit Icon"
                                                         className="h-6 w-6"
+                                                        width={40}
+                                                        height={40}
+                                                        priority
                                                     />
                                                 </button>
                                                 <button
                                                     className="mb-4 py-2 px-2 rounded-md htransition"
                                                     onClick={() => openDeleteConfirm(user.id)}
                                                 >
-                                                    <img
+                                                    <Image
                                                         src="/images/delete.png"
                                                         alt="Delete Icon"
                                                         className="h-6 w-6"
+                                                        width={40}
+                                                        height={40}
+                                                        priority
                                                     />
                                                 </button>
                                             </td>

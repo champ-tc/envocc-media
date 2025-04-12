@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 import AlertModal from "@/components/AlertModal";
+import Image from "next/image";
 
 interface Borrow {
     id: number;
@@ -71,20 +72,6 @@ function AdminsBorrowDetail({ params }: PageProps) {
         return null;
     }
 
-    if (!session) {
-        router.push("/login");
-        return null;
-    }
-
-    const showAlert = (message: string, type: "success" | "error") => {
-        setAlertMessage(message);
-        setAlertType(type);
-
-        setTimeout(() => {
-            setAlertMessage(null);
-        }, 3000);
-    };
-
 
     if (!borrow) {
         return <p>Loading borrow details...</p>;
@@ -138,7 +125,7 @@ function AdminsBorrowDetail({ params }: PageProps) {
             setTimeout(() => {
                 router.push("/admins/borrow");
             }, 3000);
-        } catch (error) {
+        } catch {
             setAlertMessage("เกิดข้อผิดพลาดในการเพิ่มรายการ");
             setAlertType("error");
         }
@@ -156,10 +143,13 @@ function AdminsBorrowDetail({ params }: PageProps) {
                         <div className="w-1/2 pr-4">
                             <div className="relative overflow-hidden rounded-lg shadow-md h-full">
                                 {borrow.borrow_images ? (
-                                    <img
+                                    <Image
                                         src={`/borrows/${borrow.borrow_images}`}
                                         alt={borrow.borrow_name}
                                         className="w-full h-full object-cover"
+                                        width={40}
+                                        height={40}
+                                        priority
                                     />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-gray-600">

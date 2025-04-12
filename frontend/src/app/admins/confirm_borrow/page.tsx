@@ -1,18 +1,20 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
-import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 import axios from "axios";
 import AlertModal from "@/components/AlertModal";
 import ConfirmEditModal from "@/components/ConfirmEditModal";
-import dynamic from "next/dynamic";
 import { registerLocale } from "react-datepicker";
 import { th } from "date-fns/locale/th";
 import "react-datepicker/dist/react-datepicker.css";
 import type { ReactDatePickerCustomHeaderProps } from "react-datepicker";
+import dynamic from "next/dynamic";
+import { forwardRef } from "react";
+import type { DatePickerProps } from "react-datepicker";
+
 
 registerLocale("th", th);
 
@@ -54,7 +56,6 @@ interface CustomInputProps {
 
 function AdminsConfirmBorrow() {
     const { session, isLoading } = useAuthCheck("admin");
-    const router = useRouter();
     const [returnDate, setReturnDate] = useState("");
 
     const [statusFilter, setStatusFilter] = useState("");
@@ -78,7 +79,7 @@ function AdminsConfirmBorrow() {
     const currentBorrows = borrowGroups || [];
 
 
-    const fetchBorrowLogs = async () => {
+    const fetchBorrowLogs = useCallback(async () => {
         try {
             if (!session || !statusFilter) return;
 
@@ -95,16 +96,15 @@ function AdminsConfirmBorrow() {
                 setTotalPages(data.totalPages);
                 setTotalItems(data.totalItems || 0);
             }
-        } catch (error) {
-            console.error("Error fetching borrow logs:", error);
+        } catch {
+            console.log("Error fetching borrow logs:");
         }
-    };
+    }, [session, statusFilter, currentPage]); // ✅ ใส่ dependencies ให้ครบ
 
 
     useEffect(() => {
         fetchBorrowLogs();
-    }, [session, statusFilter, currentPage]);
-
+    }, [fetchBorrowLogs]); // ✅ warning จะหายไป
 
 
 
@@ -120,8 +120,6 @@ function AdminsConfirmBorrow() {
         if (currentPage < totalPages) setCurrentPage(currentPage + 1);
     };
 
-
-
     if (isLoading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
@@ -130,12 +128,18 @@ function AdminsConfirmBorrow() {
         );
     }
 
-
-
-    const DynamicDatePicker = dynamic<any>(() => import("react-datepicker"), {
+    const DynamicDatePicker = dynamic(() =>
+        import("react-datepicker").then((mod) => {
+            const DatePicker = forwardRef<never, DatePickerProps>((props, ref) => (
+                <mod.default {...props} ref={ref} />
+            ));
+            DatePicker.displayName = "DatePicker";
+            return { default: DatePicker };
+        }), {
         ssr: false,
         loading: () => <p>Loading...</p>,
     });
+
 
     function formatDisplayDate(date: Date): string {
         return date.toLocaleDateString("th-TH", {
@@ -252,8 +256,8 @@ function AdminsConfirmBorrow() {
 
             setSelectedGroup({ ...group, logs });
             setModalOpen(true);
-        } catch (error) {
-            console.error("Error fetching group details:", error);
+        } catch {
+            console.log("Error fetching group details:");
         }
     };
 
@@ -284,8 +288,8 @@ function AdminsConfirmBorrow() {
 
             setSelectedReturnGroup({ ...group, logs }); // ✅ ใช้ logs ที่เป็น array เท่านั้น
             setReturnModalOpen(true);
-        } catch (error) {
-            console.error("Error fetching logs:", error);
+        } catch {
+            console.log("Error fetching logs:");
         }
     };
 
@@ -302,8 +306,7 @@ function AdminsConfirmBorrow() {
             } else {
                 alert('ไม่พบข้อมูล logs สำหรับคำขอนี้');
             }
-        } catch (error) {
-            console.error('Error fetching detail logs:', error);
+        } catch {
             alert('เกิดข้อผิดพลาดในการดึงข้อมูล logs');
         }
     };
@@ -363,8 +366,7 @@ function AdminsConfirmBorrow() {
                     setAlertMessage("เกิดข้อผิดพลาดในการอนุมัติ");
                     setAlertType("error");
                 }
-            } catch (error) {
-                console.error("Error approving borrow logs:", error);
+            } catch {
                 setAlertMessage("ไม่สามารถอนุมัติคำขอได้ในขณะนี้!");
                 setAlertType("error");
             } finally {
@@ -399,8 +401,7 @@ function AdminsConfirmBorrow() {
                 setAlertMessage("เกิดข้อผิดพลาดในการปฏิเสธคำขอ");
                 setAlertType("error");
             }
-        } catch (error) {
-            console.error("Error rejecting borrow:", error);
+        } catch {
             setAlertMessage("ไม่สามารถปฏิเสธคำขอได้ในขณะนี้");
             setAlertType("error");
         } finally {
@@ -452,12 +453,9 @@ function AdminsConfirmBorrow() {
                 setAlertMessage("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
                 setAlertType("error");
             }
-        } catch (error) {
-            console.error("Error saving return data:", error);
+        } catch {
             setAlertMessage("ไม่สามารถบันทึกข้อมูลการคืนได้");
             setAlertType("error");
-        } finally {
-            autoCloseAlert();
         }
     };
 

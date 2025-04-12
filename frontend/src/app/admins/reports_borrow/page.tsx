@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import useAuthCheck from '@/hooks/useAuthCheck';
-import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 import * as XLSX from "xlsx";
@@ -28,13 +27,11 @@ interface BorrowLogItem {
 }
 
 function AdminsReports_borrows() {
-    const { session, isLoading } = useAuthCheck("admin");
-    const router = useRouter();
+    const { isLoading } = useAuthCheck("admin");
 
     const [logs, setLogs] = useState<BorrowLogItem[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
-    const [totalRecords, setTotalRecords] = useState(0);
 
     const startIndex = (currentPage - 1) * itemsPerPage;
 
@@ -100,7 +97,6 @@ function AdminsReports_borrows() {
                 const res = await fetch(`/api/report_borrow`);
                 const json = await res.json();
                 setLogs(json.items || []);
-                setTotalRecords(json.items?.length || 0);
             } catch (err) {
                 console.error("Failed to fetch borrow logs:", err);
                 setLogs([]);
@@ -120,7 +116,7 @@ function AdminsReports_borrows() {
     }
 
     const exportToExcel = () => {
-        const dataForExcel = groupArray.map(([groupId, groupLogs], index) => {
+        const dataForExcel = groupArray.map(([, groupLogs], index) => {
             const firstLog = groupLogs[0];
 
             const itemMap = new Map<string, { quantity: number; approved: number }>();

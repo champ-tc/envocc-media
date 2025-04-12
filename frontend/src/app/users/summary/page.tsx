@@ -133,10 +133,6 @@ function UsersSummary() {
         );
     }
 
-
-
-
-
     const DynamicDatePicker = dynamic(() =>
         import("react-datepicker").then((mod) => {
             const DatePicker = forwardRef<never, DatePickerProps>((props, ref) => (
@@ -148,8 +144,6 @@ function UsersSummary() {
         ssr: false,
         loading: () => <p>Loading...</p>,
     });
-
-
 
     function formatDisplayDate(date: Date): string {
         return date.toLocaleDateString("th-TH", {

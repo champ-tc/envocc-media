@@ -1,15 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import useAuthCheck from "@/hooks/useAuthCheck";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 import axios from 'axios';
-import ConfirmModal from "@/components/ConfirmModal";
 import AlertModal from "@/components/AlertModal";
 import ConfirmEditModal from "@/components/ConfirmEditModal";
+import Image from "next/image";
 
 interface Borrow {
     id: number;
@@ -32,12 +30,9 @@ interface Type {
 }
 
 function AdminsBorrow_management() {
-    const { session, isLoading } = useAuthCheck("admin");
-    const router = useRouter();
-
+    const { isLoading } = useAuthCheck("admin");
 
     const [borrows, setBorrows] = useState<Borrow[]>([]);
-
     const [showModal, setShowModal] = useState(false);
     const [editModal, setEditModal] = useState(false);
     const [borrowImage, setBorrowImage] = useState<File | null>(null);
@@ -54,61 +49,43 @@ function AdminsBorrow_management() {
         description: '',
         createdAt: new Date().toISOString(),
     });
-    const initialBorrowState = {
-        id: 0,
-        borrow_name: '',
-        unit: '',
-        type_id: 0,
-        quantity: 0,
-        is_borro_restricted: false,
-        description: '',
-        createdAt: new Date().toISOString(),
-    };
 
     const [isEditConfirmOpen, setIsEditConfirmOpen] = useState(false);
-    const [selectedType, setSelectedType] = useState<Type | null>(null);
-
-
-
     const [selectedId, setSelectedId] = useState<number | null>(null);
-    const [error, setError] = useState<string | null>(null);
 
     const [selectedBorrow, setSelectedBorrow] = useState<Borrow | null>(null);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [isEnableConfirmOpen, setIsEnableConfirmOpen] = useState(false);
 
-
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [alertType, setAlertType] = useState<"success" | "error" | null>(null);
-
-
-
 
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [totalPages, setTotalPages] = useState(1); // ✅ ใช้ State รองรับ API
     const [totalRecords, setTotalRecords] = useState(0); // ✅ เพิ่ม State สำหรับ totalRecords
 
-
-    useEffect(() => {
-        fetchBorrows();
-    }, [currentPage]);
-
-
-
-    const fetchBorrows = async () => {
+    const fetchBorrows = useCallback(async () => {
         try {
             const response = await axios.get(`/api/borrow?page=${currentPage}&limit=${itemsPerPage}`);
-
             if (response.status === 200) {
                 setBorrows(response.data.items || []);
                 setTotalPages(response.data.totalPages);
                 setTotalRecords(response.data.totalRecords);
             }
-        } catch (error) {
-            console.error("Error fetching borrows:");
+        } catch {
+            console.log("Error fetching borrows:");
         }
-    };
+    }, [currentPage]);
+
+    useEffect(() => {
+        fetchBorrows();
+    }, [fetchBorrows]);
+
+
+    useEffect(() => {
+        fetchBorrows();
+    }, [currentPage, fetchBorrows]);
 
 
 
@@ -123,7 +100,6 @@ function AdminsBorrow_management() {
 
 
     const [types, setTypes] = useState<Type[]>([]);
-    const [isLoadingTypes, setIsLoadingTypes] = useState<boolean>(true); // เพิ่ม state โหลดข้อมูล
 
 
     const fetchTypes = async () => {
@@ -134,11 +110,9 @@ function AdminsBorrow_management() {
             } else {
                 setTypes([]);
             }
-        } catch (error) {
-            console.error("Error fetching types:", error);
+        } catch {
+            console.log("Error fetching types:");
             setTypes([]);
-        } finally {
-            setIsLoadingTypes(false);
         }
     };
 
@@ -159,16 +133,6 @@ function AdminsBorrow_management() {
             </div>
         );
     }
-
-    const showAlert = (message: string, type: "success" | "error") => {
-        setAlertMessage(message);
-        setAlertType(type);
-
-        setTimeout(() => {
-            setAlertMessage(null);
-            setAlertType(null);
-        }, 3000);
-    };
 
     const handleImageClick = (imageUrl: string | undefined) => {
         if (imageUrl) {
@@ -248,7 +212,7 @@ function AdminsBorrow_management() {
                 setAlertMessage("เพิ่มข้อมูลสำเร็จ!");
                 setAlertType("success");
             }
-        } catch (error) {
+        } catch {
             setAlertMessage("เกิดข้อผิดพลาดในการเพิ่มข้อมูล");
             setAlertType("error");
         } finally {
@@ -351,7 +315,7 @@ function AdminsBorrow_management() {
                 setAlertMessage("แก้ไขข้อมูลสำเร็จ!");
                 setAlertType("success");
             }
-        } catch (error) {
+        } catch {
             setAlertMessage("เกิดข้อผิดพลาดในการแก้ไขข้อมูล");
             setAlertType("error");
         } finally {
@@ -371,7 +335,7 @@ function AdminsBorrow_management() {
             setIsDeleteConfirmOpen(false); // ปิด Modal
             setAlertMessage("ปิดการใช้งานสำเร็จ");
             setAlertType("success");
-        } catch (error) {
+        } catch {
             setAlertMessage("เกิดข้อผิดพลาดในการปิดการใช้งาน");
             setAlertType("error");
         } finally {
@@ -391,7 +355,7 @@ function AdminsBorrow_management() {
             setIsEnableConfirmOpen(false); // ปิด Modal
             setAlertMessage("เปิดการใช้งานสำเร็จ");
             setAlertType("success");
-        } catch (error) {
+        } catch {
             setAlertMessage("เกิดข้อผิดพลาดในการเปิดการใช้งาน");
             setAlertType("error");
         } finally {
@@ -439,11 +403,14 @@ function AdminsBorrow_management() {
                                         <tr key={borrow.id} className="border-t border-gray-200 text-xs font-normal">
                                             <td className="px-4 py-2 border">
                                                 {borrow.borrow_images ? (
-                                                    <img
+                                                    <Image
                                                         src={`/borrows/${borrow.borrow_images}`}
                                                         alt="Borrow"
                                                         className="w-12 h-12 object-cover cursor-pointer"
                                                         onClick={() => handleImageClick(`/borrows/${borrow.borrow_images}`)}
+                                                        width={40}
+                                                        height={40}
+                                                        priority
                                                     />
                                                 ) : (
                                                     'ไม่มีรูปภาพ'
@@ -464,7 +431,14 @@ function AdminsBorrow_management() {
                                                     onClick={() => openEditModal(borrow)}
                                                     className="mb-4 py-2 px-2 mr-2 rounded-md transition"
                                                 >
-                                                    <img src="/images/edit.png" alt="Edit Icon" className="h-6 w-6" />
+                                                    <Image
+                                                        src="/images/edit.png"
+                                                        alt="Edit Icon"
+                                                        className="h-6 w-6"
+                                                        width={40}
+                                                        height={40}
+                                                        priority
+                                                    />
                                                 </button>
                                                 {borrow.status === 1 ? (
                                                     <button
@@ -472,7 +446,14 @@ function AdminsBorrow_management() {
                                                         className="mb-4 py-2 px-2 mr-2 rounded-md transition"
                                                         title="ปิดใช้งาน"
                                                     >
-                                                        <img src="/images/turn-on.png" alt="Turn Off Icon" className="h-6 w-6" />
+                                                        <Image
+                                                            src="/images/turn-on.png"
+                                                            alt="Turn Off Icon"
+                                                            className="h-6 w-6"
+                                                            width={40}
+                                                            height={40}
+                                                            priority
+                                                        />
                                                     </button>
 
                                                 ) : (
@@ -481,7 +462,14 @@ function AdminsBorrow_management() {
                                                         className="mb-4 py-2 px-2 mr-2 rounded-md transition"
                                                         title="เปิดใช้งาน"
                                                     >
-                                                        <img src="/images/turn-off.png" alt="Turn On Icon" className="h-6 w-6" />
+                                                        <Image
+                                                            src="/images/turn-off.png"
+                                                            alt="Turn Off Icon"
+                                                            className="h-6 w-6"
+                                                            width={40}
+                                                            height={40}
+                                                            priority
+                                                        />
                                                     </button>
                                                 )}
                                             </td>
@@ -532,7 +520,14 @@ function AdminsBorrow_management() {
                         {selectedImage && (
                             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                                 <div className="bg-white p-4 rounded-lg w-full max-w-md flex flex-col items-center">
-                                    <img src={selectedImage} alt="Selected" className="w-96 h-auto mb-4" />
+                                    <Image
+                                        src={selectedImage}
+                                        alt="Selected"
+                                        className="w-96 h-auto mb-4"
+                                        width={40}
+                                        height={40}
+                                        priority
+                                    />
                                     <button
                                         onClick={() => setSelectedImage(null)}
                                         className="bg-red-500 text-white py-2 px-4 rounded-lg"
@@ -668,19 +663,25 @@ function AdminsBorrow_management() {
                                             <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">PNG, JPG (10MB)</p>
                                             {selectedBorrow && selectedBorrow.borrow_images && !borrowImage && (
                                                 <div>
-                                                    <img
+                                                    <Image
                                                         src={`/borrows/${selectedBorrow.borrow_images}`}
                                                         alt="Borrow Image"
                                                         className="w-16 h-16 mt-2 rounded-md border"
+                                                        width={40}
+                                                        height={40}
+                                                        priority
                                                     />
                                                 </div>
                                             )}
                                             {borrowImage && (
                                                 <div>
-                                                    <img
+                                                    <Image
                                                         src={URL.createObjectURL(borrowImage)}
                                                         alt="Selected Image"
                                                         className="w-16 h-16 mt-2 rounded-md border"
+                                                        width={40}
+                                                        height={40}
+                                                        priority
                                                     />
                                                 </div>
                                             )}
@@ -782,7 +783,14 @@ function AdminsBorrow_management() {
                             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 backdrop-blur-sm">
                                 <div className="relative bg-white p-8 rounded-2xl shadow-2xl w-86 h-80 max-w-5xl text-center border-2 border-orange-500">
                                     <div className="text-red-500 mb-4">
-                                        <img src="/images/alert.png" alt="Confirm Icon" className="h-40 w-40 mx-auto" />
+                                        <Image
+                                            src="/images/alert.png"
+                                            alt="Confirm Icon"
+                                            className="h-40 w-40 mx-auto"
+                                            width={40}
+                                            height={40}
+                                            priority
+                                        />
                                     </div>
                                     <h2 className="text-lg font-semibold mb-4">คุณต้องการปิดการใช้งานรายการนี้หรือไม่?</h2>
                                     <div className="flex justify-center space-x-4">
@@ -809,7 +817,14 @@ function AdminsBorrow_management() {
                             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 backdrop-blur-sm">
                                 <div className="relative bg-white p-8 rounded-2xl shadow-2xl w-86 h-80 max-w-5xl text-center border-2 border-orange-500">
                                     <div className="text-red-500 mb-4">
-                                        <img src="/images/alert.png" alt="Confirm Icon" className="h-40 w-40 mx-auto" />
+                                        <Image
+                                            src="/images/alert.png"
+                                            alt="Confirm Icon"
+                                            className="h-40 w-40 mx-auto"
+                                            width={40}
+                                            height={40}
+                                            priority
+                                        />
                                     </div>
                                     <h2 className="text-lg font-semibold mb-4">คุณต้องการเปิดการใช้งานรายการนี้หรือไม่?</h2>
                                     <div className="flex justify-center space-x-4">

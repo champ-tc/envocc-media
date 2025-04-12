@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
-import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 import axios from "axios";
@@ -53,9 +52,7 @@ interface PendingGroup extends Group {
 
 function ConfirmRequisition() {
 
-    const { session, isLoading } = useAuthCheck("admin");
-    const router = useRouter();
-
+    const {isLoading } = useAuthCheck("admin");
 
     const [statusFilter, setStatusFilter] = useState("");
     const [selectedApprovedGroup, setSelectedApprovedGroup] = useState<ApprovedGroup | null>(null);
@@ -91,8 +88,8 @@ function ConfirmRequisition() {
                     setTotalPages(response.data.totalPages);
                     setTotalItems(response.data.totalItems); // ✅ รับจำนวนทั้งหมดมาด้วย
                 }
-            } catch (error) {
-                console.error("Error fetching requisition logs:", error);
+            } catch {
+                console.log("Error fetching requisition logs:");
             }
         };
 
@@ -162,11 +159,10 @@ function ConfirmRequisition() {
                 setSelectedApprovedGroup({ ...group, logs });
                 setApprovedModalOpen(true);
             }
-        } catch (error) {
-            console.error("Error fetching group details:", error);
+        } catch {
+            console.log("Error fetching group details:");
         }
     };
-
 
 
     const statusMapping: Record<string, string> = {
@@ -225,12 +221,9 @@ function ConfirmRequisition() {
                 setAlertMessage(`เกิดข้อผิดพลาด: ไม่สามารถเปลี่ยนสถานะได้`);
                 setAlertType("error");
             }
-        } catch (error) {
+        } catch {
             setAlertMessage("ไม่สามารถแก้ไขสถานะได้ในขณะนี้! โปรดลองอีกครั้ง");
             setAlertType("error");
-        } finally {
-            setGroupToEdit(null);
-            autoCloseAlert();
         }
     };
 
@@ -273,8 +266,7 @@ function ConfirmRequisition() {
                 setAlertMessage("เกิดข้อผิดพลาดในการอนุมัติคำขอ");
                 setAlertType("error");
             }
-        } catch (error) {
-            console.error("Error approving request:", error);
+        } catch {
             setAlertMessage("ไม่สามารถอนุมัติคำขอได้ในขณะนี้");
             setAlertType("error");
         } finally {

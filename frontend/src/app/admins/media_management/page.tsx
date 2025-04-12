@@ -1,15 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
-import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 import axios from "axios";
-import ConfirmModal from "@/components/ConfirmModal";
 import AlertModal from "@/components/AlertModal";
 import ConfirmEditModal from "@/components/ConfirmEditModal";
-
+import Image from "next/image";
 
 interface Requisition {
     id: number;
@@ -32,9 +30,7 @@ interface Type {
 }
 
 function AdminsMedia_management() {
-    const { session, isLoading } = useAuthCheck("admin");
-    const router = useRouter();
-
+    const { isLoading } = useAuthCheck("admin");
     const [currentQuantity, setCurrentQuantity] = useState<number | null>(null);
 
 
@@ -61,33 +57,15 @@ function AdminsMedia_management() {
         status: 1,
         createdAt: new Date().toISOString(),
     });
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
-
 
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [alertType, setAlertType] = useState<"success" | "error" | null>(null);
-
-    // ข้อมูลฟอร์มสำหรับการแก้ไข**
-    const [editId, setEditId] = useState<number | null>(null);
-    const [editName, setEditName] = useState("");
-    const [editDescription, setEditDescription] = useState("");
 
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false); // Modal ยืนยันการลบ
     const [isEditConfirmOpen, setIsEditConfirmOpen] = useState(false);
     const [selectedType, setSelectedType] = useState<Requisition | null>(null);
     const [selectedId, setSelectedId] = useState<number | null>(null); // ID ของข้อมูลที่เลือกสำหรับการลบ
-    const [paginatedRequisitions, setPaginatedRequisitions] = useState<Requisition[]>([]);
     const [isEnableConfirmOpen, setIsEnableConfirmOpen] = useState(false); // ใช้สำหรับ Modal เปิดการใช้งาน
-
-
-
-    useEffect(() => {
-        fetchRequisitions();
-        fetchTypes();
-    }, []);
-
-
     const [requisitions, setRequisitions] = useState<Requisition[]>([]);
     const [totalPages, setTotalPages] = useState(1);
     const [totalRecords, setTotalRecords] = useState(0); // 🔥 เก็บจำนวนข้อมูลทั้งหมด
@@ -96,25 +74,25 @@ function AdminsMedia_management() {
 
 
 
-    useEffect(() => {
-        fetchRequisitions();
-    }, [currentPage]);
-
-    const fetchRequisitions = async () => {
+    // 1. ครอบฟังก์ชันด้วย useCallback และใส่ currentPage เป็น dependency
+    const fetchRequisitions = useCallback(async () => {
         try {
-
             const response = await axios.get(`/api/requisition?page=${currentPage}&limit=${itemsPerPage}`);
-
             if (response.status === 200) {
                 setRequisitions(response.data.items || []);
                 setTotalPages(response.data.totalPages);
-                setTotalRecords(response.data.totalRecords);  // 🔥 อัปเดตจำนวนรายการทั้งหมด
+                setTotalRecords(response.data.totalRecords);
             }
-        } catch (error) {
-            console.error("Error fetching requisitions:");
+        } catch {
+            console.log("Error fetching requisitions");
         }
-    };
+    }, [currentPage]);
 
+
+    useEffect(() => {
+        fetchRequisitions();
+        fetchTypes();
+    }, [fetchRequisitions]);
 
 
     const handlePageChange = (page: number) => {
@@ -129,10 +107,6 @@ function AdminsMedia_management() {
         if (currentPage < totalPages) setCurrentPage((prev) => prev + 1);
     };
 
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-
-
     const fetchTypes = async () => {
         try {
             const response = await axios.get("/api/type");
@@ -141,21 +115,10 @@ function AdminsMedia_management() {
             } else {
                 setTypes([]); // ป้องกัน error ถ้าข้อมูลผิด
             }
-        } catch (error) {
+        } catch {
             setTypes([]); // กำหนดค่าเริ่มต้นเป็นอาร์เรย์ว่าง
         }
     };
-
-
-
-
-
-    useEffect(() => {
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-
-        setPaginatedRequisitions(requisitions.slice(startIndex, endIndex));
-    }, [currentPage, requisitions]);
 
 
     if (isLoading) {
@@ -165,7 +128,6 @@ function AdminsMedia_management() {
             </div>
         );
     }
-
 
     const showAlert = (message: string, type: "success" | "error") => {
         setAlertMessage(message);
@@ -193,18 +155,6 @@ function AdminsMedia_management() {
                 reserved_quantity: reservedQuantity
             };
         });
-    };
-
-    const handleRequisitionImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setRequisitionImage(e.target.files[0]);
-        }
-    };
-
-    const handleEditedImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setEditedImage(e.target.files[0]); // เก็บรูปใหม่ที่เลือก
-        }
     };
 
     const handleImageChange = (
@@ -288,7 +238,7 @@ function AdminsMedia_management() {
                     (fileInput as HTMLInputElement).value = ""; // รีเซ็ตค่าไฟล์
                 }
             }
-        } catch (error) {
+        } catch {
             showAlert("เกิดข้อผิดพลาดในการเพิ่มข้อมูล", "error");
         }
     };
@@ -402,9 +352,7 @@ function AdminsMedia_management() {
             } else {
                 showAlert("เกิดข้อผิดพลาดในการอัปเดตข้อมูล", "error");
             }
-        } catch (error) {
-            // จัดการข้อผิดพลาด
-            console.error("Error updating requisition:");
+        } catch {
             showAlert("ไม่สามารถแก้ไขข้อมูลได้", "error");
         }
     };
@@ -451,7 +399,7 @@ function AdminsMedia_management() {
                 setAlertMessage("ปิดการใช้งานสำเร็จ!");
                 setAlertType("success");
             }
-        } catch (error) {
+        } catch {
             setAlertMessage("เกิดข้อผิดพลาดในการปิดการใช้งาน");
             setAlertType("error");
         } finally {
@@ -478,15 +426,9 @@ function AdminsMedia_management() {
                 setAlertMessage("เปิดการใช้งานสำเร็จ!");
                 setAlertType("success");
             }
-        } catch (error) {
+        } catch {
             setAlertMessage("เกิดข้อผิดพลาดในการเปิดการใช้งาน");
             setAlertType("error");
-        } finally {
-            setIsEnableConfirmOpen(false); // ปิด Modal
-            setTimeout(() => {
-                setAlertMessage(null);
-                setAlertType(null);
-            }, 5000); // ตั้งเวลาให้แจ้งเตือนหายไป
         }
     };
 
@@ -523,11 +465,14 @@ function AdminsMedia_management() {
                                         <tr key={req.id}>
                                             <td className="p-2 py-2 border">
                                                 {req.requisition_images ? (
-                                                    <img
+                                                    <Image
                                                         src={`/requisitions/${req.requisition_images}`}
                                                         alt={req.requisition_name}
                                                         className="w-16 h-16 object-cover cursor-pointer"
                                                         onClick={() => req.requisition_images && handleImageClick(req.requisition_images)}
+                                                        width={40}
+                                                        height={40}
+                                                        priority
                                                     />
                                                 ) : (
                                                     "ไม่มีรูปภาพ"
@@ -549,7 +494,14 @@ function AdminsMedia_management() {
                                             </td>
                                             <td className="p-2 border">
                                                 <button onClick={() => handleEditRequest(req)} className="mb-4 py-2 px-2 mr-2 rounded-md transition">
-                                                    <img src="/images/edit.png" alt="Edit Icon" className="h-6 w-6" />
+                                                    <Image
+                                                        src="/images/edit.png"
+                                                        alt="Edit Icon"
+                                                        className="h-6 w-6"
+                                                        width={40}
+                                                        height={40}
+                                                        priority
+                                                    />
                                                 </button>
                                                 {req.status === 1 ? (
                                                     <button
@@ -557,7 +509,14 @@ function AdminsMedia_management() {
                                                         className="mb-4 py-2 px-2 mr-2 rounded-md transition"
                                                         title="ปิดใช้งาน"
                                                     >
-                                                        <img src="/images/turn-on.png" alt="Turn Off Icon" className="h-6 w-6" />
+                                                        <Image
+                                                            src="/images/turn-on.png"
+                                                            alt="Turn Off Icon"
+                                                            className="h-6 w-6"
+                                                            width={40}
+                                                            height={40}
+                                                            priority
+                                                        />
                                                     </button>
                                                 ) : (
                                                     <button
@@ -565,7 +524,14 @@ function AdminsMedia_management() {
                                                         className="mb-4 py-2 px-2 mr-2 rounded-md transition"
                                                         title="เปิดใช้งาน"
                                                     >
-                                                        <img src="/images/turn-off.png" alt="Turn On Icon" className="h-6 w-6" />
+                                                        <Image
+                                                            src="/images/turn-off.png"
+                                                            alt="Turn On Icon"
+                                                            className="h-6 w-6"
+                                                            width={40}
+                                                            height={40}
+                                                            priority
+                                                        />
                                                     </button>
                                                 )}
                                             </td>
@@ -621,7 +587,14 @@ function AdminsMedia_management() {
                         {selectedImage && (
                             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                                 <div className="bg-white p-4 rounded-lg w-full max-w-md flex flex-col items-center">
-                                    <img src={selectedImage} alt="Selected" className="w-96 h-auto mb-4" />
+                                    <Image
+                                        src={selectedImage}
+                                        alt="Selected"
+                                        className="w-96 h-auto mb-4"
+                                        width={40}
+                                        height={40}
+                                        priority
+                                    />
                                     <button
                                         onClick={() => setSelectedImage(null)}
                                         className="bg-red-500 text-white py-2 px-4 rounded-lg"
@@ -784,10 +757,13 @@ function AdminsMedia_management() {
                                             <p className="mt-1 text-xs text-gray-500">PNG, JPG (10MB)</p>
 
                                             {(currentImage || editedImage) && (
-                                                <img
+                                                <Image
                                                     src={editedImage ? URL.createObjectURL(editedImage) : `/requisitions/${currentImage}`}
                                                     alt="Preview"
                                                     className="w-20 h-20 mt-2 rounded-md border object-cover"
+                                                    width={40}
+                                                    height={40}
+                                                    priority
                                                 />
                                             )}
                                         </div>
@@ -891,7 +867,14 @@ function AdminsMedia_management() {
                             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 backdrop-blur-sm">
                                 <div className="relative bg-white p-8 rounded-2xl shadow-2xl w-80 h-80 max-w-5xl text-center border-2 border-orange-500">
                                     <div className="text-red-500 mb-4">
-                                        <img src="/images/alert.png" alt="Confirm Icon" className="h-40 w-40 mx-auto" />
+                                        <Image
+                                            src="/images/alert.png"
+                                            alt="Confirm Icon"
+                                            className="h-40 w-40 mx-auto"
+                                            width={40}
+                                            height={40}
+                                            priority
+                                        />
                                     </div>
                                     <h2 className="text-lg font-semibold mb-4">คุณต้องการปิดข้อมูลนี้หรือไม่?</h2>
                                     <div className="flex justify-center space-x-4">
@@ -916,7 +899,14 @@ function AdminsMedia_management() {
                             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 backdrop-blur-sm">
                                 <div className="relative bg-white p-8 rounded-2xl shadow-2xl w-80 h-80 max-w-5xl text-center border-2 border-orange-500">
                                     <div className="text-red-500 mb-4">
-                                        <img src="/images/alert.png" alt="Confirm Icon" className="h-40 w-40 mx-auto" />
+                                        <Image
+                                            src="/images/alert.png"
+                                            alt="Confirm Icon"
+                                            className="h-40 w-40 mx-auto"
+                                            width={40}
+                                            height={40}
+                                            priority
+                                        />
                                     </div>
                                     <h2 className="text-lg font-semibold mb-4">คุณต้องการเปิดข้อมูลนี้หรือไม่?</h2>
                                     <div className="flex justify-center space-x-4">

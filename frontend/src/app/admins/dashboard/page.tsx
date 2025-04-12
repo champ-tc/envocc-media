@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar_Admin';
 import TopBar from '@/components/TopBar';
 import useAuthCheck from "@/hooks/useAuthCheck";
-import { useRouter } from "next/navigation";
 import { Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -22,10 +21,34 @@ ChartJS.register(
   ChartDataLabels
 );
 
-export default function AdminsDashboard() {
-  const { session, isLoading } = useAuthCheck("admin");
-  const router = useRouter();
-  const [data, setData] = useState<any>(null);
+interface StatItem {
+  name: string;
+  count: number;
+}
+
+interface TopItem {
+  name: string;
+  used: number;
+  remaining: number;
+}
+
+interface DashboardData {
+  totalRequisitionLogs: number;
+  approvedRequisitionLogs: number;
+  totalBorrowLogs: number;
+  returnedCount: number;
+  userTypeStats: StatItem[];
+  usagePurposeStatsRequisition: StatItem[];
+  usagePurposeStatsBorrow: StatItem[];
+  topRequisitions: TopItem[];
+  topBorrows: TopItem[];
+}
+
+
+
+function AdminsDashboard() {
+  const { isLoading } = useAuthCheck("admin");
+  const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
     fetch('/api/dashboard')
@@ -79,34 +102,37 @@ export default function AdminsDashboard() {
   };
 
   const doughnutUserType = {
-    labels: data.userTypeStats.map((u: any) => u.name),
+    labels: data.userTypeStats.map((u: StatItem) => u.name),
     datasets: [
       {
-        data: data.userTypeStats.map((u: any) => u.count),
+        data: data.userTypeStats.map((u: StatItem) => u.count),
         backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#8B5CF6', '#EC4899'],
       },
     ],
   };
 
+
   const doughnutPurposeRequisition = {
-    labels: data.usagePurposeStatsRequisition.map((r: any) => r.name),
+    labels: data.usagePurposeStatsRequisition.map((r: StatItem) => r.name),
     datasets: [
       {
-        data: data.usagePurposeStatsRequisition.map((r: any) => r.count),
+        data: data.usagePurposeStatsRequisition.map((r: StatItem) => r.count),
         backgroundColor: ['#60A5FA', '#FBBF24', '#F87171', '#34D399'],
       },
     ],
   };
 
+
   const doughnutPurposeBorrow = {
-    labels: data.usagePurposeStatsBorrow.map((r: any) => r.name),
+    labels: data.usagePurposeStatsBorrow.map((r: StatItem) => r.name),
     datasets: [
       {
-        data: data.usagePurposeStatsBorrow.map((r: any) => r.count),
+        data: data.usagePurposeStatsBorrow.map((r: StatItem) => r.count),
         backgroundColor: ['#A78BFA', '#FDBA74', '#FCA5A5', '#6EE7B7'],
       },
     ],
   };
+
 
   return (
     <div className="min-h-screen flex bg-gray-100">
@@ -147,7 +173,7 @@ export default function AdminsDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.topRequisitions.map((item: any, idx: number) => (
+                    {data.topRequisitions.map((item: TopItem, idx: number) => (
                       <tr key={idx} className="border-b text-gray-700">
                         <td className="py-2">{item.name}</td>
                         <td>{item.used}</td>
@@ -169,7 +195,7 @@ export default function AdminsDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.topBorrows.map((item: any, idx: number) => (
+                    {data.topBorrows.map((item: TopItem, idx: number) => (
                       <tr key={idx} className="border-b text-gray-700">
                         <td className="py-2">{item.name}</td>
                         <td>{item.used}</td>
@@ -199,3 +225,5 @@ export default function AdminsDashboard() {
     </div>
   );
 }
+
+export default AdminsDashboard

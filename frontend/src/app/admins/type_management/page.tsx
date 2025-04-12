@@ -1,15 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
-import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 import axios from "axios";
 import ConfirmModal from "@/components/ConfirmModal";
 import AlertModal from "@/components/AlertModal";
 import ConfirmEditModal from "@/components/ConfirmEditModal";
-
+import Image from "next/image";
 
 interface Type {
     id: number;
@@ -18,17 +17,10 @@ interface Type {
     createdAt: string;
 }
 
-interface ConfirmModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onConfirm: () => void;
-    title: string;
-}
 
 function AdminsType_management() {
 
-    const { session, isLoading } = useAuthCheck("admin");
-    const router = useRouter();
+    const { isLoading } = useAuthCheck("admin");
 
     // ข้อมูลประเภท
     const [types, setTypes] = useState<Type[]>([]);
@@ -62,31 +54,25 @@ function AdminsType_management() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    useEffect(() => {
-        if (!isLoading) {
-            fetchTypes();
-        }
-    }, [isLoading, currentPage]);
-
-    const fetchTypes = async () => {
+    const fetchTypes = useCallback(async () => {
         try {
             const response = await axios.get(`/api/type?page=${currentPage}&limit=${itemsPerPage}`);
-
             if (response.status === 200) {
                 setTypes(response.data.items || []);
                 setTotalPages(response.data.totalPages);
                 setTotalRecords(response.data.totalRecords);
             }
-        } catch (error) {
-            console.error("Failed to fetch types:");
+        } catch {
+            console.log("Failed to fetch types:");
         }
-    };
+    }, [currentPage, itemsPerPage]);
+    
+    useEffect(() => {
+        if (!isLoading) {
+            fetchTypes();
+        }
+    }, [isLoading, fetchTypes]);
 
-
-
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentTypes = types.slice(startIndex, endIndex);
 
     const handlePageChange = (page: number) => {
         if (page >= 1 && page <= totalPages) {
@@ -139,23 +125,12 @@ function AdminsType_management() {
                 setShowModal(false);
                 showAlert('ไม่สามารถเพิ่มข้อมูลได้', 'error');
             }
-        } catch (error) {
+        } catch {
             setShowModal(false);
             setName('');
             setDescription('');
             showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์', 'error');
         }
-    };
-
-    const openEditModal = (type: { id?: number; name?: string; description?: string }) => {
-        if (!type.id) {
-            showAlert('ไม่พบข้อมูลสำหรับแก้ไข', 'error');
-            return;
-        }
-        setEditId(type.id);
-        setEditName(type.name || '');
-        setEditDescription(type.description || '');
-        setEditModalVisible(true);
     };
 
     const handleEditConfirm = () => {
@@ -202,7 +177,7 @@ function AdminsType_management() {
                 setEditModalVisible(false);
                 showAlert('ไม่สามารถแก้ไขข้อมูลได้', 'error');
             }
-        } catch (error) {
+        } catch {
             setEditModalVisible(false);
             showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์', 'error');
         }
@@ -225,7 +200,7 @@ function AdminsType_management() {
             } else {
                 showAlert('ไม่สามารถลบข้อมูลได้', 'error');
             }
-        } catch (error) {
+        } catch {
             showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์', 'error');
         } finally {
             setIsDeleteConfirmOpen(false);
@@ -277,10 +252,24 @@ function AdminsType_management() {
                                                     </td>
                                                     <td className="px-4 py-2 border-b">
                                                         <button onClick={() => openEditConfirm(type)} className="mb-4 py-2 px-2 mr-2 rounded-md">
-                                                            <img src="/images/edit.png" alt="Edit Icon" className="h-6 w-6" />
+                                                            <Image
+                                                                src="/images/edit.png"
+                                                                alt="Edit Icon"
+                                                                className="h-6 w-6"
+                                                                width={40}
+                                                                height={40}
+                                                                priority
+                                                            />
                                                         </button>
                                                         <button onClick={() => openDeleteConfirm(type.id)} className="mb-4 py-2 px-2 rounded-md">
-                                                            <img src="/images/delete.png" alt="Delete Icon" className="h-6 w-6" />
+                                                            <Image
+                                                                src="/images/delete.png"
+                                                                alt="Delete Icon"
+                                                                className="h-6 w-6"
+                                                                width={40}
+                                                                height={40}
+                                                                priority
+                                                            />
                                                         </button>
                                                     </td>
                                                 </tr>
