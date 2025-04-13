@@ -160,8 +160,9 @@ function UsersBorrow() {
                                             src={`/borrows/${item.borrow_images}`}
                                             alt={item.borrow_name}
                                             className="w-full h-60 object-cover rounded-lg mb-4"
-                                            width={24}
-                                            height={24}
+                                            width={140}
+                                            height={140}
+                                            priority
                                         />
                                     ) : (
                                         <div className="w-full h-60 bg-gray-200 flex items-center justify-center rounded-lg mb-4">

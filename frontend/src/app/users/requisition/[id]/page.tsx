@@ -112,13 +112,14 @@ function UsersRequisitionDetail() {
                         <div className="flex-1 flex items-start justify-center p-2">
                             <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 flex">
                                 <div className="w-1/2 pr-4">
-                                    <div className="relative overflow-hidden rounded-lg shadow-md h-full">
+                                    <div className="relative overflow-hidden rounded-lg shadow-md h-auto">
                                         <Image
                                             src={requisition.requisition_images}
                                             alt={requisition.requisition_name}
-                                            className="w-full h-full object-cover"
-                                            width={24}
-                                            height={24}
+                                            className="w-full h-auto object-cover"
+                                            width={200}
+                                            height={300}
+                                            priority
                                         />
                                     </div>
                                 </div>

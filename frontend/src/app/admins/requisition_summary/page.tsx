@@ -395,229 +395,229 @@ function RequisitionSummary() {
             <div className="flex-1">
                 <TopBar />
 
-                <div
-                    className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52"
-                >
-                    <h1 className="text-2xl font-bold mb-4">รายการ</h1>
+                <div className="flex-1 flex items-start justify-center p-4">
+                    <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
+                        <h1 className="text-2xl font-bold mb-4">รายการ</h1>
 
-                    <div className="mb-4 flex space-x-4">
-                        <button
-                            onClick={() => setSelectedAction("requisition")}
-                            className={`py-2 px-4 rounded-md text-white ${selectedAction === "requisition"
-                                ? "bg-orange-500"
-                                : "bg-gray-300 hover:bg-gray-400"
-                                }`}
-                        >
-                            เบิกสื่อ
-                        </button>
-                        <button
-                            onClick={() => setSelectedAction("borrow")}
-                            className={`py-2 px-4 rounded-md text-white ${selectedAction === "borrow"
-                                ? "bg-orange-500"
-                                : "bg-gray-300 hover:bg-gray-400"
-                                }`}
-                        >
-                            ยืมสื่อ
-                        </button>
-                    </div>
-
-                    {selectedAction ? (
-                        <>
-                            <table className="w-full border-collapse bg-white shadow rounded-lg overflow-hidden">
-                                <thead>
-                                    <tr className="bg-gray-200 text-gray-700">
-                                        <th className="py-3 px-4 text-left">ชื่อรายการ</th>
-                                        <th className="py-3 px-4 text-left">จำนวน</th>
-                                        <th className="py-3 px-4 text-left">ลบ</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredOrders.length > 0 ? (
-                                        filteredOrders.map((order) => (
-                                            <tr key={order.id} className="border-b">
-                                                <td className="py-3 px-4">
-                                                    {order.requisition
-                                                        ? order.requisition.requisition_name
-                                                        : order.borrow?.borrow_name || "ไม่มีข้อมูล"}
-                                                </td>
-                                                <td className="py-3 px-4">{order.quantity}</td>
-                                                <td className="py-3 px-4">
-                                                    <button
-                                                        onClick={() => handleDeleteOrder(order.id)}
-                                                        className="mb-4 py-2 px-2 rounded-md transition"
-                                                    >
-                                                        <Image
-                                                            src="/images/delete.png"
-                                                            alt="Delete Icon"
-                                                            className="h-6 w-6"
-                                                            width={40}
-                                                            height={40}
-                                                            priority
-                                                        />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={3} className="text-center py-4">
-                                                ไม่มีรายการที่จะแสดง
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-
-                            {selectedAction === "borrow" && (
-                                <div className="mt-4">
-                                    <label className="block text-gray-700 font-semibold mb-2">
-                                        วันที่คืน:
-                                    </label>
-                                    <DynamicDatePicker
-                                        selected={returnDate ? new Date(returnDate) : null}
-                                        onChange={(date: Date | null) => {
-                                            if (date) {
-                                                const today = new Date();
-                                                const selectedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-                                                const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-                                                if (selectedDate < currentDate) {
-                                                    showAlert("ไม่สามารถเลือกวันที่น้อยกว่าวันปัจจุบัน", "error");
-                                                    return;
-                                                }
-                                                setReturnDate(formatSubmitDate(date));
-                                            }
-                                        }}
-                                        locale="th" // ใช้ภาษาไทย
-                                        dateFormat="dd/MM/yyyy" // รูปแบบการแสดงผล
-                                        renderCustomHeader={renderCustomHeader} // ใช้ header ที่ปรับแต่ง
-                                        customInput={
-                                            <CustomInput
-                                                id="returnDate"
-                                                name="returnDate"
-                                                value={returnDate ? formatDisplayDate(new Date(returnDate)) : ""}
-                                            />
-                                        }
-                                        className="datepicker-input" // เพิ่ม className สำหรับปรับแต่ง
-                                        withPortal
-                                        minDate={new Date()} // ห้ามเลือกวันที่น้อยกว่าวันปัจจุบัน
-                                    />
-
-                                </div>
-                            )}
-
-                            <div className="mt-6">
-                                <label className="block text-gray-700 font-semibold mb-2">นำไปใช้เพื่ออะไร:</label>
-                                <select
-                                    value={usageReasonId ?? ""}
-                                    onChange={handleUsageChange}
-                                    className="w-full px-4 py-2 border rounded-md"
-                                >
-                                    <option value="" disabled>กรุณาเลือก...</option>
-                                    {reasons.map((reason) => (
-                                        <option key={reason.id} value={reason.id}>{reason.reason_name}</option>
-                                    ))}
-                                    <option value={0}>อื่นๆ</option> {/* 👈 เปลี่ยนจาก "อื่นๆ" เป็น value 0 */}
-                                </select>
-
-
-                                {usageReasonId === 0 && (
-                                    <>
-                                        <input
-                                            type="text"
-                                            value={customUsageReason}
-                                            onChange={(e) => setCustomUsageReason(e.target.value)}
-                                            className="mt-2 w-full px-4 py-2 border rounded-md"
-                                            placeholder="กรุณาระบุรายละเอียด"
-                                        />
-                                        {customUsageReasonError && (
-                                            <p className="text-red-500 text-sm mt-1">{customUsageReasonError}</p>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-
-                            {/* ตัวเลือกจัดส่ง */}
-                            <div className="mt-6">
-                                <h2 className="text-lg font-semibold mb-2">เลือกวิธีการจัดส่ง:</h2>
-                                <div className="flex items-center space-x-4">
-                                    <label>
-                                        <input
-                                            type="radio"
-                                            name="deliveryMethod"
-                                            value="delivery"
-                                            checked={deliveryMethod === "delivery"}
-                                            onChange={(e) => setDeliveryMethod(e.target.value)}
-                                        />
-                                        <span className="ml-2">จัดส่ง</span>
-                                    </label>
-                                    <label>
-                                        <input
-                                            type="radio"
-                                            name="deliveryMethod"
-                                            value="self"
-                                            checked={deliveryMethod === "self"}
-                                            onChange={(e) => setDeliveryMethod(e.target.value)}
-                                        />
-                                        <span className="ml-2">รับเอง</span>
-                                    </label>
-                                </div>
-
-                                {deliveryMethod === "delivery" && (
-                                    <textarea
-                                        value={address}
-                                        onChange={(e) => setAddress(e.target.value)}
-                                        className="mt-4 w-full px-4 py-2 border rounded-md"
-                                        placeholder="กรอกที่อยู่สำหรับการจัดส่ง"
-                                    />
-                                )}
-                            </div>
-
-                            {/* ปุ่มบันทึก */}
+                        <div className="mb-4 flex space-x-4">
                             <button
-                                onClick={(e) =>
-                                    selectedAction === "requisition"
-                                        ? handleSubmitRequisition(e)
-                                        : handleSubmitBorrow(e)
-                                }
-                                disabled={filteredOrders.length === 0}
-                                className={`mt-6 py-2 px-4 rounded-md transition ${filteredOrders.length === 0
-                                    ? "bg-gray-300 cursor-not-allowed text-gray-500"
-                                    : "bg-green-500 text-white hover:bg-green-600"
+                                onClick={() => setSelectedAction("requisition")}
+                                className={`py-2 px-4 rounded-md text-white ${selectedAction === "requisition"
+                                    ? "bg-[#9063d2]"
+                                    : "bg-gray-300 hover:bg-gray-400"
                                     }`}
                             >
-                                {selectedAction === "requisition" ? "บันทึกการเบิก" : "บันทึกการยืม"}
+                                เบิกสื่อ
                             </button>
+                            <button
+                                onClick={() => setSelectedAction("borrow")}
+                                className={`py-2 px-4 rounded-md text-white ${selectedAction === "borrow"
+                                    ? "bg-[#9063d2]"
+                                    : "bg-gray-300 hover:bg-gray-400"
+                                    }`}
+                            >
+                                ยืมสื่อ
+                            </button>
+                        </div>
+
+                        {selectedAction ? (
+                            <>
+                                <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden text-sm">
+                                    <thead>
+                                        <tr className="bg-[#9063d2] text-white text-left text-sm uppercase font-semibold tracking-wider">
+                                            <th className="border py-3 px-4 text-left">ชื่อรายการ</th>
+                                            <th className="border py-3 px-4 text-left">จำนวน</th>
+                                            <th className="border py-3 px-4 text-left">ลบ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredOrders.length > 0 ? (
+                                            filteredOrders.map((order) => (
+                                                <tr key={order.id} className="border-b">
+                                                    <td className="border py-3 px-4">
+                                                        {order.requisition
+                                                            ? order.requisition.requisition_name
+                                                            : order.borrow?.borrow_name || "ไม่มีข้อมูล"}
+                                                    </td>
+                                                    <td className="border py-3 px-4">{order.quantity}</td>
+                                                    <td className="border py-3 px-4">
+                                                        <button
+                                                            onClick={() => handleDeleteOrder(order.id)}
+                                                            className="mb-4 py-2 px-2 rounded-md transition"
+                                                        >
+                                                            <Image
+                                                                src="/images/delete.png"
+                                                                alt="Delete Icon"
+                                                                className="h-6 w-6"
+                                                                width={40}
+                                                                height={40}
+                                                                priority
+                                                            />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={3} className="text-center py-4">
+                                                    ไม่มีรายการที่จะแสดง
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+
+                                {selectedAction === "borrow" && (
+                                    <div className="mt-4">
+                                        <label className="block text-gray-700 font-semibold mb-2">
+                                            วันที่คืน:
+                                        </label>
+                                        <DynamicDatePicker
+                                            selected={returnDate ? new Date(returnDate) : null}
+                                            onChange={(date: Date | null) => {
+                                                if (date) {
+                                                    const today = new Date();
+                                                    const selectedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                                                    const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+                                                    if (selectedDate < currentDate) {
+                                                        showAlert("ไม่สามารถเลือกวันที่น้อยกว่าวันปัจจุบัน", "error");
+                                                        return;
+                                                    }
+                                                    setReturnDate(formatSubmitDate(date));
+                                                }
+                                            }}
+                                            locale="th" // ใช้ภาษาไทย
+                                            dateFormat="dd/MM/yyyy" // รูปแบบการแสดงผล
+                                            renderCustomHeader={renderCustomHeader} // ใช้ header ที่ปรับแต่ง
+                                            customInput={
+                                                <CustomInput
+                                                    id="returnDate"
+                                                    name="returnDate"
+                                                    value={returnDate ? formatDisplayDate(new Date(returnDate)) : ""}
+                                                />
+                                            }
+                                            className="datepicker-input" // เพิ่ม className สำหรับปรับแต่ง
+                                            withPortal
+                                            minDate={new Date()} // ห้ามเลือกวันที่น้อยกว่าวันปัจจุบัน
+                                        />
+
+                                    </div>
+                                )}
+
+                                <div className="mt-6">
+                                    <label className="block text-gray-700 font-semibold mb-2">นำไปใช้เพื่ออะไร:</label>
+                                    <select
+                                        value={usageReasonId ?? ""}
+                                        onChange={handleUsageChange}
+                                        className="w-full px-4 py-2 border rounded-md"
+                                    >
+                                        <option value="" disabled>กรุณาเลือก...</option>
+                                        {reasons.map((reason) => (
+                                            <option key={reason.id} value={reason.id}>{reason.reason_name}</option>
+                                        ))}
+                                        <option value={0}>อื่นๆ</option> {/* 👈 เปลี่ยนจาก "อื่นๆ" เป็น value 0 */}
+                                    </select>
 
 
-                        </>
-                    ) : (
-                        <p className="text-center text-gray-500 mt-4">
-                            กรุณาเลือกระหว่างเบิกสื่อ หรือ ยืมสื่อ
-                        </p>
+                                    {usageReasonId === 0 && (
+                                        <>
+                                            <input
+                                                type="text"
+                                                value={customUsageReason}
+                                                onChange={(e) => setCustomUsageReason(e.target.value)}
+                                                className="mt-2 w-full px-4 py-2 border rounded-md"
+                                                placeholder="กรุณาระบุรายละเอียด"
+                                            />
+                                            {customUsageReasonError && (
+                                                <p className="text-red-500 text-sm mt-1">{customUsageReasonError}</p>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* ตัวเลือกจัดส่ง */}
+                                <div className="mt-6">
+                                    <h2 className="text-lg font-semibold mb-2">เลือกวิธีการจัดส่ง:</h2>
+                                    <div className="flex items-center space-x-4">
+                                        <label>
+                                            <input
+                                                type="radio"
+                                                name="deliveryMethod"
+                                                value="delivery"
+                                                checked={deliveryMethod === "delivery"}
+                                                onChange={(e) => setDeliveryMethod(e.target.value)}
+                                            />
+                                            <span className="ml-2">จัดส่ง</span>
+                                        </label>
+                                        <label>
+                                            <input
+                                                type="radio"
+                                                name="deliveryMethod"
+                                                value="self"
+                                                checked={deliveryMethod === "self"}
+                                                onChange={(e) => setDeliveryMethod(e.target.value)}
+                                            />
+                                            <span className="ml-2">รับเอง</span>
+                                        </label>
+                                    </div>
+
+                                    {deliveryMethod === "delivery" && (
+                                        <textarea
+                                            value={address}
+                                            onChange={(e) => setAddress(e.target.value)}
+                                            className="mt-4 w-full px-4 py-2 border rounded-md"
+                                            placeholder="กรอกที่อยู่สำหรับการจัดส่ง"
+                                        />
+                                    )}
+                                </div>
+
+                                {/* ปุ่มบันทึก */}
+                                <button
+                                    onClick={(e) =>
+                                        selectedAction === "requisition"
+                                            ? handleSubmitRequisition(e)
+                                            : handleSubmitBorrow(e)
+                                    }
+                                    disabled={filteredOrders.length === 0}
+                                    className={`mt-6 py-2 px-4 rounded-md transition ${filteredOrders.length === 0
+                                        ? "bg-gray-300 cursor-not-allowed text-gray-500"
+                                        : "bg-[#9063d2] hover:bg-[#8753d5] text-white"
+                                        }`}
+                                >
+                                    {selectedAction === "requisition" ? "บันทึกการเบิก" : "บันทึกการยืม"}
+                                </button>
+
+
+                            </>
+                        ) : (
+                            <p className="text-center text-gray-500 mt-4">
+                                กรุณาเลือกระหว่างเบิกสื่อ หรือ ยืมสื่อ
+                            </p>
+                        )}
+
+                    </div>
+
+                    {isDeleteConfirmOpen && (
+                        <ConfirmModal
+                            isOpen={isDeleteConfirmOpen}
+                            onClose={() => setIsDeleteConfirmOpen(false)} // ปิด Modal หากยกเลิก
+                            onConfirm={handleConfirmDelete} // เรียกฟังก์ชันลบเมื่อยืนยัน
+                            title="คุณต้องการลบข้อมูลนี้หรือไม่?"
+                            iconSrc="/images/alert.png"
+                        />
+                    )}
+
+                    {alertMessage && (
+                        <AlertModal
+                            isOpen={!!alertMessage}
+                            message={alertMessage}
+                            type={alertType ?? "error"}
+                            iconSrc={alertType === "success" ? "/images/check.png" : "/images/close.png"}
+                        />
                     )}
 
                 </div>
-
-                {isDeleteConfirmOpen && (
-                    <ConfirmModal
-                        isOpen={isDeleteConfirmOpen}
-                        onClose={() => setIsDeleteConfirmOpen(false)} // ปิด Modal หากยกเลิก
-                        onConfirm={handleConfirmDelete} // เรียกฟังก์ชันลบเมื่อยืนยัน
-                        title="คุณต้องการลบข้อมูลนี้หรือไม่?"
-                        iconSrc="/images/alert.png"
-                    />
-                )}
-
-                {alertMessage && (
-                    <AlertModal
-                        isOpen={!!alertMessage}
-                        message={alertMessage}
-                        type={alertType ?? "error"}
-                        iconSrc={alertType === "success" ? "/images/check.png" : "/images/close.png"}
-                    />
-                )}
-
             </div>
         </div>
     );

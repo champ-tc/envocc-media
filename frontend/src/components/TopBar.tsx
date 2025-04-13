@@ -38,6 +38,7 @@ function TopBar() {
                             width={20}
                             height={20}
                             className="w-10 h-10"
+                            priority
                         />
                     </button>
                 </Link>
@@ -52,6 +53,7 @@ function TopBar() {
                             width={20}
                             height={20}
                             className="h-8 w-6"
+                            priority
                         />
                         <span>{session?.user?.name || "User"}</span>
                         <Image

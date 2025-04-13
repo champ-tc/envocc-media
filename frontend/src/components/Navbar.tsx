@@ -28,7 +28,7 @@ function Navbar() {
                             alt="Media Icon"
                             width={35}
                             height={40}
-                            style={{ height: "40px", width: "35px" }} // ✅ เพิ่มทั้ง 2 ฝั่ง
+                            style={{ height: "40px", width: "35px" }}
                             priority
                         />
                     </Link>
@@ -38,7 +38,7 @@ function Navbar() {
                             alt="icon"
                             width={80}
                             height={40}
-                            style={{ height: "40px", width: "80px" }} // ✅ เช่นเดียวกัน
+                            style={{ height: "40px", width: "80px" }}
                             priority
                         />
                     </Link>

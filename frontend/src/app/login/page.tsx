@@ -56,9 +56,9 @@ function LoginPage() {
             <Image
               src="/images/login.png"
               alt="login"
-              className="w-80"
-              width={24}
-              height={24}
+              width={300}
+              height={420}
+              className="rounded object-cover h-[420px] w-[300px]"
               priority
             />
           </div>

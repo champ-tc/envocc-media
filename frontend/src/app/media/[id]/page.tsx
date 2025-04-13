@@ -93,7 +93,7 @@ function MediaDetailPage() {
             alt={image.title}
             width={280}
             height={400}
-            className="rounded-t-lg object-cover w-full h-full"
+            className="rounded-t-lg object-cover h-[400px]"
             priority
           />
           <div className="mb-4">
@@ -101,10 +101,10 @@ function MediaDetailPage() {
               วันที่เพิ่ม:{' '}
               {image.addedDate
                 ? new Date(image.addedDate).toLocaleDateString('th-TH', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  })
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })
                 : 'วันที่ไม่ถูกต้อง'}
             </p>
             <h3 className="text-2xl font-bold mt-2 mb-2">{image.title}</h3>

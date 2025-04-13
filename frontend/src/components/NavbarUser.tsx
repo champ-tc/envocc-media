@@ -31,8 +31,22 @@ function Navbar() {
             <div className="flex justify-between items-center py-3 px-6 h-16 relative">
                 {/* โลโก้ */}
                 <div className="flex items-center space-x-6">
-                    <Image src="/images/logoddc.png" alt="โลโก้" width={40} height={40} />
-                    <Image src="/images/icon_media.png" alt="โลโก้ media" width={80} height={80} />
+                    <Image
+                        src="/images/logoddc.png"
+                        alt="Media Icon"
+                        width={35}
+                        height={40}
+                        style={{ height: "40px", width: "35px" }}
+                        priority
+                    />
+                    <Image
+                        src="/images/icon_media.png"
+                        alt="icon"
+                        width={80}
+                        height={40}
+                        style={{ height: "40px", width: "80px" }}
+                        priority
+                    />
                 </div>
 
                 {/* เมนู Desktop */}
@@ -59,7 +73,15 @@ function Navbar() {
                         onClick={() => setUserMenuOpen(!userMenuOpen)}
                         className="flex items-center bg-white/20 px-4 py-2 rounded-md text-sm font-medium hover:bg-white/30 transition"
                     >
-                        <Image src="/images/profile.png" alt="menu" width={24} height={24} className="rounded-full" />
+                        <Image
+                            src="/images/profile.png"
+                            alt="menu"
+                            className="rounded-full"
+                            width={24}
+                            height={24}
+                            style={{ height: "24px", width: "24px" }}
+                            priority
+                        />
                         <span className="ml-2">: {session?.user?.name || "Guest"}</span>
                     </button>
                     {userMenuOpen && (
@@ -91,7 +113,14 @@ function Navbar() {
                 {/* Hamburger สำหรับ Mobile */}
                 <div className="lg:hidden">
                     <button onClick={() => setIsOpen(!isOpen)} aria-label="Toggle Menu">
-                        <Image src="/images/hamburger.png" alt="เมนู" width={32} height={32} />
+                        <Image
+                            src="/images/hamburger.png"
+                            alt="เมนู"
+                            width={32}
+                            height={32}
+                            style={{ height: "32px", width: "32px" }}
+                            priority
+                        />
                     </button>
                 </div>
             </div>

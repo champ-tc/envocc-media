@@ -41,9 +41,14 @@ const Sidebar = () => {
 
             >
                 <div className="p-4 flex justify-center">
-                    <Image src="/images/icon_media.png" alt="icon" width={90} height={90} />
+                    <Image 
+                    src="/images/icon_media.png" 
+                    alt="icon" 
+                    width={100} 
+                    height={100} 
+                    className="w-20 h-10"
+                    priority/>
                 </div>
-
 
                 <ul className="mt-4 space-y-3">
                     {menuItems.map((item, index) => (

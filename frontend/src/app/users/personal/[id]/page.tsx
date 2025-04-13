@@ -238,7 +238,7 @@ function PersonalPage() {
             }
         }
 
-        if (!title || !firstName || !lastName || !tel || !email || !department || !position) {
+        if (!title || !firstName || !lastName || !tel || !email || !department) {
             showAlert("กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน", "error");
             return;
         }
@@ -332,7 +332,7 @@ function PersonalPage() {
                                                         htmlFor="password"
                                                         className="block text-sm font-medium text-gray-700 mb-1"
                                                     >
-                                                        Password
+                                                        รหัสผ่าน
                                                     </label>
                                                     <input
                                                         type={showPassword ? "text" : "password"} // แสดงหรือซ่อนรหัสผ่าน
@@ -354,7 +354,7 @@ function PersonalPage() {
                                                         htmlFor="confirm_password"
                                                         className="block text-sm font-medium text-gray-700 mb-1"
                                                     >
-                                                        Confirm Password
+                                                        ยืนยันรหัสผ่าน
                                                     </label>
                                                     <input
                                                         type={showPassword ? "text" : "password"} // แสดงหรือซ่อนรหัสผ่าน

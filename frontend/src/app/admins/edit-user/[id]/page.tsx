@@ -148,7 +148,6 @@ function EditUser() {
     role: "",
   });
 
-  const [loading] = useState(true);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [alertType, setAlertType] = useState<"success" | "error" | null>(null);
 
@@ -194,13 +193,13 @@ function EditUser() {
   }, [session, id, fetchUserData]); // ✅ warning หาย
 
 
-  if (isLoading || loading) {
+  if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <p>กำลังโหลด...</p>
-      </div>
+        <div className="flex justify-center items-center min-h-screen">
+            <p>กำลังโหลด...</p>
+        </div>
     );
-  }
+}
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

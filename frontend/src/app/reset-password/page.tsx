@@ -1,9 +1,11 @@
+'use client';
+
 import { Suspense } from 'react';
 import ResetPasswordForm from './ResetPasswordForm';
 
 export default function Page() {
     return (
-        <Suspense fallback={<p className="text-center mt-10">กำลังโหลด...</p>}>
+        <Suspense fallback={<div>Loading...</div>}>
             <ResetPasswordForm />
         </Suspense>
     );

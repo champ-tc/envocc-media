@@ -125,8 +125,8 @@ function RequisitionDetail() {
                                     src={requisition.requisition_images}
                                     alt={requisition.requisition_name}
                                     className="w-full h-full object-cover"
-                                    width={40}
-                                    height={40}
+                                    width={200}
+                                    height={200}
                                     priority
                                 />
                             </div>

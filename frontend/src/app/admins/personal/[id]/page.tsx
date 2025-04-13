@@ -276,7 +276,7 @@ function PersonalPage() {
                                                     htmlFor="password"
                                                     className="block text-sm font-medium text-gray-700 mb-1"
                                                 >
-                                                    Password
+                                                    รหัสผ่าน
                                                 </label>
                                                 <input
                                                     type={showPassword ? "text" : "password"} // แสดงหรือซ่อนรหัสผ่าน
@@ -298,7 +298,7 @@ function PersonalPage() {
                                                     htmlFor="confirm_password"
                                                     className="block text-sm font-medium text-gray-700 mb-1"
                                                 >
-                                                    Confirm Password
+                                                    ยืนยันรหัสผ่าน
                                                 </label>
                                                 <input
                                                     type={showPassword ? "text" : "password"} // แสดงหรือซ่อนรหัสผ่าน

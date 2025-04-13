@@ -147,8 +147,8 @@ function AdminsBorrowDetail({ params }: PageProps) {
                                         src={`/borrows/${borrow.borrow_images}`}
                                         alt={borrow.borrow_name}
                                         className="w-full h-full object-cover"
-                                        width={40}
-                                        height={40}
+                                        width={200}
+                                        height={200}
                                         priority
                                     />
                                 ) : (

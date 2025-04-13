@@ -151,8 +151,8 @@ function AdminsRequisition() {
                                             src={`/requisitions/${item.requisition_images}`}
                                             alt={item.requisition_name}
                                             className="w-full h-60 object-cover rounded-lg mb-4"
-                                            width={40}
-                                            height={40}
+                                            width={140}
+                                            height={140}
                                             priority
                                         />
                                     ) : (

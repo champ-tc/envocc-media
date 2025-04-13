@@ -106,7 +106,7 @@ function AdminsDashboard() {
     datasets: [
       {
         data: data.userTypeStats.map((u: StatItem) => u.count),
-        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#8B5CF6', '#EC4899'],
+        backgroundColor: ['#9063d2', '#5ef5bf', '#FFCE56', '#4BC0C0', '#91a7ff', '#f06292'],
       },
     ],
   };
@@ -117,7 +117,7 @@ function AdminsDashboard() {
     datasets: [
       {
         data: data.usagePurposeStatsRequisition.map((r: StatItem) => r.count),
-        backgroundColor: ['#60A5FA', '#FBBF24', '#F87171', '#34D399'],
+        backgroundColor: ['#9063d2', '#5ef5bf', '#FFCE56', '#4BC0C0'],
       },
     ],
   };
@@ -128,7 +128,7 @@ function AdminsDashboard() {
     datasets: [
       {
         data: data.usagePurposeStatsBorrow.map((r: StatItem) => r.count),
-        backgroundColor: ['#A78BFA', '#FDBA74', '#FCA5A5', '#6EE7B7'],
+        backgroundColor: ['#9063d2', '#5ef5bf', '#FFCE56', '#4BC0C0'],
       },
     ],
   };
@@ -148,7 +148,7 @@ function AdminsDashboard() {
                 key={i}
                 className="bg-white hover:shadow-lg transition-shadow duration-300 rounded-2xl p-6 text-center shadow-md"
               >
-                <p className="text-3xl font-bold text-indigo-600">{card.value.toLocaleString()}</p>
+                <p className="text-3xl font-bold text-[#9063d2]">{card.value.toLocaleString()}</p>
                 <p className="text-sm text-gray-600 mt-1">{card.label}</p>
               </div>
             ))}

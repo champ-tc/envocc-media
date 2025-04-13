@@ -5,6 +5,7 @@ import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Image from "next/image";
+import { notFound } from 'next/navigation';
 
 function ResetPasswordForm() {
     const searchParams = useSearchParams();
@@ -43,12 +44,21 @@ function ResetPasswordForm() {
         if (res.ok) {
             setDone(true);
         } else {
-            setError(data.error || 'เกิดข้อผิดพลาด');
+            if (res.status === 400 || res.status === 403) {
+                // token ผิด หรือหมดอายุ
+                setError('ลิงก์หมดอายุหรือไม่ถูกต้อง กำลังนำคุณกลับไปหน้า "ลืมรหัสผ่าน"...');
+                setTimeout(() => {
+                    window.location.href = '/forgot-password';
+                }, 3000);
+            } else {
+                setError(data.error || 'เกิดข้อผิดพลาด');
+            }
         }
     };
 
+
     if (!token) {
-        return <p className="text-red-500 text-center mt-10">ไม่พบ token</p>;
+        notFound();
     }
 
     return (
@@ -80,6 +90,7 @@ function ResetPasswordForm() {
                                     className="w-5 h-5 absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer"
                                     width={24}
                                     height={24}
+                                    priority
                                 />
                             </div>
 
@@ -101,6 +112,7 @@ function ResetPasswordForm() {
                                     className="w-5 h-5 absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer"
                                     width={24}
                                     height={24}
+                                    priority
                                 />
                             </div>
 
