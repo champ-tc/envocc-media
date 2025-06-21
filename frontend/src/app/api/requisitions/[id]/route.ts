@@ -1,21 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getToken } from "next-auth/jwt";
+import { protectApiRoute } from '@/lib/protectApi';
 
-// ตรวจสอบสิทธิ์ของผู้ใช้
-async function checkAdminOrUserSession(request:  NextRequest): Promise<boolean> {
-    const token = await getToken({ req: request });
-    return !!(token && (token.role === "admin" || token.role === "user"));
-}
 
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+
+    const access = await protectApiRoute(req, ['admin', 'user']);
+    if (access !== true) return access;
+
     // Unwrap params ด้วย await
     const { id } = await context.params;
 
-    // ตรวจสอบสิทธิ์การเข้าถึง
-    if (!(await checkAdminOrUserSession(req))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
 
     try {
         const requisitionId = parseInt(id, 10); // แปลง id เป็นตัวเลข
@@ -34,7 +29,8 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
             return NextResponse.json({ message: "Requisition not found" }, { status: 404 });
         }
 
-        const remaining = requisition.quantity - (requisition.reserved_quantity || 0);
+        const remaining = requisition.quantity;
+
 
         return NextResponse.json({
             ...requisition,

@@ -1,19 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getToken } from "next-auth/jwt";
+import { protectApiRoute } from '@/lib/protectApi';
 
-// ฟังก์ชันตรวจสอบสิทธิ์
-async function checkAdminSession(request: NextRequest): Promise<boolean> {
-    const token = await getToken({ req: request });
-    return !!(token && token.role === "admin");
-}
+
 
 // เพิ่มข้อมูลใน RequisitionLog
 export async function POST(req: NextRequest) {
 
-    if (!(await checkAdminSession(req))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const access = await protectApiRoute(req, ['admin']);
+    if (access !== true) return access;
 
     try {
         const { userId, orders, deliveryMethod, address, usageReason } = await req.json();
@@ -62,9 +57,8 @@ export async function POST(req: NextRequest) {
 // ดึงข้อมูล requisition log ตาม ID
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
 
-    if (!(await checkAdminSession(req))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const access = await protectApiRoute(req, ['admin']);
+    if (access !== true) return access;
 
     const { id } = await context.params; // Unwrap params
     try {
@@ -98,9 +92,8 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
 // อัปเดต requisition log
 export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
 
-    if (!(await checkAdminSession(req))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const access = await protectApiRoute(req, ['admin']);
+    if (access !== true) return access;
 
 
     const { id } = await context.params; // Unwrap params
@@ -121,9 +114,8 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 // ลบ requisition log
 export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
 
-    if (!(await checkAdminSession(req))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const access = await protectApiRoute(req, ['admin']);
+    if (access !== true) return access;
 
     const { id } = await context.params; // Unwrap params
     try {

@@ -6,6 +6,8 @@
 .pnp.js
 .yarn/install-state.gz
 
+
+
 # testing
 /coverage
 
@@ -26,8 +28,16 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-.env*.local
 .env
+.env.*
+
+# prisma
+/prisma/migrations/**/migration.sql
+
+# system
+Thumbs.db
+.idea/
+.vscode/
 
 # vercel
 .vercel

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from '@/lib/prisma';
-import { getToken } from 'next-auth/jwt';
 import { z } from 'zod';
+import { protectApiRoute } from '@/lib/protectApi';
 
 // Schema สำหรับตรวจสอบข้อมูล
 const typeSchema = z.object({
@@ -9,18 +9,13 @@ const typeSchema = z.object({
     description: z.string().optional(),
 });
 
-// ฟังก์ชันตรวจสอบสิทธิ์
-async function checkAdminSession(request: NextRequest): Promise<boolean> {
-    const token = await getToken({ req: request });
-    return !!(token && token.role === "admin");
-}
-
 
 export async function GET(req: NextRequest) {
+
+    const access = await protectApiRoute(req, ['admin']);
+    if (access !== true) return access;
+
     try {
-        if (!(await checkAdminSession(req))) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-        }
 
         const { searchParams } = new URL(req.url);
         const page = parseInt(searchParams.get("page") || "1", 10);
@@ -44,13 +39,13 @@ export async function GET(req: NextRequest) {
     }
 }
 
-
 // เพิ่มข้อมูล
 export async function POST(request: NextRequest) {
+
+    const access = await protectApiRoute(request, ['admin']);
+    if (access !== true) return access;
+
     try {
-        if (!(await checkAdminSession(request))) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-        }
 
         // รับข้อมูลจาก formData
         const formData = await request.formData();

@@ -1,7 +1,7 @@
 "use client";
 
 import useAuthCheck from "@/hooks/useAuthCheck";
-import { useRouter, useParams } from "next/navigation"; // เพิ่ม useParams
+import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/NavbarUser";
 import React, { useState, useEffect } from "react";
 import AlertModal from "@/components/AlertModal";
@@ -17,12 +17,13 @@ interface Requisition {
     reserved_quantity: number;
     is_borro_restricted: boolean;
     description: string | null;
+    remaining: number;
 }
 
 function UsersRequisitionDetail() {
     const { session, isLoading } = useAuthCheck("user");
     const router = useRouter();
-    const { id } = useParams(); // ใช้ useParams ดึง id จาก URL
+    const { id } = useParams();
     const [requisition, setRequisition] = useState<Requisition | null>(null);
     const [quantity, setQuantity] = useState<number>(0);
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
@@ -101,7 +102,7 @@ function UsersRequisitionDetail() {
 
     if (!requisition) return <p>Loading...</p>;
 
-    const remaining = requisition.quantity - (requisition.reserved_quantity || 0);
+    const remaining = requisition.remaining;
 
     return (
         <>

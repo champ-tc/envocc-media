@@ -1,8 +1,9 @@
 import { getServerSession } from "next-auth";
-import { getToken } from "next-auth/jwt";
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { protectApiRoute } from '@/lib/protectApi';
+
 
 // Schema สำหรับตรวจสอบข้อมูล
 const profileUpdateSchema = z.object({
@@ -17,18 +18,12 @@ const profileUpdateSchema = z.object({
     password: z.string().optional(), // Password เป็น optional
 });
 
-async function checkAdminSession(request: NextRequest): Promise<boolean> {
-    const token = await getToken({ req: request });
-    return !!(token && token.role === "admin");
-}
 
 // ฟังก์ชัน GET สำหรับดึงข้อมูลผู้ใช้
 export async function GET(req: NextRequest) {
 
-    if (!(await checkAdminSession(req))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
-
+    const access = await protectApiRoute(req, ['admin']);
+    if (access !== true) return access;
 
     const session = await getServerSession();
 
@@ -59,7 +54,11 @@ export async function GET(req: NextRequest) {
 }
 
 // ฟังก์ชัน PUT สำหรับอัปเดตข้อมูลผู้ใช้
-export async function PUT(req: Request) {
+export async function PUT(req: NextRequest) {
+
+    const access = await protectApiRoute(req, ['admin']);
+    if (access !== true) return access;
+
     const session = await getServerSession();
 
     if (!session) {

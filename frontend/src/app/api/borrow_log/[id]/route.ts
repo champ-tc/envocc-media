@@ -1,18 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getToken } from "next-auth/jwt";
+import { protectApiRoute } from '@/lib/protectApi';
 
-// ฟังก์ชันตรวจสอบสิทธิ์แอดมิน
-async function checkAdminSession(request: NextRequest): Promise<boolean> {
-    const token = await getToken({ req: request });
-    return !!(token && token.role === "admin");
-}
 
 // POST: สร้าง BorrowLog (ไม่ใช้ ID จาก params)
 export async function POST(req: NextRequest) {
-    if (!(await checkAdminSession(req))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const access = await protectApiRoute(req, ['admin']);
+    if (access !== true) return access;
 
     try {
         const { userId, orders, deliveryMethod, address, returnDate, usageReason } = await req.json();
@@ -63,6 +57,10 @@ export async function POST(req: NextRequest) {
 
 // GET: ดึง BorrowLog ตาม ID
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+
+    const access = await protectApiRoute(req, ['admin']);
+    if (access !== true) return access;
+
     const { id } = await context.params;
 
     try {
@@ -87,6 +85,10 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
 
 // PUT: อัปเดต BorrowLog ตาม ID
 export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+
+    const access = await protectApiRoute(req, ['admin']);
+    if (access !== true) return access;
+
     const { id } = await context.params;
 
     try {
@@ -104,8 +106,12 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
     }
 }
 
-// DELETE: ลบ BorrowLog ตาม ID
+
 export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+
+    const access = await protectApiRoute(req, ['admin']);
+    if (access !== true) return access;
+
     const { id } = await context.params;
 
     try {

@@ -35,17 +35,17 @@ function LoginPage() {
     }
   };
 
-
   useEffect(() => {
-    if (status === "authenticated") {
-      const userRole = session?.user?.role;
+    if (status === "authenticated" && session?.user?.role) {
+      const userRole = session.user.role;
       if (userRole === "admin") {
         router.push("/admins/dashboard");
       } else {
-        router.push("/users/requisition");
+        router.push("/users/main");
       }
     }
-  }, [status, session, router]);
+  }, [status, session?.user?.role]); // เพิ่ม dependency ให้ useEffect รอ role
+
 
   return (
     <>
@@ -60,6 +60,7 @@ function LoginPage() {
               height={420}
               className="rounded object-cover h-[420px] w-[300px]"
               priority
+              loading="eager"
             />
           </div>
 
@@ -116,14 +117,15 @@ function LoginPage() {
                   width={24}
                   height={24}
                   priority
+                  loading="eager"
                 />
               </div>
 
               <div className="flex justify-between text-[#9063d2] text-sm mt-2 mb-6 font-bold">
-                <Link href="forgot-password">
+                <Link href="forgot-password" prefetch={false}>
                   ลืมรหัสผ่าน
                 </Link>
-                <Link href="/">
+                <Link href="/" prefetch={false}>
                   หน้าแรก
                 </Link>
               </div>

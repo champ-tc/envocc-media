@@ -274,6 +274,12 @@ function UsersSummary() {
     const handleSubmitRequisition = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        if (!session?.user?.id) {
+            showAlert("ไม่พบผู้ใช้", "error");
+            return;
+        }
+
+
         if (!orders || orders.length === 0) {
             showAlert("ไม่มีรายการเบิก", "error");
             return;
@@ -284,23 +290,19 @@ function UsersSummary() {
             return;
         }
 
+        // ตรวจสอบเมื่อเลือก "อื่นๆ" แล้วไม่ได้กรอกรายละเอียด
         if (usageReasonId === 0 && !customUsageReason.trim()) {
             setCustomUsageReasonError("กรุณาระบุรายละเอียดเพิ่มเติม");
             showAlert("กรุณาระบุรายละเอียดเพิ่มเติม", "error");
             return;
         } else {
-            setCustomUsageReasonError(null); // reset error
+            setCustomUsageReasonError(null); // ล้าง error ถ้ามีการกรอกแล้ว
         }
-
-
 
         if (deliveryMethod === "delivery" && !address.trim()) {
             showAlert("กรุณากรอกที่อยู่สำหรับการจัดส่ง", "error");
             return;
         }
-
-
-
 
         try {
             const formattedOrders = orders
@@ -308,7 +310,7 @@ function UsersSummary() {
                 .reduce((acc, order) => {
                     const existingOrder = acc.find(o => o.requisitionId === order.requisition!.id);
                     if (existingOrder) {
-                        existingOrder.quantity += order.quantity; // รวมจำนวน
+                        existingOrder.quantity += order.quantity;
                     } else {
                         acc.push({
                             requisitionId: order.requisition!.id,
@@ -329,15 +331,17 @@ function UsersSummary() {
                 orders: formattedOrders,
                 deliveryMethod,
                 address: deliveryMethod === "delivery" ? address : null,
-                usageReasonId,
-                customUsageReason: usageReasonId === 0 ? customUsageReason : null,
+                usageReasonId, // ส่ง usageReasonId (รวม 0 สำหรับ "อื่นๆ")
+                customUsageReason: usageReasonId === 0 ? customUsageReason : null, // ส่ง customUsageReason เมื่อเลือก "อื่นๆ"
             });
-
 
             showAlert("บันทึกการเบิกสำเร็จ!", "success");
             setOrders([]);
             setAddress("");
             setSelectedAction(null);
+            setUsageReasonId(null); // รีเซ็ตเหตุผลการใช้งาน
+            setCustomUsageReason(""); // รีเซ็ตข้อความเหตุผลอื่นๆ
+            
             await fetchOrders();
         } catch {
             showAlert("เกิดข้อผิดพลาดในการเบิกของ", "error");
@@ -397,6 +401,8 @@ function UsersSummary() {
             setOrders([]);
             setAddress("");
             setSelectedAction(null);
+            setUsageReasonId(null);
+            setCustomUsageReason("");
             await fetchOrders();
         } catch {
             showAlert("เกิดข้อผิดพลาดในการยืมของ", "error");
@@ -420,29 +426,33 @@ function UsersSummary() {
                 <div className="relative flex flex-col items-center">
                     <div className="flex-1 flex items-start justify-center p-2">
                         <div
-                            className="bg-white rounded-lg shadow-lg w-[800px] p-8 mt-4"
+                            className="bg-white rounded-lg shadow-lg w-full md:w-[800px] p-8 mt-4"
                         >
                             <h1 className="text-2xl font-bold mb-4">รายการ</h1>
 
-                            <div className="mb-4 flex space-x-4">
-                                <button
-                                    onClick={() => setSelectedAction("requisition")}
-                                    className={`py-2 px-4 rounded-md text-white ${selectedAction === "requisition"
-                                        ? "bg-[#9063d2]"
-                                        : "bg-gray-300 hover:bg-gray-400"
-                                        }`}
-                                >
-                                    เบิกสื่อ
-                                </button>
-                                <button
-                                    onClick={() => setSelectedAction("borrow")}
-                                    className={`py-2 px-4 rounded-md text-white ${selectedAction === "borrow"
-                                        ? "bg-[#9063d2]"
-                                        : "bg-gray-300 hover:bg-gray-400"
-                                        }`}
-                                >
-                                    ยืมสื่อ
-                                </button>
+                            <div className="mb-4 flex flex-wrap gap-4 ">
+                                <div className="mb-4 flex flex-wrap gap-4">
+                                    <button
+                                        onClick={() => setSelectedAction("requisition")}
+                                        className={`py-2 px-4 rounded-md text-white transition-colors duration-200
+                                        ${selectedAction === "requisition"
+                                                ? "bg-[#8753d5]"
+                                                : "bg-[#9063d2] hover:bg-[#8753d5]"
+                                            }`}
+                                    >
+                                        เบิกสื่อ
+                                    </button>
+                                    <button
+                                        onClick={() => setSelectedAction("borrow")}
+                                        className={`py-2 px-4 rounded-md text-white transition-colors duration-200
+                                        ${selectedAction === "borrow"
+                                                ? "bg-[#8753d5]"
+                                                : "bg-[#9063d2] hover:bg-[#8753d5]"
+                                            }`}
+                                    >
+                                        ยืมสื่อ
+                                    </button>
+                                </div>
                             </div>
 
                             {selectedAction ? (
@@ -541,11 +551,10 @@ function UsersSummary() {
                                             {reasons.map((reason) => (
                                                 <option key={reason.id} value={reason.id}>{reason.reason_name}</option>
                                             ))}
-                                            <option value={0}>อื่นๆ</option> {/* 👈 เปลี่ยนจาก "อื่นๆ" เป็น value 0 */}
                                         </select>
 
 
-                                        {usageReasonId === 0 && (
+                                        {usageReasonId === 99 && (
                                             <>
                                                 <input
                                                     type="text"

@@ -10,13 +10,20 @@ export const sendEmail = async ({
     subject: string;
     html: string;
     text?: string; // 👈 และตรงนี้ กำหนดให้เป็น optional ก็ได้
-}) => {
+}) => { 
     const transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false, // ใช้ STARTTLS
         auth: {
             user: process.env.SMTP_EMAIL,
             pass: process.env.SMTP_PASSWORD,
         },
+        tls: {
+            rejectUnauthorized: false, // กรณีโดน SSL error
+        },
+
+        
     });
 
     try {

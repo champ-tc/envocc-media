@@ -30,7 +30,7 @@ function TopBar() {
     return (
         <div className="w-full bg-gray-50 text-dark py-4 px-8 shadow-md flex justify-end items-center">
             <div className="flex items-center space-x-4 relative">
-                <Link href="/admins/requisition_summary">
+                <Link href="/admins/requisition_summary" prefetch={false}>
                     <button className="py-1 px-1 rounded-md hover:bg-gray-200 font-semibold">
                         <Image
                             src="/images/basket.png"
@@ -68,7 +68,7 @@ function TopBar() {
                     {dropdownOpen && (
                         <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-md shadow-lg w-48">
                             <div>
-                                <Link href={`/admins/personal/${user?.id}`}>
+                                <Link href={`/admins/personal/${user?.id}`} prefetch={false}>
                                     <button className="w-full text-left px-4 py-2 hover:bg-slate-200">
                                         ข้อมูลส่วนตัว
                                     </button>

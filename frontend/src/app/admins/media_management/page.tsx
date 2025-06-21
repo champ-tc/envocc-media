@@ -32,7 +32,7 @@ interface Type {
 function AdminsMedia_management() {
     const { isLoading } = useAuthCheck("admin");
     const [currentQuantity, setCurrentQuantity] = useState<number | null>(null);
-
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [requisitionImage, setRequisitionImage] = useState<File | null>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -133,14 +133,11 @@ function AdminsMedia_management() {
         setAlertMessage(message);
         setAlertType(type);
 
-        // ใช้ setTimeout เพื่อปิดการแจ้งเตือนอัตโนมัติ
         setTimeout(() => {
-            setAlertMessage(null); // ลบข้อความแจ้งเตือน
-            setAlertType(null);    // ลบประเภทแจ้งเตือน
-        }, 3000); // ปิดอัตโนมัติใน 3 วินาที
+            setAlertMessage(null);
+            setAlertType(null);
+        }, 3000);
     };
-
-
 
     const handleImageClick = (filename: string) => {
         setSelectedImage(`/requisitions/${filename}`);
@@ -148,7 +145,7 @@ function AdminsMedia_management() {
 
     const handleQuantityChange = (value: number) => {
         setNewRequisition(prevState => {
-            const reservedQuantity = Math.round(value * 0.01); // คำนวณ 1% และปัดเศษให้เป็นจำนวนเต็ม
+            const reservedQuantity = Math.round(value * 0.01);
             return {
                 ...prevState,
                 quantity: value,
@@ -170,35 +167,37 @@ function AdminsMedia_management() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // ตรวจสอบข้อมูลจำเป็นและรูปภาพก่อนส่งข้อมูล
+        if (isSubmitting) return; // ป้องกันคลิกซ้ำ
+        setIsSubmitting(true);     // เริ่มกำลังส่ง
+
+        // ตรวจสอบข้อมูลจำเป็น
         if (!newRequisition.requisition_name || !newRequisition.unit || newRequisition.type_id === 0 || newRequisition.quantity === 0) {
             setAlertMessage("กรุณากรอกข้อมูลให้ครบถ้วน: ชื่อสื่อ, หน่วยนับ, ประเภท, และจำนวนคงเหลือ");
             setAlertType("error");
+            setIsSubmitting(false);
             return;
         }
 
-        // ตรวจสอบว่าได้เลือกรูปภาพหรือไม่
         if (!requisitionImage) {
             setAlertMessage("กรุณาเลือกไฟล์รูปภาพ");
             setAlertType("error");
+            setIsSubmitting(false);
             return;
         }
 
-        // ตรวจสอบขนาดไฟล์ (ไม่เกิน 10MB)
         const maxSize = 10 * 1024 * 1024;
         if (requisitionImage.size > maxSize) {
             setAlertMessage("ไฟล์มีขนาดเกิน 10MB");
             setAlertType("error");
+            setIsSubmitting(false);
             return;
         }
 
-        // คำนวณ 1% ของจำนวนคงเหลือ
         const reservedQuantity = Math.round(newRequisition.quantity * 0.01);
         const adjustedQuantity = newRequisition.quantity - reservedQuantity;
 
-        // สร้าง FormData เพื่อส่งไฟล์พร้อมข้อมูลอื่นๆ
         const formData = new FormData();
-        formData.append("file", requisitionImage); // เพิ่มไฟล์รูปภาพ
+        formData.append("file", requisitionImage);
         formData.append("requisition_name", newRequisition.requisition_name);
         formData.append("unit", newRequisition.unit);
         formData.append("type_id", newRequisition.type_id.toString());
@@ -213,11 +212,9 @@ function AdminsMedia_management() {
 
             if (response.status === 200) {
                 setRequisitions([...requisitions, response.data]);
-                setShowModal(false);
                 showAlert("เพิ่มข้อมูลสำเร็จ!", "success");
+                setShowModal(false);
 
-
-                // รีเซ็ตค่า newRequisition และ requisitionImage
                 setNewRequisition({
                     id: 0,
                     requisition_name: "",
@@ -231,17 +228,19 @@ function AdminsMedia_management() {
                     createdAt: new Date().toISOString(),
                 });
 
-                // รีเซ็ตไฟล์ใน input
-                setRequisitionImage(null); // รีเซ็ตค่าภาพที่เลือก
+                setRequisitionImage(null);
                 const fileInput = document.querySelector("input[type='file']");
                 if (fileInput) {
-                    (fileInput as HTMLInputElement).value = ""; // รีเซ็ตค่าไฟล์
+                    (fileInput as HTMLInputElement).value = "";
                 }
             }
         } catch {
             showAlert("เกิดข้อผิดพลาดในการเพิ่มข้อมูล", "error");
+        } finally {
+            setIsSubmitting(false); // ปลดล็อกการกด
         }
     };
+
 
     const handleEditRequest = (req: Requisition) => {
         setSelectedType(req); // เก็บข้อมูล requisition ที่ต้องการแก้ไข
@@ -466,7 +465,8 @@ function AdminsMedia_management() {
                                             <td className="p-2 py-2 border">
                                                 {req.requisition_images ? (
                                                     <Image
-                                                        src={`/requisitions/${req.requisition_images}`}
+                                                        // src={`/requisitions/${req.requisition_images}`}
+                                                        src={`/uploads/${req.requisition_images}`}
                                                         alt={req.requisition_name}
                                                         className="w-16 h-16 object-cover cursor-pointer"
                                                         onClick={() => req.requisition_images && handleImageClick(req.requisition_images)}
@@ -585,25 +585,28 @@ function AdminsMedia_management() {
                         </div>
 
                         {selectedImage && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                                <div className="bg-white p-4 rounded-lg w-full max-w-md flex flex-col items-center">
-                                    <Image
-                                        src={selectedImage}
-                                        alt="Selected"
-                                        className="w-96 h-auto mb-4"
-                                        width={40}
-                                        height={40}
-                                        priority
-                                    />
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto p-4 flex flex-col items-center">
+                                    <div className="w-full flex justify-center">
+                                        <Image
+                                            src={selectedImage}
+                                            alt="Selected"
+                                            width={1000}
+                                            height={600}
+                                            className="w-auto h-auto max-h-[75vh] object-contain"
+                                            priority
+                                        />
+                                    </div>
                                     <button
                                         onClick={() => setSelectedImage(null)}
-                                        className="bg-red-500 text-white py-2 px-4 rounded-lg"
+                                        className="mt-4 bg-red-500 text-white py-2 px-4 rounded-lg"
                                     >
                                         ปิด
                                     </button>
                                 </div>
                             </div>
                         )}
+
 
                         {showModal && (
                             <div className="modal fixed inset-0 flex items-center justify-center bg-gray-600 bg-opacity-50">
@@ -705,10 +708,13 @@ function AdminsMedia_management() {
                                         <div className="flex justify-end space-x-2">
                                             <button
                                                 type="submit"
-                                                className="mb-4 bg-[#9063d2] hover:bg-[#8753d5] text-white py-2 px-4 rounded-md transition"
+                                                disabled={isSubmitting}
+                                                className={`mb-4 ${isSubmitting ? "bg-gray-400 cursor-not-allowed" : "bg-[#9063d2] hover:bg-[#8753d5]"
+                                                    } text-white py-2 px-4 rounded-md transition`}
                                             >
-                                                บันทึก
+                                                {isSubmitting ? "กำลังบันทึก..." : "บันทึก"}
                                             </button>
+
                                             <button
                                                 type="button"
                                                 onClick={() => setShowModal(false)}

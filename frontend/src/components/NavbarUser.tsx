@@ -31,22 +31,24 @@ function Navbar() {
             <div className="flex justify-between items-center py-3 px-6 h-16 relative">
                 {/* โลโก้ */}
                 <div className="flex items-center space-x-6">
-                    <Image
-                        src="/images/logoddc.png"
-                        alt="Media Icon"
-                        width={35}
-                        height={40}
-                        style={{ height: "40px", width: "35px" }}
-                        priority
-                    />
-                    <Image
-                        src="/images/icon_media.png"
-                        alt="icon"
-                        width={80}
-                        height={40}
-                        style={{ height: "40px", width: "80px" }}
-                        priority
-                    />
+                    <Link href="/users/main" className="flex items-center space-x-6 cursor-pointer">
+                        <Image
+                            src="/images/logoddc.png"
+                            alt="Media Icon"
+                            width={35}
+                            height={40}
+                            style={{ height: "40px", width: "35px" }}
+                            priority
+                        />
+                        <Image
+                            src="/images/icon_media.png"
+                            alt="icon"
+                            width={80}
+                            height={40}
+                            style={{ height: "40px", width: "80px" }}
+                            priority
+                        />
+                    </Link>
                 </div>
 
                 {/* เมนู Desktop */}
@@ -78,8 +80,8 @@ function Navbar() {
                             alt="menu"
                             className="rounded-full"
                             width={24}
-                            height={24}
-                            style={{ height: "24px", width: "24px" }}
+                            height={30}
+                            style={{width: "24px",  height: "30px" }}
                             priority
                         />
                         <span className="ml-2">: {session?.user?.name || "Guest"}</span>

@@ -3,44 +3,38 @@ import { prisma } from '@/lib/prisma';
 import { v4 as uuidv4 } from 'uuid'; // Import uuidv4
 import fs from 'fs';
 import path from 'path';
-import { getToken } from "next-auth/jwt";
+import { protectApiRoute } from '@/lib/protectApi';
 
-async function checkAdminSession(request: NextRequest): Promise<boolean> {
-    const token = await getToken({ req: request });
-    return !!(token && token.role === "admin");
-}
+
+
 
 export async function POST(request: NextRequest) {
-
-    if (!(await checkAdminSession(request))) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
+    const access = await protectApiRoute(request, ['admin']);
+    if (access !== true) return access;
 
     try {
         const formData = await request.formData();
         const title = formData.get('title') as string;
-        const file = formData.get('file') as File;
+        const file = formData.get('file');
 
-        if (!file || !title) {
+        if (!file || typeof title !== 'string') {
             return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
         }
 
-        if (!(file instanceof File)) {
+        if (!(file instanceof Blob)) {
             return NextResponse.json({ error: 'Invalid file input' }, { status: 400 });
         }
 
-        // สร้างชื่อไฟล์แบบสุ่ม
         const filename = `${uuidv4()}.${file.type.split('/')[1]}`;
+        const filePath = path.join('/app/fileuploads', filename);
+        console.log('Saving file to:', filePath);
 
-        // เขียนไฟล์ไปยังเซิร์ฟเวอร์
-        const filePath = path.join(process.cwd(), 'public', 'uploads', filename);
         const fileBuffer = Buffer.from(await file.arrayBuffer());
         fs.writeFileSync(filePath, fileBuffer);
 
-        // บันทึกข้อมูลในฐานข้อมูล
         const newImage = await prisma.image.create({
             data: {
-                title: title.toString(),
+                title,
                 filename,
             },
         });
@@ -53,7 +47,6 @@ export async function POST(request: NextRequest) {
 }
 
 
-// API สำหรับ GET ข้อมูล
 export async function GET() {
     try {
         const images = await prisma.image.findMany({

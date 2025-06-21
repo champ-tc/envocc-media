@@ -23,7 +23,35 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // ตรวจสอบข้อมูลด้วย zod
+    // ถ้า checkOnly = true ให้ validate เฉพาะ username กับ email
+    if (body.checkOnly === true) {
+      const checkSchema = z.object({
+        username: z.string().min(3),
+        email: z.string().email(),
+        checkOnly: z.boolean().optional(),
+      });
+
+      const { username, email } = checkSchema.parse(body);
+
+
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          OR: [{ username }, { email }],
+        },
+      });
+
+      if (existingUser) {
+        const errorField = existingUser.email === email ? 'Email' : 'Username';
+        return NextResponse.json(
+          { error: `${errorField} นี้มีอยู่ในระบบแล้ว` },
+          { status: 400 }
+        );
+      }
+
+      return NextResponse.json({ message: "สามารถใช้ข้อมูลนี้ได้" }, { status: 200 });
+    }
+
+    // ถ้าไม่ใช่ checkOnly = true ให้ validate แบบเต็ม
     const {
       username,
       email,
@@ -34,34 +62,23 @@ export async function POST(req: NextRequest) {
       phoneNumber,
       department,
       position,
-      checkOnly,
     } = registerSchema.parse(body);
 
-    // ตรวจสอบว่ามี Email หรือ Username ซ้ำหรือไม่
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [{ username }, { email }],
       },
     });
 
-    if (checkOnly) {
-      if (existingUser) {
-        const errorField = existingUser.email === email ? 'Email' : 'Username';
-        return NextResponse.json(
-          { error: `${errorField} นี้มีอยู่ในระบบแล้ว` },
-          { status: 400 }
-        );
-      }
+    if (existingUser) {
       return NextResponse.json(
-        { message: "สามารถใช้ข้อมูลนี้ได้" },
-        { status: 200 }
+        { error: "มีผู้ใช้นี้อยู่ในระบบแล้ว" },
+        { status: 400 }
       );
     }
 
-    // สร้างรหัสผ่าน Hash
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // บันทึกผู้ใช้ใหม่ในระบบ
     await prisma.user.create({
       data: {
         username,
@@ -81,24 +98,20 @@ export async function POST(req: NextRequest) {
       { message: 'User created successfully' },
       { status: 201 }
     );
-
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
+      console.error("❌ Zod Validation Errors:", error.errors);
       return NextResponse.json(
         { error: "ข้อมูลที่ส่งมาไม่ถูกต้อง", details: error.errors },
         { status: 400 }
       );
     }
 
-    if (error instanceof Error) {
-      console.error("❌ User registration error:", error.message);
-    } else {
-      console.error("❌ Unknown error during registration:", error);
-    }
-
+    console.error("❌ Unknown error during registration:", error);
     return NextResponse.json(
       { error: "เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่ภายหลัง" },
       { status: 500 }
     );
   }
 }
+

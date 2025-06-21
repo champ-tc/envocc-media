@@ -269,8 +269,8 @@ function Adminsimage() {
                                                             alt={image.title}
                                                             className="w-16 h-16 object-cover cursor-pointer"
                                                             onClick={() => setSelectedImage(`/uploads/${image.filename}`)}
-                                                            width={40}
-                                                            height={40}
+                                                            width={300}
+                                                            height={400}
                                                             priority
                                                         />
                                                     </td>
@@ -446,8 +446,8 @@ function Adminsimage() {
                                                 src={selectedImage}
                                                 alt="Selected"
                                                 className="w-96 h-auto mb-4"
-                                                width={40}
-                                                height={40}
+                                                width={300}
+                                                height={400}
                                                 priority
                                             />
                                             <button

@@ -7,12 +7,31 @@ export const sendLineGroupMessage = async (
     requestDate: string,
     usagePurpose: string
 ) => {
+    const isBorrow = type === "ยืม";
+
     const message = {
         type: "flex",
-        altText: `แจ้งเตือนการ${type}`,
+        altText: `📦 แจ้งเตือนการ${type}พัสดุ`,
         contents: {
             type: "bubble",
             size: "mega",
+            header: {
+                type: "box",
+                layout: "vertical",
+                contents: [
+                    {
+                        type: "text",
+                        text: `📢 แจ้งเตือนการ${type}`,
+                        weight: "bold",
+                        size: "lg",
+                        color: "#FFFFFF"
+                    }
+                ],
+                backgroundColor: isBorrow ? "#3498db" : "#2ecc71", // ฟ้า = ยืม / เขียว = เบิก
+                paddingAll: "lg",
+                paddingTop: "md",
+                paddingBottom: "md"
+            },
             body: {
                 type: "box",
                 layout: "vertical",
@@ -24,7 +43,7 @@ export const sendLineGroupMessage = async (
                         text: type, // "เบิก" หรือ "ยืม"
                         weight: "bold",
                         size: "xl",
-                        color: "#00B900", // สีเขียว LINE
+                        color: isBorrow ? "#3498db" : "#2ecc71",
                         align: "center",
                     },
                     {
@@ -51,7 +70,7 @@ export const sendLineGroupMessage = async (
                             },
                             {
                                 type: "text",
-                                text: `นำไปใช้เพื่อ: ${usagePurpose}`,
+                                text: `ใช้เพื่อ: ${usagePurpose}`,
                                 wrap: true,
                                 size: "md",
                             },

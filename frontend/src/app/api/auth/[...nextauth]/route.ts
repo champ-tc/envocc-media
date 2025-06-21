@@ -39,8 +39,8 @@ const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'credentials',
       credentials: {
-        username: { label: "Username", type: "text" },
-        password: { label: "Password", type: "password" }
+        username: { label: 'Username', type: 'text' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials): Promise<User | null> {
         if (!credentials?.username || !credentials?.password) {
@@ -65,20 +65,31 @@ const authOptions: NextAuthOptions = {
             role: user.role,
           };
         } catch (error) {
-          console.error("Authorization Error:", error);
+          console.error('Authorization Error:', error);
           return null;
         }
       },
     }),
   ],
   session: {
-    strategy: "jwt",
-    maxAge: 60 * 60,
+    strategy: 'jwt',
+    maxAge: 60 * 60, // 1 ชั่วโมง
     updateAge: 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
-    signIn: "/login",
+    signIn: '/login',
+  },
+  cookies: {
+    sessionToken: {
+      name: 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'strict',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+      },
+    },
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -97,6 +108,19 @@ const authOptions: NextAuthOptions = {
       };
       session.token = token;
       return session;
+    },
+  },
+  logger: {
+    error(code, metadata) {
+      console.error(`[NextAuth ERROR] ${code}`, metadata);
+    },
+    warn(code) {
+      console.warn(`[NextAuth WARN] ${code}`);
+    },
+    debug(code, metadata) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.debug(`[NextAuth DEBUG] ${code}`, metadata);
+      }
     },
   },
 };

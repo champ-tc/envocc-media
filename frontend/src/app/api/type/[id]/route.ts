@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getToken } from "next-auth/jwt";
 import { z } from "zod"; // ใช้เพื่อทำ validation
+import { protectApiRoute } from '@/lib/protectApi';
 
 // Schema สำหรับตรวจสอบข้อมูล
 const typeSchema = z.object({
@@ -9,21 +9,16 @@ const typeSchema = z.object({
     description: z.string().optional(),
 });
 
-// ฟังก์ชันตรวจสอบสิทธิ์
-async function checkAdminSession(request: NextRequest): Promise<boolean> {
-    const token = await getToken({ req: request });
-    return !!(token && token.role === "admin");
-}
 
 // API สำหรับแก้ไขข้อมูล
 export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+
+    const access = await protectApiRoute(request, ['admin']);
+    if (access !== true) return access;
+
     const { id } = await context.params; // Unwrap params
 
     try {
-        // ตรวจสอบสิทธิ์
-        if (!(await checkAdminSession(request))) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-        }
 
         const typeId = parseInt(id, 10);
         if (isNaN(typeId)) {
@@ -76,13 +71,13 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
 
 // API สำหรับลบข้อมูล
 export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+
+    const access = await protectApiRoute(request, ['admin']);
+    if (access !== true) return access;
+    
     const { id } = await context.params; // Unwrap params
 
     try {
-        // ตรวจสอบสิทธิ์
-        if (!(await checkAdminSession(request))) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-        }
 
         const typeId = parseInt(id, 10);
         if (isNaN(typeId)) {

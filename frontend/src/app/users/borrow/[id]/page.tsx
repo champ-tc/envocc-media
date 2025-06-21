@@ -176,7 +176,7 @@ function UsersBorrowDetail() {
                                     </button>
                                     <button
                                         className="bg-[#f3e5f5] hover:bg-[#8753d5] text-white px-4 py-2 rounded-md"
-                                        onClick={() => router.push("/admins/borrow")}
+                                        onClick={() => router.push("/users/borrow")}
                                     >
                                         ย้อนกลับ
                                     </button>

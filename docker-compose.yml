@@ -8,33 +8,54 @@ services:
     depends_on:
       - db
     env_file:
-      - ./.env
-    restart: always
+      - ./frontend/.env
+    networks:
+      - internal_net
+    restart: unless-stopped
+    volumes:
+      - fileuploads-data:/app/fileuploads
+      - fileborrows-data:/app/fileborrows
+      - filerequisitions-data:/app/filerequisitions
 
   nginx:
     image: nginx:alpine
     container_name: nginx
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - fileuploads-data:/app/fileuploads
+      - fileborrows-data:/app/fileborrows
+      - filerequisitions-data:/app/filerequisitions
+
     depends_on:
       - frontend
-    restart: always
+    networks:
+      - internal_net
+    restart: unless-stopped
 
-  db:
+
+  db:  # ✅ ย้ายเข้ามาอยู่ใต้ services
     image: mysql:8.0
     container_name: mysql-db
-    restart: always
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - "3306:3306"
     volumes:
       - db-data:/var/lib/mysql
+    networks:
+      - internal_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 
   phpmyadmin:
     image: phpmyadmin:latest
@@ -43,7 +64,20 @@ services:
       PMA_HOST: db
     ports:
       - "8080:80"
-    restart: always
+    networks:
+      - internal_net
+    restart: unless-stopped
 
 volumes:
   db-data:
+  fileuploads-data:
+    name: fileuploads-data
+  fileborrows-data:
+    name: fileborrows-data
+  filerequisitions-data:
+    name: filerequisitions-data
+
+
+networks:
+  internal_net:
+    driver: bridge

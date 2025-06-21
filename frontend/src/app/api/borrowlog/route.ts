@@ -1,18 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 import { prisma } from "@/lib/prisma";
-import { getToken } from "next-auth/jwt";
 import { sendLineGroupMessage } from "@/lib/lineNotify";
+import { protectApiRoute } from '@/lib/protectApi';
 
-async function checkAdminOrUserSession(request: NextRequest): Promise<boolean> {
-    const token = await getToken({ req: request });
-    return !!(token && (token.role === "admin" || token.role === "user"));
-}
 
 export async function POST(request: NextRequest) {
-    if (!(await checkAdminOrUserSession(request))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const access = await protectApiRoute(request, ['admin', 'user']);
+    if (access !== true) return access;
 
     try {
         const {
@@ -102,4 +97,3 @@ export async function POST(request: NextRequest) {
         );
     }
 }
-

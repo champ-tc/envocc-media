@@ -1,19 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getToken } from "next-auth/jwt";
-
-async function checkUserSession(request: NextRequest): Promise<boolean> {
-    const token = await getToken({ req: request });
-    return !!(token && token.role === "user");
-}
+import { protectApiRoute } from '@/lib/protectApi';
 
 
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+
+    const access = await protectApiRoute(req, ['user']);
+    if (access !== true) return access;
+
     const { id } = await context.params; // Unwrap params
 
-    if (!(await checkUserSession(req))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
 
     try {
         const userId = id;

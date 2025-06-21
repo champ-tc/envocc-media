@@ -19,9 +19,9 @@ model requisition {
   description         String?
   createdAt           DateTime              @default(now())
   requisition_images  String
-  status              Int                   @default(1) // 1 = ใช้งาน, 0 = ไม่ใช้งาน
+  status              Int                   @default(1)
   order               order[]
-  type                Type                  @relation(fields: [type_id], references: [id], map: "Requisition_type_id_fkey") // เปลี่ยนชื่อจาก types เป็น type
+  type                Type                  @relation(fields: [type_id], references: [id], map: "Requisition_type_id_fkey")
   logs                RequisitionLog[]
   updates             requisition_updates[]
 
@@ -50,7 +50,7 @@ model Borrow {
   description         String?
   createdAt           DateTime         @default(now())
   borrow_images       String
-  status              Int              @default(1) // 1 = ใช้งาน, 0 = ไม่ใช้งาน
+  status              Int              @default(1)
   type                Type             @relation(fields: [type_id], references: [id])
   logs                BorrowLog[]
   updates             Borrow_updates[]
@@ -63,13 +63,13 @@ model Borrow {
 model Borrow_updates {
   id              Int      @id @default(autoincrement())
   borrowId        Int
-  updatedQuantity Int // ฟิลด์นี้สำคัญ
-  updateType      String // insert หรือ reduce
-  remarks         String? // หมายเหตุ
+  updatedQuantity Int
+  updateType      String
+  remarks         String?
   createdAt       DateTime @default(now())
+  borrow          Borrow   @relation(fields: [borrowId], references: [id])
 
-  borrow Borrow @relation(fields: [borrowId], references: [id])
-
+  @@index([borrowId], map: "borrow_updates_borrowId_fkey")
   @@map("borrow_updates")
 }
 
@@ -99,8 +99,8 @@ model order {
 model Reason {
   id              Int              @id @default(autoincrement())
   reason_name     String           @unique
-  requisitionLogs RequisitionLog[] @relation("RequisitionUsageReason")
   borrowLogs      BorrowLog[]      @relation("BorrowUsageReason")
+  requisitionLogs RequisitionLog[] @relation("RequisitionUsageReason")
 
   @@map("reason")
 }
@@ -119,16 +119,17 @@ model RequisitionLog {
   requested_groupid       String
   delivery_address        String?
   delivery_method         String
-  approvedByAdmin         user?       @relation("AdminRequisitionApproval", fields: [approved_by_admin_id], references: [id])
-  requisition             requisition @relation(fields: [requisition_id], references: [id])
-  user                    user        @relation(fields: [user_id], references: [id])
   usageReason             Int
   customUsageReason       String?
+  approvedByAdmin         user?       @relation("AdminRequisitionApproval", fields: [approved_by_admin_id], references: [id])
+  requisition             requisition @relation(fields: [requisition_id], references: [id])
   reason                  Reason      @relation("RequisitionUsageReason", fields: [usageReason], references: [id])
+  user                    user        @relation(fields: [user_id], references: [id])
 
   @@index([approved_by_admin_id], map: "requisition_log_approved_by_admin_id_fkey")
   @@index([requisition_id], map: "requisition_log_requisition_id_fkey")
   @@index([user_id], map: "requisition_log_user_id_fkey")
+  @@index([usageReason], map: "requisition_log_usageReason_fkey")
   @@map("requisition_log")
 }
 
@@ -148,22 +149,23 @@ model BorrowLog {
   approved_by_admin_id Int?
   createdAt            DateTime  @default(now())
   status               String    @default("pending")
-  approvedByAdmin      user?     @relation("AdminBorrowApproval", fields: [approved_by_admin_id], references: [id])
-  borrow               Borrow    @relation(fields: [borrow_id], references: [id])
-  user                 user      @relation(fields: [user_id], references: [id])
   usageReason          Int
   customUsageReason    String?
+  approvedByAdmin      user?     @relation("AdminBorrowApproval", fields: [approved_by_admin_id], references: [id])
+  borrow               Borrow    @relation(fields: [borrow_id], references: [id])
   reason               Reason    @relation("BorrowUsageReason", fields: [usageReason], references: [id])
+  user                 user      @relation(fields: [user_id], references: [id])
 
   @@index([approved_by_admin_id], map: "borrow_log_approved_by_admin_id_fkey")
   @@index([borrow_id], map: "borrow_log_borrow_id_fkey")
   @@index([user_id], map: "borrow_log_user_id_fkey")
+  @@index([usageReason], map: "borrow_log_usageReason_fkey")
   @@map("borrow_log")
 }
 
 model Type {
   id          Int           @id @default(autoincrement())
-  name        String        @unique // เพิ่ม @unique เพื่อให้ name เป็นฟิลด์ที่ไม่ซ้ำ
+  name        String        @unique
   description String?
   createdAt   DateTime      @default(now())
   borrows     Borrow[]
@@ -176,10 +178,12 @@ model PasswordResetToken {
   id        Int      @id @default(autoincrement())
   user_id   Int
   token     String   @unique
-  user      user     @relation(fields: [user_id], references: [id])
   createdAt DateTime @default(now())
+  user      user     @relation(fields: [user_id], references: [id])
 
   @@index([createdAt])
+  @@index([user_id], map: "passwordresettoken_user_id_fkey")
+  @@map("passwordresettoken")
 }
 
 model user {
@@ -197,7 +201,7 @@ model user {
   createdAt            DateTime             @default(now())
   approvedBorrows      BorrowLog[]          @relation("AdminBorrowApproval")
   borrowLogs           BorrowLog[]
+  PasswordResetToken   PasswordResetToken[]
   approvedRequisitions RequisitionLog[]     @relation("AdminRequisitionApproval")
   requisitions         RequisitionLog[]
-  PasswordResetToken   PasswordResetToken[]
 }

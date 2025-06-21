@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
-import { getToken } from "next-auth/jwt";
-import { type NextRequest } from "next/server";
+import { protectApiRoute } from '@/lib/protectApi';
+
 
 
 
@@ -13,16 +14,10 @@ interface Order {
 }
 
 
-async function checkAdminSession(request: NextRequest): Promise<boolean> {
-    const token = await getToken({ req: request });
-    return !!(token && token.role === "admin");
-}
-
 export async function POST(request: NextRequest) {
 
-    if (!(await checkAdminSession(request))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const access = await protectApiRoute(request, ['admin']);
+    if (access !== true) return access;
 
     try {
         const {
@@ -99,7 +94,11 @@ export async function POST(request: NextRequest) {
 
 
 // GET: ดึงข้อมูล BorrowLog
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
+
+    const access = await protectApiRoute(req, ['admin']);
+    if (access !== true) return access;
+    
     try {
         const { searchParams } = new URL(req.url);
         const status = searchParams.get("status");

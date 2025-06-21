@@ -1,23 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getToken } from "next-auth/jwt";
-
-// ฟังก์ชันตรวจสอบสิทธิ์
-async function checkAdminOrUserSession(request: NextRequest): Promise<boolean> {
-    const token = await getToken({ req: request });
-    return !!(token && (token.role === "admin" || token.role === "user"));
-}
+import { protectApiRoute } from '@/lib/protectApi';
 
 // GET: ดึงข้อมูล Borrow ตาม ID
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+
+    const access = await protectApiRoute(request, ['admin', 'user']);
+    if (access !== true) return access;
+
     try {
         // Unwrap params
         const { id } = await context.params;
 
-        // ตรวจสอบสิทธิ์
-        if (!(await checkAdminOrUserSession(request))) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-        }
 
         // ตรวจสอบว่า ID เป็นตัวเลข
         const parsedId = parseInt(id, 10);

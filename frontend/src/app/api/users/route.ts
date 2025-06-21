@@ -1,18 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getToken } from "next-auth/jwt";
+import { protectApiRoute } from '@/lib/protectApi';
 
-// ฟังก์ชันตรวจสอบสิทธิ์
-async function checkAdminSession(request: NextRequest): Promise<boolean> {
-    const token = await getToken({ req: request });
-    return !!(token && token.role === "admin");
-}
+
 
 // ดึงข้อมูลผู้ใช้ทั้งหมด (ต้องการสิทธิ์ admin)
 export async function GET(request: NextRequest) {
-    if (!(await checkAdminSession(request))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const access = await protectApiRoute(request, ['admin']);
+    if (access !== true) return access;
 
     try {
         const users = await prisma.user.findMany();

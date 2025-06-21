@@ -1,9 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { protectApiRoute } from '@/lib/protectApi';
+
+
 
 const prisma = new PrismaClient();
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+
+    const access = await protectApiRoute(request, ['admin']);
+    if (access !== true) return access;
+
     try {
         const borrowLogs = await prisma.borrowLog.findMany({
             include: {

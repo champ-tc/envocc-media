@@ -1,31 +1,12 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getToken } from "next-auth/jwt";
 import { z } from "zod";
-import type { JWT } from "next-auth/jwt";
-
+import { protectApiRoute } from '@/lib/protectApi';
 // ฟังก์ชันจัดการข้อผิดพลาด
 const handleError = (error: unknown, message = "An error occurred", status = 500) => {
     console.error(message, error);
     return NextResponse.json({ error: message }, { status });
 };
-
-// ฟังก์ชันตรวจสอบสิทธิ์ admin
-async function checkAdminSession(request: NextRequest): Promise<boolean> {
-    const token = await getToken({ req: request });
-    return !!(token && (token as JWT).role === 'admin');
-}
-
-// ฟังก์ชันตรวจสอบสิทธิ์ admin หรือ user
-async function checkAdminOrUserSession(request: NextRequest): Promise<boolean> {
-    try {
-        const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
-        return !!(token && ((token as JWT).role === "admin" || (token as JWT).role === "user"));
-    } catch (error) {
-        console.error("Error in checkAdminOrUserSession:", error);
-        return false;
-    }
-}
 
 // Schema สำหรับตรวจสอบข้อมูลในฟังก์ชัน PUT
 const userUpdateSchema = z.object({
@@ -42,9 +23,8 @@ const userUpdateSchema = z.object({
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     const { id } = await context.params;
 
-    if (!(await checkAdminOrUserSession(req))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const access = await protectApiRoute(req, ['admin', 'user']);
+    if (access !== true) return access;
 
     try {
         const user = await prisma.user.findUnique({ where: { id: Number(id) } });
@@ -57,11 +37,11 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
 }
 
 export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
-    const { id } = await context.params;
 
-    if (!(await checkAdminOrUserSession(req))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const access = await protectApiRoute(req, ['admin', 'user']);
+    if (access !== true) return access;
+
+    const { id } = await context.params;
 
     if (isNaN(Number(id))) {
         return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
@@ -104,11 +84,11 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 }
 
 export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
-    const { id } = await context.params;
 
-    if (!(await checkAdminSession(req))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const access = await protectApiRoute(req, ['admin']);
+    if (access !== true) return access;
+
+    const { id } = await context.params;
 
     try {
         const numericId = Number(id);

@@ -69,7 +69,5 @@ export async function POST(req: Request) {
         html: htmlContent,
     });
 
-
-
     return NextResponse.json({ success: true, message: 'ส่งอีเมลเรียบร้อยแล้ว' });
 }

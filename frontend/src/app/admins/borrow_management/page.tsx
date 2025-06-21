@@ -36,6 +36,7 @@ function AdminsBorrow_management() {
     const [showModal, setShowModal] = useState(false);
     const [editModal, setEditModal] = useState(false);
     const [borrowImage, setBorrowImage] = useState<File | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
@@ -122,10 +123,6 @@ function AdminsBorrow_management() {
     }, []);
 
 
-
-
-
-
     if (isLoading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
@@ -136,9 +133,8 @@ function AdminsBorrow_management() {
 
     const handleImageClick = (imageUrl: string | undefined) => {
         if (imageUrl) {
-            setSelectedImage(imageUrl); // ตั้งค่าให้เปิด modal และแสดงรูป
+            setSelectedImage(imageUrl);
         } else {
-            // จัดการกรณีที่ไม่มีรูปภาพ
             console.log('No image to display');
         }
     };
@@ -152,7 +148,6 @@ function AdminsBorrow_management() {
 
 
     const resetForm = () => {
-        // รีเซ็ตค่า `newBorrow` และ `borrowImage` เป็นค่าเริ่มต้น
         setNewBorrow({
             id: 0,
             borrow_name: '',
@@ -169,11 +164,15 @@ function AdminsBorrow_management() {
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        if (isSubmitting) return; // ✅ ป้องกันการกดซ้ำ
+        setIsSubmitting(true);    // ✅ ล็อกปุ่มขณะกำลังส่ง
+
         // ตรวจสอบฟิลด์ที่จำเป็นต้องกรอก
         if (!newBorrow.borrow_name || !newBorrow.unit || newBorrow.type_id === 0 || newBorrow.quantity === 0) {
             setAlertMessage("กรุณากรอกข้อมูลให้ครบถ้วน");
             setAlertType("error");
             setTimeout(() => setAlertMessage(null), 3000);
+            setIsSubmitting(false); // ✅ ปลดล็อก
             return;
         }
 
@@ -181,6 +180,7 @@ function AdminsBorrow_management() {
             setAlertMessage("กรุณาเลือกไฟล์รูปภาพ");
             setAlertType("error");
             setTimeout(() => setAlertMessage(null), 3000);
+            setIsSubmitting(false); // ✅ ปลดล็อก
             return;
         }
 
@@ -189,6 +189,7 @@ function AdminsBorrow_management() {
             setAlertMessage("ไฟล์มีขนาดเกิน 10MB");
             setAlertType("error");
             setTimeout(() => setAlertMessage(null), 3000);
+            setIsSubmitting(false); // ✅ ปลดล็อก
             return;
         }
 
@@ -208,7 +209,7 @@ function AdminsBorrow_management() {
 
             if (response.status === 200) {
                 await fetchBorrows(); // รีโหลดข้อมูล
-                setShowModal(false); // ปิด Modal
+                setShowModal(false);  // ปิด Modal
                 setAlertMessage("เพิ่มข้อมูลสำเร็จ!");
                 setAlertType("success");
             }
@@ -216,17 +217,14 @@ function AdminsBorrow_management() {
             setAlertMessage("เกิดข้อผิดพลาดในการเพิ่มข้อมูล");
             setAlertType("error");
         } finally {
-            resetForm(); // รีเซ็ตค่า
+            resetForm();           // รีเซ็ตฟอร์ม
+            setIsSubmitting(false); // ✅ ปลดล็อกปุ่ม
             setTimeout(() => {
                 setAlertMessage(null);
                 setAlertType(null);
             }, 3000);
         }
     };
-
-
-
-
 
 
     const openEditModal = (borrow: Borrow) => {
@@ -404,10 +402,12 @@ function AdminsBorrow_management() {
                                             <td className="px-4 py-2 border">
                                                 {borrow.borrow_images ? (
                                                     <Image
-                                                        src={`/borrows/${borrow.borrow_images}`}
+                                                        // src={`/borrows/${borrow.borrow_images}`}
+                                                        src={`/uploads/${borrow.borrow_images}`}
                                                         alt="Borrow"
                                                         className="w-12 h-12 object-cover cursor-pointer"
-                                                        onClick={() => handleImageClick(`/borrows/${borrow.borrow_images}`)}
+                                                        // onClick={() => handleImageClick(`/borrows/${borrow.borrow_images}`)}
+                                                        onClick={() => handleImageClick(`${borrow.borrow_images}`)}
                                                         width={40}
                                                         height={40}
                                                         priority
@@ -518,25 +518,28 @@ function AdminsBorrow_management() {
                         </div>
 
                         {selectedImage && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                                <div className="bg-white p-4 rounded-lg w-full max-w-md flex flex-col items-center">
-                                    <Image
-                                        src={selectedImage}
-                                        alt="Selected"
-                                        className="w-96 h-auto mb-4"
-                                        width={40}
-                                        height={40}
-                                        priority
-                                    />
-                                    <button
-                                        onClick={() => setSelectedImage(null)}
-                                        className="bg-red-500 text-white py-2 px-4 rounded-lg"
-                                    >
-                                        ปิด
-                                    </button>
-                                </div>
-                            </div>
-                        )}
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto p-4 flex flex-col items-center">
+      <div className="w-full flex justify-center">
+        <Image
+          src={selectedImage}
+          alt="Selected"
+          width={800}
+          height={600}
+          className="w-auto h-auto max-h-[75vh] object-contain mb-4"
+          priority
+        />
+      </div>
+      <button
+        onClick={() => setSelectedImage(null)}
+        className="mt-2 bg-red-500 text-white py-2 px-4 rounded-lg"
+      >
+        ปิด
+      </button>
+    </div>
+  </div>
+)}
+
 
                         {showModal && (
                             <div className="modal fixed inset-0 flex items-center justify-center bg-gray-600 bg-opacity-50">
@@ -615,10 +618,13 @@ function AdminsBorrow_management() {
                                         <div className="flex justify-end space-x-2">
                                             <button
                                                 type="submit"
-                                                className="mb-4 bg-[#9063d2] hover:bg-[#8753d5] text-white py-2 px-4 rounded-md transition"
+                                                disabled={isSubmitting}
+                                                className={`mb-4 ${isSubmitting ? "bg-gray-400 cursor-not-allowed" : "bg-[#9063d2] hover:bg-[#8753d5]"
+                                                    } text-white py-2 px-4 rounded-md transition`}
                                             >
-                                                บันทึก
+                                                {isSubmitting ? "กำลังบันทึก..." : "บันทึก"}
                                             </button>
+
                                             <button
                                                 type="button"
                                                 onClick={() => setShowModal(false)}

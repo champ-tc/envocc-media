@@ -2,8 +2,16 @@
 import { prisma } from '@/lib/prisma';
 import { hash } from 'bcryptjs';
 import { NextResponse } from 'next/server';
+import { isRateLimited } from '@/lib/rateLimit';
+
 
 export async function POST(req: Request) {
+
+    const ip = req.headers.get("x-forwarded-for") || "unknown-ip";
+    if (isRateLimited(ip, 30, 60_000)) {
+        return new Response(JSON.stringify({ error: "Too many requests" }), { status: 429 });
+    }
+
     const { token, newPassword } = await req.json();
 
     const resetRecord = await prisma.passwordResetToken.findUnique({

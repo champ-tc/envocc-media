@@ -1,28 +1,23 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getToken } from "next-auth/jwt";
-import { type NextRequest } from "next/server";
 import fs from "fs";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
+import { protectApiRoute } from '@/lib/protectApi';
 
-
-// ฟังก์ชันตรวจสอบสิทธิ์
-async function checkAdminSession(request: NextRequest): Promise<boolean> {
-    const token = await getToken({ req: request });
-    return !!(token && token.role === "admin");
-}
 
 
 
 // GET: ดึงข้อมูล Borrow ตาม ID
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
-    const { id } = await context.params; // Unwrap params
+
+    const access = await protectApiRoute(req, ['admin']);
+    if (access !== true) return access;
+
+
+    const { id } = await context.params;
 
     try {
-        if (!(await checkAdminSession(req))) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-        }
 
         const numericId = parseInt(id, 10);
         if (isNaN(numericId)) {
@@ -47,12 +42,11 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
 
 // PUT: อัปเดตข้อมูล Borrow
 export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
-    const { id } = await context.params; // Unwrap params
+    const access = await protectApiRoute(req, ['admin']);
+    if (access !== true) return access;
 
+    const { id } = await context.params;
     try {
-        if (!(await checkAdminSession(req))) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-        }
 
         const numericId = parseInt(id, 10);
         if (isNaN(numericId)) {
@@ -68,11 +62,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         const description = formData.get("description")?.toString() || "";
         const file = formData.get("file") as File | null;
 
-        // ดึงข้อมูลเดิมจากฐานข้อมูล
-        const existingBorrow = await prisma.borrow.findUnique({
-            where: { id: numericId },
-        });
-
+        const existingBorrow = await prisma.borrow.findUnique({ where: { id: numericId } });
         if (!existingBorrow) {
             return NextResponse.json({ error: "Borrow not found" }, { status: 404 });
         }
@@ -80,25 +70,22 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         let imageUrl = existingBorrow.borrow_images;
         if (file) {
             const filename = `${uuidv4()}.${file.type.split("/")[1]}`;
-            const filePath = path.join(process.cwd(), "public", "borrows", filename);
+            const filePath = path.join("/app/fileborrows", filename);
             const fileBuffer = Buffer.from(await file.arrayBuffer());
             fs.writeFileSync(filePath, fileBuffer);
 
             if (existingBorrow.borrow_images) {
-                const oldFilePath = path.join(process.cwd(), "public", "borrows", existingBorrow.borrow_images);
+                const oldFilePath = path.join("/app/fileborrows", existingBorrow.borrow_images);
                 if (fs.existsSync(oldFilePath)) {
                     fs.unlinkSync(oldFilePath);
                 }
             }
-
             imageUrl = filename;
         }
 
-        // คำนวณความแตกต่างของจำนวน
         const updatedQuantity = quantity - existingBorrow.quantity;
         const updateType = updatedQuantity > 0 ? "insert" : updatedQuantity < 0 ? "reduce" : "no change";
 
-        // อัปเดต borrow ในฐานข้อมูล
         const updatedBorrow = await prisma.borrow.update({
             where: { id: numericId },
             data: {
@@ -112,18 +99,16 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
             },
         });
 
-        // เพิ่มบันทึกการอัปเดตเฉพาะเมื่อมีการเปลี่ยนแปลงจำนวน
         if (updatedQuantity !== 0) {
             await prisma.borrow_updates.create({
                 data: {
                     borrowId: numericId,
-                    updatedQuantity: updatedQuantity,
-                    updateType: updateType,
+                    updatedQuantity,
+                    updateType,
                     remarks: "Updated via borrow edit form",
                 },
             });
         }
-
 
         return NextResponse.json(updatedBorrow);
     } catch (error) {
@@ -132,28 +117,35 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
     }
 }
 
-
 // DELETE: ลบข้อมูล Borrow
 export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
-    const { id } = await context.params; // Unwrap params
-
+    const access = await protectApiRoute(req, ['admin']);
+    if (access !== true) return access;
+    
+    const { id } = await context.params;
     try {
-        if (!(await checkAdminSession(req))) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-        }
 
         const numericId = parseInt(id, 10);
         if (isNaN(numericId)) {
             return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
         }
 
-        await prisma.borrow.delete({
-            where: { id: numericId },
-        });
+        const borrow = await prisma.borrow.findUnique({ where: { id: numericId } });
+        if (!borrow) {
+            return NextResponse.json({ error: "Borrow not found" }, { status: 404 });
+        }
 
-        return NextResponse.json({ message: "Borrow deleted successfully" });
+        if (borrow.borrow_images) {
+            const filePath = path.join("/app/fileborrows", borrow.borrow_images);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+        }
+
+        await prisma.borrow.delete({ where: { id: numericId } });
+        return NextResponse.json({ message: "Borrow and image deleted successfully" });
     } catch (error) {
-        console.error("Error deleting borrow:", error);
+        console.error("Error deleting borrow or image:", error);
         return NextResponse.json({ error: "Error deleting borrow data" }, { status: 500 });
     }
 }

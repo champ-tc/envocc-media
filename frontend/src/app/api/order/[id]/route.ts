@@ -1,17 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getToken } from "next-auth/jwt";
+import { protectApiRoute } from '@/lib/protectApi';
 
-async function checkAdminOrUserSession(request: NextRequest): Promise<boolean> {
-    const token = await getToken({ req: request });
-    return !!(token && (token.role === "admin" || token.role === "user"));
-}
 
 // สร้าง Order
 export async function POST(req: NextRequest) {
-    if (!(await checkAdminOrUserSession(req))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const access = await protectApiRoute(req, ['admin', 'user']);
+    if (access !== true) return access;
 
     try {
         const body = await req.json();
@@ -35,11 +30,11 @@ export async function POST(req: NextRequest) {
 
 // ลบ Order
 export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+    const access = await protectApiRoute(req, ['admin', 'user']);
+    if (access !== true) return access;
+
     const { id } = await context.params; // Unwrap params
 
-    if (!(await checkAdminOrUserSession(req))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
 
     try {
         const orderId = parseInt(id, 10);

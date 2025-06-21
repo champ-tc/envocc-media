@@ -1,17 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from '@/lib/prisma';
-import { getToken } from "next-auth/jwt";
-
-async function checkAdminOrUserSession(request: NextRequest): Promise<boolean> {
-    const token = await getToken({ req: request });
-    return !!(token && (token.role === "admin" || token.role === "user"));
-}
+import { protectApiRoute } from '@/lib/protectApi';
 
 // Handler สำหรับ GET requests
 export async function GET(request: NextRequest) {
-    if (!(await checkAdminOrUserSession(request))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const access = await protectApiRoute(request, ['admin', 'user']);
+    if (access !== true) return access;
 
     try {
         const { searchParams } = new URL(request.url);

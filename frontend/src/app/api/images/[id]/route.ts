@@ -2,23 +2,20 @@ import { prisma } from "@/lib/prisma";
 import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
 import path from "path";
-import { getToken } from "next-auth/jwt";
 import cookie from "cookie";
 import { NextRequest } from "next/server";
+import { protectApiRoute } from '@/lib/protectApi';
+import { isRateLimited } from '@/lib/rateLimit';
 
-// ฟังก์ชันตรวจสอบสิทธิ์
-async function checkAdminSession(request: NextRequest): Promise<boolean> {
-    const token = await getToken({ req: request });
-    return !!(token && token.role === "admin");
-}
+
 
 // DELETE: ลบข้อมูลภาพ
 export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
-    const { id } = await context.params; // Unwrap params
 
-    if (!(await checkAdminSession(request))) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403 });
-    }
+    const access = await protectApiRoute(request, ['admin']);
+    if (access !== true) return access;
+
+    const { id } = await context.params; // Unwrap params
 
     const imageId = parseInt(id, 10);
     if (isNaN(imageId)) {
@@ -31,7 +28,9 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
             return new Response(JSON.stringify({ error: "Image not found" }), { status: 404 });
         }
 
-        const filePath = path.join(process.cwd(), "public", "uploads", image.filename);
+
+        const filePath = path.join("/app/fileuploads", image.filename);
+
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
         }
@@ -47,11 +46,12 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
 
 // PUT: แก้ไขข้อมูลภาพ
 export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+
+    const access = await protectApiRoute(request, ['admin']);
+    if (access !== true) return access;
+
     const { id } = await context.params; // Unwrap params
 
-    if (!(await checkAdminSession(request))) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403 });
-    }
 
     const imageId = parseInt(id, 10);
     if (isNaN(imageId)) {
@@ -71,13 +71,13 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
         let filename = existingImage.filename;
 
         if (newFile) {
-            const oldFilePath = path.join(process.cwd(), "public", "uploads", filename);
+            const oldFilePath = path.join("/app/fileuploads", filename);
             if (fs.existsSync(oldFilePath)) {
                 fs.unlinkSync(oldFilePath);
             }
 
             filename = `${uuidv4()}.${newFile.type.split("/")[1]}`;
-            const newFilePath = path.join(process.cwd(), "public", "uploads", filename);
+            const newFilePath = path.join("/app/fileuploads", filename);
             const fileBuffer = Buffer.from(await newFile.arrayBuffer());
             fs.writeFileSync(newFilePath, fileBuffer);
         }
@@ -103,6 +103,13 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
 
 // GET: ดึงข้อมูลภาพ
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+
+    const ip = request.headers.get("x-forwarded-for") || "unknown-ip";
+    if (isRateLimited(ip, 30, 60_000)) {
+        return new Response(JSON.stringify({ error: "Too many requests" }), { status: 429 });
+    }
+
+
     const { id } = await context.params; // Unwrap params
 
     if (!id) {
@@ -124,6 +131,12 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
 
 // POST: เพิ่ม viewCount
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+
+    const ip = request.headers.get("x-forwarded-for") || "unknown-ip";
+    if (isRateLimited(ip, 30, 60_000)) {
+        return new Response(JSON.stringify({ error: "Too many requests" }), { status: 429 });
+    }
+
     const { id } = await context.params; // Unwrap params
 
     if (!id) {

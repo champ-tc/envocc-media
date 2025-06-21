@@ -30,7 +30,7 @@ const Sidebar = () => {
         <>
             <div className="lg:hidden fixed top-4 left-4 z-50">
                 <button onClick={() => setIsOpen(!isOpen)} aria-label="Toggle Menu">
-                    <Image src="/images/hamburger.png" alt="menu" width={32} height={32} />
+                    <Image src="/images/hamburger.png" alt="menu" width={32} height={32} priority />
                 </button>
             </div>
 
@@ -63,32 +63,32 @@ const Sidebar = () => {
                                         }`}
                                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                 >
-                                    <Image src={item.src} alt="จัดการสื่อ" width={20} height={20} className="mr-4" />
+                                    <Image src={item.src} alt="จัดการสื่อ" width={20} height={20} className="mr-4" priority/>
                                     <span className="font-semibold">{item.label}</span>
                                 </li>
                                 {isDropdownOpen && (
                                     <ul className="ml-8 space-y-2">
                                         <li className={`p-2 rounded-lg transition-colors duration-300 flex items-center ${activePath === '/admins/type_management' ? 'bg-[#b8a0f5]' : 'hover:bg-[#b8a0f5]'
                                             }`}>
-                                            <Link href="/admins/type_management" className="flex items-center text-white w-full">
+                                            <Link href="/admins/type_management" className="flex items-center text-white w-full" prefetch={false}>
                                                 <span>จัดการประเภท</span>
                                             </Link>
                                         </li>
                                         <li className={`p-2 rounded-lg transition-colors duration-300 flex items-center ${activePath === '/admins/media_management' ? 'bg-[#b8a0f5]' : 'hover:bg-[#b8a0f5]'
                                             }`}>
-                                            <Link href="/admins/media_management" className="flex items-center text-white w-full">
-                                                <span>จัดการสื่อ</span>
+                                            <Link href="/admins/media_management" className="flex items-center text-white w-full" prefetch={false}>
+                                                <span>จัดการเบิกสื่อ</span>
                                             </Link>
                                         </li>
                                         <li className={`p-2 rounded-lg transition-colors duration-300 flex items-center ${activePath === '/admins/borrow_management' ? 'bg-[#b8a0f5]' : 'hover:bg-[#b8a0f5]'
                                             }`}>
-                                            <Link href="/admins/borrow_management" className="flex items-center text-white w-full">
+                                            <Link href="/admins/borrow_management" className="flex items-center text-white w-full" prefetch={false}>
                                                 <span>จัดการยืม/คืน</span>
                                             </Link>
                                         </li>
                                         <li className={`p-2 rounded-lg transition-colors duration-300 flex items-center ${activePath === '/admins/image' ? 'bg-[#b8a0f5]' : 'hover:bg-[#b8a0f5]'
                                             }`}>
-                                            <Link href="/admins/image" className="flex items-center text-white w-full">
+                                            <Link href="/admins/image" className="flex items-center text-white w-full" prefetch={false}>
                                                 <span>จัดการสื่อดาวน์โหลด</span>
                                             </Link>
                                         </li>
@@ -101,7 +101,7 @@ const Sidebar = () => {
                                 className={`p-2 rounded-lg transition-colors duration-300 flex items-center ${activePath === item.href ? 'bg-[#b8a0f5]' : 'hover:bg-[#b8a0f5]'
                                     }`}
                             >
-                                <Link href={item.href ?? '#'} className="flex items-center text-white w-full">
+                                <Link href={item.href ?? '#'} className="flex items-center text-white w-full" prefetch={false}>
                                     <Image
                                         src={item.src}
                                         alt="icon"
@@ -109,6 +109,7 @@ const Sidebar = () => {
                                         height={20}
                                         className="mr-4"
                                         style={{ filter: 'brightness(0) invert(1)' }}
+                                        priority
                                     />
                                     <span className="font-semibold">{item.label}</span>
                                 </Link>

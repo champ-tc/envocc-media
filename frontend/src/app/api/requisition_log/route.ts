@@ -1,20 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { v4 as uuidv4 } from 'uuid';
-import { getToken } from "next-auth/jwt";
 import { sendLineGroupMessage } from "@/lib/lineNotify";
-
-async function checkAdminOrUserSession(request: NextRequest): Promise<boolean> {
-    const token = await getToken({ req: request });
-    return !!(token && (token.role === 'admin' || token.role === 'user'));
-}
+import { protectApiRoute } from '@/lib/protectApi';
 
 
 // ใช้สำหรับ requisition_summary
 export async function POST(req: NextRequest) {
-    if (!(await checkAdminOrUserSession(req))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const access = await protectApiRoute(req, ['admin', 'user']);
+    if (access !== true) return access;
 
     try {
         const {
@@ -107,9 +101,8 @@ export async function POST(req: NextRequest) {
 
 // ดึงข้อมูล requisition log
 export async function GET(req: NextRequest) {
-    if (!(await checkAdminOrUserSession(req))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const access = await protectApiRoute(req, ['admin', 'user']);
+    if (access !== true) return access;
 
 
     try {
@@ -187,9 +180,8 @@ export async function GET(req: NextRequest) {
 // อัปเดตสถานะ requisition log
 export async function PUT(req: NextRequest) {
 
-    if (!(await checkAdminOrUserSession(req))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const access = await protectApiRoute(req, ['admin', 'user']);
+    if (access !== true) return access;
 
     try {
         const { id, status } = await req.json();
