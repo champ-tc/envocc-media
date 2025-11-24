@@ -26,7 +26,13 @@ export async function POST(request: NextRequest) {
         }
 
         const filename = `${uuidv4()}.${file.type.split('/')[1]}`;
-        const filePath = path.join('/app/fileuploads', filename);
+
+        // ไฟล์เข้า Docker
+        const filePath = path.join('/app/fileuploads', filename); 
+
+        // ใช้ใน local
+        // const filePath = path.join(process.cwd(), 'public', 'uploads', filename);
+
         console.log('Saving file to:', filePath);
 
         const fileBuffer = Buffer.from(await file.arrayBuffer());

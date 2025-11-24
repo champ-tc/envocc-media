@@ -41,14 +41,18 @@ const Sidebar = () => {
 
             >
                 <div className="p-4 flex justify-center">
-                    <Image 
-                    src="/images/icon_media.png" 
-                    alt="icon" 
-                    width={100} 
-                    height={100} 
-                    className="w-20 h-10"
-                    priority/>
+                    <Link href="/admins/dashboard" prefetch={false}>
+                        <Image
+                            src="/images/icon_media.png"
+                            alt="icon"
+                            width={100}
+                            height={100}
+                            className="w-20 h-10 cursor-pointer hover:scale-105 transition-transform duration-200"
+                            priority
+                        />
+                    </Link>
                 </div>
+
 
                 <ul className="mt-4 space-y-3">
                     {menuItems.map((item, index) => (
@@ -63,7 +67,7 @@ const Sidebar = () => {
                                         }`}
                                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                 >
-                                    <Image src={item.src} alt="จัดการสื่อ" width={20} height={20} className="mr-4" priority/>
+                                    <Image src={item.src} alt="จัดการสื่อ" width={20} height={20} className="mr-4" priority />
                                     <span className="font-semibold">{item.label}</span>
                                 </li>
                                 {isDropdownOpen && (

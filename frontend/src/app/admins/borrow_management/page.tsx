@@ -23,7 +23,6 @@ interface Borrow {
 }
 
 
-
 interface Type {
     id: number;
     name: string;
@@ -39,6 +38,9 @@ function AdminsBorrow_management() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+    const [selectedDeleteId, setSelectedDeleteId] = useState<number | null>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     const [newBorrow, setNewBorrow] = useState<Borrow>({
         id: 0,
@@ -87,7 +89,6 @@ function AdminsBorrow_management() {
     useEffect(() => {
         fetchBorrows();
     }, [currentPage, fetchBorrows]);
-
 
 
     const startIndex = (currentPage - 1) * itemsPerPage + 1;
@@ -139,12 +140,12 @@ function AdminsBorrow_management() {
         }
     };
 
+
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             setBorrowImage(e.target.files[0]); // เก็บไฟล์ที่เลือก
         }
     };
-
 
 
     const resetForm = () => {
@@ -364,6 +365,35 @@ function AdminsBorrow_management() {
         }
     };
 
+    const openPermanentDeleteConfirm = (id: number) => {
+        setSelectedDeleteId(id);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handlePermanentDelete = async () => {
+        if (!selectedDeleteId) return;
+
+        try {
+            const response = await axios.delete(`/api/borrow/${selectedDeleteId}`);
+            if (response.status === 200) {
+                setBorrows((prev) => prev.filter((b) => b.id !== selectedDeleteId));
+                setAlertMessage("ลบสื่อสำเร็จ!");
+                setAlertType("success");
+            }
+        } catch {
+            setAlertMessage("เกิดข้อผิดพลาดในการลบสื่อ");
+            setAlertType("error");
+        } finally {
+            setIsDeleteModalOpen(false);
+            setTimeout(() => {
+                setAlertMessage(null);
+                setAlertType(null);
+            }, 5000);
+        }
+    };
+
+
+
 
 
     if (status === "loading") return <p>Loading...</p>;
@@ -388,9 +418,9 @@ function AdminsBorrow_management() {
                                     <th className="border px-4 py-2" style={{ width: "10%" }}>หน่วยนับ</th>
                                     <th className="border px-4 py-2" style={{ width: "10%" }}>ประเภท</th>
                                     <th className="border px-4 py-2" style={{ width: "10%" }}>จำนวนคงเหลือ</th>
-                                    <th className="border px-4 py-2" style={{ width: "15%" }}>คำอธิบาย</th>
+                                    <th className="border px-4 py-2" style={{ width: "12%" }}>คำอธิบาย</th>
                                     <th className="border px-4 py-2" style={{ width: "10%" }}>สถานะเบิก</th>
-                                    <th className="border px-4 py-2" style={{ width: "15%" }}>จัดการ</th>
+                                    <th className="border px-4 py-2" style={{ width: "17%" }}>จัดการ</th>
                                 </tr>
                             </thead>
 
@@ -402,12 +432,12 @@ function AdminsBorrow_management() {
                                             <td className="px-4 py-2 border">
                                                 {borrow.borrow_images ? (
                                                     <Image
-                                                        // src={`/borrows/${borrow.borrow_images}`}
-                                                        src={`/uploads/${borrow.borrow_images}`}
+                                                        src={`/borrows/${borrow.borrow_images}`}
+                                                        // src={`/fileborrows-data/${borrow.borrow_images}`}
                                                         alt="Borrow"
                                                         className="w-12 h-12 object-cover cursor-pointer"
-                                                        // onClick={() => handleImageClick(`/borrows/${borrow.borrow_images}`)}
-                                                        onClick={() => handleImageClick(`${borrow.borrow_images}`)}
+                                                        // onClick={() => handleImageClick(`${borrow.borrow_images}`)}
+                                                        onClick={() => handleImageClick(`/borrows/${borrow.borrow_images}`)}
                                                         width={40}
                                                         height={40}
                                                         priority
@@ -472,6 +502,20 @@ function AdminsBorrow_management() {
                                                         />
                                                     </button>
                                                 )}
+                                                <button
+                                                    onClick={() => openPermanentDeleteConfirm(borrow.id)}
+                                                    className="py-2 px-2 mr-2 rounded-md transition"
+                                                    title="ลบถาวร"
+                                                >
+                                                    <Image
+                                                        src="/images/delete.png"
+                                                        alt="Delete Icon"
+                                                        className="h-6 w-6"
+                                                        width={40}
+                                                        height={40}
+                                                        priority
+                                                    />
+                                                </button>
                                             </td>
                                         </tr>
                                     ))
@@ -518,27 +562,27 @@ function AdminsBorrow_management() {
                         </div>
 
                         {selectedImage && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto p-4 flex flex-col items-center">
-      <div className="w-full flex justify-center">
-        <Image
-          src={selectedImage}
-          alt="Selected"
-          width={800}
-          height={600}
-          className="w-auto h-auto max-h-[75vh] object-contain mb-4"
-          priority
-        />
-      </div>
-      <button
-        onClick={() => setSelectedImage(null)}
-        className="mt-2 bg-red-500 text-white py-2 px-4 rounded-lg"
-      >
-        ปิด
-      </button>
-    </div>
-  </div>
-)}
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto p-4 flex flex-col items-center">
+                                    <div className="w-full flex justify-center">
+                                        <Image
+                                            src={selectedImage}
+                                            alt="Selected"
+                                            width={800}
+                                            height={600}
+                                            className="w-auto h-auto max-h-[75vh] object-contain mb-4"
+                                            priority
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={() => setSelectedImage(null)}
+                                        className="mt-2 bg-red-500 text-white py-2 px-4 rounded-lg"
+                                    >
+                                        ปิด
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
 
                         {showModal && (
@@ -872,6 +916,19 @@ function AdminsBorrow_management() {
                                 iconSrc={alertType === 'success' ? '/images/check.png' : '/images/close.png'}
                             />
                         )}
+
+                        {isDeleteModalOpen && (
+                            <AlertModal
+                                isOpen={true}
+                                message="ท่านต้องการลบสื่อหรือไม่? หากลบแล้วจะไม่สามารถกู้คืนได้อีก"
+                                type="warning"
+                                iconSrc="/images/warning.png"
+                                onConfirm={handlePermanentDelete}
+                                onCancel={() => setIsDeleteModalOpen(false)}
+                            />
+                        )}
+
+
                     </div>
                 </div>
             </div>

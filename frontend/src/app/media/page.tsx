@@ -18,6 +18,8 @@ function MediaPage() {
   const [images, setImages] = useState<ImageData[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
+  const [searchTerm, setSearchTerm] = useState('');
+
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -37,10 +39,15 @@ function MediaPage() {
     router.push(`/media/${imageId}`);
   };
 
-  // Calculate the current images to display based on the current page
+
   const indexOfLastImage = currentPage * itemsPerPage;
   const indexOfFirstImage = indexOfLastImage - itemsPerPage;
-  const currentImages = images.slice(indexOfFirstImage, indexOfLastImage);
+
+  const filteredImages = images.filter((image) =>
+    image.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const currentImages = filteredImages.slice(indexOfFirstImage, indexOfLastImage);
 
   // Change page
   const handlePageChange = (newPage: number) => {
@@ -52,6 +59,19 @@ function MediaPage() {
       <Navbar />
       <div className="flex flex-col items-center bg-[#f3e5f5] p-10 min-h-screen">
         <h1 className="text-4xl font-bold mb-8 text-gray-700">สื่อเผยแพร่</h1>
+
+        <div className="w-full ml-20 px-4 mb-6 flex justify-start">
+          <input
+            type="text"
+            placeholder="ค้นหาจากชื่อ..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full max-w-md px-4 py-2 border border-gray-300 rounded-md shadow-sm"
+          />
+        </div>
+
+
+
         <div className="w-full max-w-7xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-4 justify-center">
           {currentImages.map((image) => (
             <div

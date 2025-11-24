@@ -51,10 +51,17 @@ function AdminsDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
-    fetch('/api/dashboard')
-      .then((res) => res.json())
-      .then((json) => setData(json));
+    fetch('/api/dashboard', { credentials: 'same-origin' })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((json) => setData(json))
+      .catch(err => {
+        console.error("Fetch dashboard failed:", err);
+      });
   }, []);
+
 
   if (!data) return <div className="p-4">กำลังโหลด...</div>;
 

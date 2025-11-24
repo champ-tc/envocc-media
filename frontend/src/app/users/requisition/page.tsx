@@ -36,7 +36,7 @@ function UsersRequisition() {
             const data = await response.json();
 
             if (Array.isArray(data)) {
-                console.log(data);
+                // console.log(data);
                 setRequisitions(data);
             } else {
                 console.error("ข้อมูลที่ดึงมาไม่ใช่อาเรย์:", data);
@@ -162,12 +162,12 @@ function UsersRequisition() {
                                     {/* รายละเอียด */}
                                     <h3 className="text-lg font-bold text-gray-800 mb-2">{item.requisition_name}</h3>
                                     <p className="text-sm text-gray-500 mb-1">ประเภท: {item.type?.name || 'ไม่มีประเภท'}</p>
-                                    <p className="text-sm text-gray-500 mb-2">
+                                    {/* <p className="text-sm text-gray-500 mb-2">
                                         คงเหลือ:{" "}
                                         <span className="text-[#fb8124] font-bold">
                                             {item.quantity} {item.unit}
                                         </span>
-                                    </p>
+                                    </p> */}
 
                                     <button
                                         className="mt-auto bg-[#9063d2] text-white py-2 px-4 rounded-lg w-full transition-colors"

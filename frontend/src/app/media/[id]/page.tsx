@@ -115,7 +115,14 @@ function MediaDetailPage() {
               onClick={() => {
                 const link = document.createElement('a');
                 link.href = `/uploads/${image.filename}`;
-                link.download = image.title;
+
+                // ✅ แก้ตรงนี้: ดึงนามสกุลจาก filename
+                const extension = image.filename.split('.').pop(); // เช่น "jpg"
+                const safeTitle = image.title.replace(/[^a-zA-Z0-9ก-๙-_ ]/g, ''); // ป้องกันชื่อไฟล์ผิดพลาด
+
+                // ✅ ตั้งชื่อไฟล์ใหม่ โดยรวม title + นามสกุล
+                link.download = `${safeTitle}.${extension}`;
+
                 link.click();
               }}
               className="bg-[#9063d2] hover:bg-[#8753d5] text-white px-6 py-2 rounded-md transition"

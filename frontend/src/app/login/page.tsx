@@ -44,7 +44,8 @@ function LoginPage() {
         router.push("/users/main");
       }
     }
-  }, [status, session?.user?.role]); // เพิ่ม dependency ให้ useEffect รอ role
+  }, [status, session?.user?.role, router]);
+
 
 
   return (

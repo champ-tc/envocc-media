@@ -10,12 +10,10 @@ import { protectApiRoute } from '@/lib/protectApi';
 
 // POST - เพิ่ม requisition
 export async function POST(request: NextRequest) {
-
     const access = await protectApiRoute(request, ['admin']);
     if (access !== true) return access;
 
     try {
-
         const formData = await request.formData();
         const requisition_name = formData.get('requisition_name')?.toString() || "";
         const unit = formData.get('unit')?.toString() || "";
@@ -35,14 +33,19 @@ export async function POST(request: NextRequest) {
 
             filename = `${uuidv4()}.${extension}`;
 
-            const fileDir = path.join(process.cwd(), "public", "uploads");
+            // ✅ เก็บไฟล์ใน path ที่ volume mount
+            const fileDir = "/app/filerequisitions";
 
-            // สร้างโฟลเดอร์หากยังไม่มี
+            // ใช้ใน local
+            // const fileDir = path.join(process.cwd(), 'public', 'filerequisitions');
+
+
+            // สร้างโฟลเดอร์ถ้าจำเป็น (จริง ๆ docker volume จะสร้างอยู่แล้ว แต่กันไว้)
             if (!fs.existsSync(fileDir)) {
                 fs.mkdirSync(fileDir, { recursive: true });
             }
-            
-            const filePath = path.join("/app/filerequisitions", filename);
+
+            const filePath = path.join(fileDir, filename);
             const fileBuffer = Buffer.from(await file.arrayBuffer());
             fs.writeFileSync(filePath, fileBuffer);
         }
@@ -64,7 +67,7 @@ export async function POST(request: NextRequest) {
             data: {
                 requisitionId: newRequisition.id,
                 addedQuantity: quantity,
-                updateType: quantity > 0 ? "insert" : "insert",
+                updateType: "insert",
                 remarks: "เพิ่ม requisition ใหม่",
             },
         });

@@ -1,12 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { protectApiRoute } from '@/lib/protectApi';
-
-
+import { protectApiRoute } from "@/lib/protectApi";
 
 export async function GET(request: NextRequest) {
-
-    const access = await protectApiRoute(request, ['admin']);
+    const access = await protectApiRoute(request, ["admin"]);
     if (access !== true) return access;
 
     try {
@@ -17,7 +14,8 @@ export async function GET(request: NextRequest) {
                         title: true,
                         firstName: true,
                         lastName: true,
-                        department: true,
+                        department: true, // รหัสหน่วยงานหลัก (เช่น '1','2',...)
+                        position: true,   // ✅ เพิ่ม: ใช้เป็นหน่วยงานย่อย/เขต (เช่น สคร.1..12, หรือจังหวัด)
                     },
                 },
                 requisition: {
@@ -31,7 +29,6 @@ export async function GET(request: NextRequest) {
             },
         });
 
-
         return NextResponse.json({
             items: logs,
             totalRecords: logs.length,
@@ -42,7 +39,6 @@ export async function GET(request: NextRequest) {
             console.error("🔥 Prisma error:", error.message);
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
-
         console.error("🔥 Unknown error:", error);
         return NextResponse.json({ error: "Unknown server error" }, { status: 500 });
     }

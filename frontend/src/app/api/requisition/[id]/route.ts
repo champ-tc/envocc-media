@@ -6,6 +6,49 @@ import path from "path";
 import { protectApiRoute } from '@/lib/protectApi';
 
 
+
+export async function DELETE(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
+  const access = await protectApiRoute(request, ["admin"]);
+  if (access !== true) return access;
+
+  const id = Number(context.params.id);
+  if (isNaN(id)) {
+    return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+  }
+
+  try {
+    const existing = await prisma.requisition.findUnique({ where: { id } });
+
+    if (!existing) {
+      return NextResponse.json({ error: "ไม่พบรายการนี้" }, { status: 404 });
+    }
+
+    if (existing.requisition_images) {
+      const filePath = path.join("/app/filerequisitions", existing.requisition_images);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
+    await prisma.requisitionLog.deleteMany({ where: { requisition_id: id } });
+    await prisma.requisition_updates.deleteMany({ where: { requisitionId: id } });
+    await prisma.requisition.delete({ where: { id } });
+
+    return NextResponse.json({ message: "ลบเรียบร้อยแล้ว" }, { status: 200 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("[DELETE requisition]", errorMessage);
+    return NextResponse.json(
+      { error: "ไม่สามารถลบสื่อได้ อาจมีข้อมูลเชื่อมโยงอยู่" },
+      { status: 500 }
+    );
+  }
+}
+
+
 // ✅ แก้ไขรายละเอียด requisition
 async function updateRequisitionDetails(id: number, request: NextRequest) {
 
@@ -127,3 +170,68 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
   }
 }
+
+
+
+
+
+// export async function DELETE(request: NextRequest,{ params }: { params: { id: string } }) {
+
+//   const access = await protectApiRoute(request, ['admin']);
+//   if (access !== true) return access;
+
+//   const id = Number(params.id);
+//   if (isNaN(id)) {
+//     return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+//   }
+
+//   try {
+//     // ✅ ตรวจสอบว่ามีข้อมูลนี้
+//     const existing = await prisma.requisition.findUnique({
+//       where: { id },
+//     });
+
+//     if (!existing) {
+//       return NextResponse.json({ error: 'ไม่พบรายการนี้' }, { status: 404 });
+//     }
+
+//     // ✅ ลบไฟล์ภาพหากมี local
+//     // if (existing.requisition_images) {
+//     //   const filePath = path.join(process.cwd(), 'public', 'filerequisitions', existing.requisition_images);
+//     //   if (fs.existsSync(filePath)) {
+//     //     fs.unlinkSync(filePath);
+//     //   }
+//     // }
+
+//      // ✅ ลบไฟล์ภาพหากมี docker
+//     if (existing.requisition_images) {
+//       const filePath = path.join('/app/filerequisitions', existing.requisition_images);
+//       if (fs.existsSync(filePath)) {
+//         fs.unlinkSync(filePath);
+//       }
+//     }
+
+//     // ✅ ลบตารางลูกที่อ้างอิง foreign key ก่อน
+//     await prisma.requisitionLog.deleteMany({
+//       where: { requisition_id: id },
+//     });
+
+//     await prisma.requisition_updates.deleteMany({
+//       where: { requisitionId: id },
+//     });
+
+//     // ✅ ลบ requisition หลัก
+//     await prisma.requisition.delete({
+//       where: { id },
+//     });
+
+//     return NextResponse.json({ message: 'ลบเรียบร้อยแล้ว' }, { status: 200 });
+//   } catch (error: unknown) {
+//     const errorMessage = error instanceof Error ? error.message : String(error);
+//     console.error('[DELETE requisition]', errorMessage);
+//     return NextResponse.json(
+//       { error: 'ไม่สามารถลบสื่อได้ อาจมีข้อมูลเชื่อมโยงอยู่' },
+//       { status: 500 }
+//     );
+//   }
+// }

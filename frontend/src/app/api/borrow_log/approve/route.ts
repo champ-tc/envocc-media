@@ -4,8 +4,7 @@ import { getToken } from "next-auth/jwt";
 import { protectApiRoute } from '@/lib/protectApi';
 
 export async function PUT(req: NextRequest) {
-
-    const access = await protectApiRoute(req, ['admin']);
+    const access = await protectApiRoute(req, ["admin"]);
     if (access !== true) return access;
 
     try {
@@ -18,11 +17,10 @@ export async function PUT(req: NextRequest) {
 
         // Extract admin ID from the token
         const token = await getToken({ req });
-        if (!token || token.role !== "admin") {
-            return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+        const adminId = parseInt(token?.sub || "0", 10);
+        if (!adminId) {
+            return NextResponse.json({ message: "Invalid admin ID" }, { status: 400 });
         }
-        const adminId = parseInt(token.sub || "0", 10);
-
 
         // Process each log
         await Promise.all(
@@ -65,7 +63,7 @@ export async function PUT(req: NextRequest) {
                         approved_by_admin_id: adminId,
                         returned_quantity: log.returned_quantity || 0,
                         actual_return_date: log.actual_return_date || null,
-                        approved_quantity: log.approved_quantity, // This field now exists
+                        approved_quantity: log.approved_quantity,
                     },
                 });
 
@@ -75,16 +73,18 @@ export async function PUT(req: NextRequest) {
                     data: { quantity: stockAfterBorrow },
                 });
 
-                // Optionally, remove stock from the borrow table or log the changes elsewhere if necessary
-                console.log(`Updated stock for Borrow ID: ${borrowLog.borrow_id}, remaining: ${stockAfterBorrow}`);
+                console.log(`✅ Updated stock for Borrow ID: ${borrowLog.borrow_id}, remaining: ${stockAfterBorrow}`);
             })
         );
 
         return NextResponse.json({ message: "Borrow logs approved successfully" });
     } catch (error) {
-        console.error("Error approving borrow logs:", error);
+        console.error("❌ Error approving borrow logs:", error);
         return NextResponse.json(
-            { error: "Failed to approve borrow logs", details: error instanceof Error ? error.message : "Unknown error" },
+            {
+                error: "Failed to approve borrow logs",
+                details: error instanceof Error ? error.message : "Unknown error",
+            },
             { status: 500 }
         );
     }

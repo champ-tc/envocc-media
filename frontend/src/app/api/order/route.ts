@@ -6,7 +6,6 @@ import { protectApiRoute } from '@/lib/protectApi';
 
 // เพิ่มคำสั่งซื้อ
 export async function POST(req: NextRequest) {
-
     const access = await protectApiRoute(req, ['admin', 'user']);
     if (access !== true) return access;
 
@@ -27,30 +26,65 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ message: "Borrow not found" }, { status: 404 });
             }
 
-            // ตรวจสอบว่ามีสินค้าคงเหลือเพียงพอหรือไม่
+            // ตรวจสอบ stock
             if (quantity > borrow.quantity) {
                 return NextResponse.json({ message: "Not enough stock available" }, { status: 400 });
             }
         }
 
-        // สร้างคำสั่งซื้อในตาราง Order
-        const order = await prisma.order.create({
-            data: {
+        // ตรวจสอบว่ามี order เดิมอยู่หรือไม่
+        const existingOrder = await prisma.order.findFirst({
+            where: {
                 userId,
                 requisitionId: requisitionId || null,
                 borrowId: borrowId || null,
                 requisition_type,
-                quantity,
-                date,
             },
         });
 
-        return NextResponse.json(order);
+        if (existingOrder) {
+            // รวมจำนวนใหม่
+            const newQuantity = existingOrder.quantity + quantity;
+
+            // จำกัดสูงสุดไม่เกิน 100
+            if (newQuantity > 100) {
+                return NextResponse.json({ message: "Total quantity cannot exceed 100" }, { status: 400 });
+            }
+
+            const updatedOrder = await prisma.order.update({
+                where: { id: existingOrder.id },
+                data: {
+                    quantity: newQuantity,
+                    date,
+                },
+            });
+
+            return NextResponse.json(updatedOrder);
+        } else {
+            // ถ้าไม่มี order เดิม → สร้างใหม่
+            if (quantity > 100) {
+                return NextResponse.json({ message: "Quantity cannot exceed 100" }, { status: 400 });
+            }
+
+            const order = await prisma.order.create({
+                data: {
+                    userId,
+                    requisitionId: requisitionId || null,
+                    borrowId: borrowId || null,
+                    requisition_type,
+                    quantity,
+                    date,
+                },
+            });
+
+            return NextResponse.json(order);
+        }
     } catch (error) {
         console.error("Error adding order:", error);
         return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
     }
 }
+
 
 // ดึงรายการคำสั่งซื้อ
 export async function GET(req: NextRequest) {

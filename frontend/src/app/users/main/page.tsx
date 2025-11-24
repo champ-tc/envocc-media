@@ -33,15 +33,15 @@ function MainPage() {
                     </div>
 
                     <div className="relative -mt-16 w-full px-4 md:px-20 lg:px-32">
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                             <Link href="/users/requisition" className="block">
                                 <div className="flex h-48 flex-col items-center justify-center rounded-2xl bg-white p-6 text-center shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-gray-100 transform hover:rotate-1">
                                     <h3 className="text-3xl font-extrabold text-[#9063d2] mb-2 drop-shadow-sm">
                                         เบิก
                                     </h3>
-                                    <p className="text-lg text-gray-700 mt-1 max-w-xs leading-relaxed">
+                                    {/* <p className="text-lg text-gray-700 mt-1 max-w-xs leading-relaxed">
                                         จัดการคำขอเบิกสิ่งของต่างๆ ของคุณ
-                                    </p>
+                                    </p> */}
                                 </div>
                             </Link>
 
@@ -50,9 +50,17 @@ function MainPage() {
                                     <h3 className="text-3xl font-extrabold text-[#c78ee8] mb-2 drop-shadow-sm">
                                         ยืม/คืน
                                     </h3>
-                                    <p className="text-lg text-gray-700 mt-1 max-w-xs leading-relaxed">
+                                    {/* <p className="text-lg text-gray-700 mt-1 max-w-xs leading-relaxed">
                                         บันทึกและติดตามการยืมคืนสิ่งของ
-                                    </p>
+                                    </p> */}
+                                </div>
+                            </Link>
+
+                            <Link href="/users/media" className="block">
+                                <div className="flex h-48 flex-col items-center justify-center rounded-2xl bg-white p-6 text-center shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-gray-100 transform hover:-rotate-1">
+                                    <h3 className="text-3xl font-extrabold text-[#c78ee8] mb-2 drop-shadow-sm">
+                                        โหลดสื่อ
+                                    </h3>
                                 </div>
                             </Link>
                         </div>

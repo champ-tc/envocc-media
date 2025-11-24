@@ -87,8 +87,6 @@ function UsersSummary() {
     };
 
 
-
-
     useEffect(() => {
         fetch("/api/reason")
             .then((res) => res.json())

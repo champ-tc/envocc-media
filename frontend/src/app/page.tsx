@@ -79,8 +79,8 @@ export default function Home() {
 
       <div className="block bg-gradient-to-r from-[#fdb7fe] via-[#c78ee8] to-[#9063d2]">
         <div className="flex flex-col items-center justify-center py-16">
+          <div className="mt-2 mb-5 text-4xl font-bold text-white">โหลดสื่อ</div>
           <div className="flex flex-col sm:flex-row items-center justify-center w-full px-4 gap-6">
-            <div className="mt-2 mb-5 text-2xl font-bold">โหลดสื่อ</div>
             {images.map((image) => (
               <div key={image.id} className="w-full sm:w-auto">
                 <Image

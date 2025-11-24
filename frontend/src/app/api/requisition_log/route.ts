@@ -99,82 +99,109 @@ export async function POST(req: NextRequest) {
 }
 
 
-// ดึงข้อมูล requisition log
+// ดึงข้อมูล requisition log (นับแบบกลุ่ม)
 export async function GET(req: NextRequest) {
-    const access = await protectApiRoute(req, ['admin', 'user']);
+    const access = await protectApiRoute(req, ["admin", "user"]);
     if (access !== true) return access;
 
+    const { searchParams } = new URL(req.url);
+    const status = searchParams.get("status") as
+        | "Pending"
+        | "Approved"
+        | "NotApproved"
+        | null;
+    const requested_groupid = searchParams.get("groupid");
 
-    try {
-        const { searchParams } = new URL(req.url);
-        const status = searchParams.get("status");
-        const requested_groupid = searchParams.get("groupid");
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "10", 10);
+    const offset = (page - 1) * limit;
 
-        // ค่าหน้า (page) และจำนวนต่อหน้า (limit) (ค่าเริ่มต้น: page = 1, limit = 10)
-        const page = parseInt(searchParams.get("page") || "1", 10);
-        const limit = parseInt(searchParams.get("limit") || "10", 10);
-        const offset = (page - 1) * limit; // คำนวณ offset
+    const whereClause = status ? { status } : undefined;
 
-        if (requested_groupid) {
-            // ดึงข้อมูลเฉพาะ groupid ที่ร้องขอ
-            const groupLogs = await prisma.requisitionLog.findMany({
-                where: { requested_groupid },
-                include: {
-                    user: { select: { title: true, firstName: true, lastName: true } },
-                    requisition: { select: { requisition_name: true } },
-                    reason: true, // เอาทั้ง object มาก่อน แล้วไปเช็คฝั่ง client
+    // === กรณีเปิด modal: เอามาทั้งกลุ่ม ให้สกอลในโมดัล ===
+    if (requested_groupid) {
+        const groupLogs = await prisma.requisitionLog.findMany({
+            where: { requested_groupid },
+            include: {
+                // ✅ เพิ่ม department ให้แสดงใน modal ได้
+                user: {
+                    select: {
+                        title: true,
+                        firstName: true,
+                        lastName: true,
+                        department: true,
+                    },
                 },
-                skip: offset,
-                take: limit,
-            });
-
-
-            // นับจำนวนทั้งหมดเพื่อใช้สำหรับ frontend
-            const totalRecords = await prisma.requisitionLog.count({ where: { requested_groupid } });
-            const totalPages = Math.ceil(totalRecords / limit);
-
-            return NextResponse.json({ items: groupLogs, totalPages, totalRecords });
-        }
-
-        // ดึงข้อมูลตาม status (ถ้ามี) หรือดึงทั้งหมด
-        const requisitionLogs = await prisma.requisitionLog.findMany({
-            where: status ? { status } : undefined,
-            select: {
-                requested_groupid: true,
-                user: { select: { title: true, firstName: true, lastName: true } },
-                status: true,
+                requisition: { select: { requisition_name: true } },
+                reason: true,
             },
-            distinct: ["requested_groupid"], // ดึงเฉพาะกลุ่มที่ไม่ซ้ำ
-            skip: offset, // ใช้ offset สำหรับ pagination
-            take: limit, // จำกัดจำนวนข้อมูล
+            orderBy: { id: "asc" },
         });
-
-        // นับจำนวนทั้งหมดเพื่อใช้กับ frontend
-        const totalRecords = await prisma.requisitionLog.count({
-            where: status ? { status } : undefined,
-        });
-        const totalPages = Math.ceil(totalRecords / limit);
 
         return NextResponse.json({
-            items: requisitionLogs,
-            totalPages,
-            totalRecords,
-            totalItems: totalRecords,
+            items: groupLogs,
+            totalPages: 1,
+            totalRecords: groupLogs.length,
+            totalItems: groupLogs.length,
         });
-
-    } catch (error) {
-        console.error("Error fetching requisition logs:", error instanceof Error ? error.stack : error);
-        return NextResponse.json(
-            {
-                error: "Failed to fetch requisition logs",
-                detail: error instanceof Error ? error.message : "Unknown error",
-            },
-            { status: 500 }
-        );
     }
 
+    // === 1) นับ "จำนวนกลุ่ม" ===
+    const allGroups = await prisma.requisitionLog.groupBy({
+        by: ["requested_groupid"],
+        where: whereClause,
+        _min: { requisition_date: true },
+    });
 
+    // เรียงจากใหม่ -> เก่า
+    allGroups.sort((a, b) => {
+        const ad = a._min.requisition_date
+            ? new Date(a._min.requisition_date).getTime()
+            : 0;
+        const bd = b._min.requisition_date
+            ? new Date(b._min.requisition_date).getTime()
+            : 0;
+        return bd - ad;
+    });
+
+    const totalGroups = allGroups.length;
+    const totalPages = Math.ceil(totalGroups / limit) || 1;
+    const pageGroupIds = allGroups.slice(offset, offset + limit).map((g) => g.requested_groupid);
+
+    // === 2) ดึงตัวแทนของแต่ละ group เพื่อโชว์ในตาราง ===
+    const pageItemsRaw = await prisma.requisitionLog.findMany({
+        where: { requested_groupid: { in: pageGroupIds }, ...(whereClause || {}) },
+        select: {
+            requested_groupid: true,
+            status: true,
+            delivery_address: true,
+            // ✅ เพิ่ม department เพื่อให้หน้า UI แสดงหน่วยงานได้
+            user: {
+                select: {
+                    title: true,
+                    firstName: true,
+                    lastName: true,
+                    department: true,
+                },
+            },
+        },
+        orderBy: [{ requested_groupid: "asc" }, { requisition_date: "desc" }],
+    });
+
+    // จับคู่ตามลำดับ pageGroupIds (กัน null เผื่อกรณีหาไม่เจอ)
+    const pageItems = pageGroupIds
+        .map((id) => pageItemsRaw.find((r) => r.requested_groupid === id) || null)
+        .filter((v): v is NonNullable<typeof v> => Boolean(v));
+
+    return NextResponse.json({
+        items: pageItems,
+        totalPages,
+        totalRecords: totalGroups,
+        totalItems: totalGroups,
+    });
 }
+
+
 
 
 // อัปเดตสถานะ requisition log

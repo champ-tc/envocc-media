@@ -25,7 +25,7 @@ function UsersRequisitionDetail() {
     const router = useRouter();
     const { id } = useParams();
     const [requisition, setRequisition] = useState<Requisition | null>(null);
-    const [quantity, setQuantity] = useState<number>(0);
+    const [quantity, setQuantity] = useState<number>(1);
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [alertType, setAlertType] = useState<"success" | "error" | null>(null);
 
@@ -33,18 +33,14 @@ function UsersRequisitionDetail() {
         const fetchRequisition = async () => {
             try {
                 const response = await fetch(`/api/requisitions/${id}`);
-                if (!response.ok) {
-                    throw new Error("Failed to fetch requisition data");
-                }
+                if (!response.ok) throw new Error("Failed to fetch requisition data");
                 const data = await response.json();
                 setRequisition(data);
             } catch (error) {
                 console.error("Error fetching requisition:", error);
             }
         };
-        if (id) {
-            fetchRequisition();
-        }
+        if (id) fetchRequisition();
     }, [id]);
 
     if (isLoading) {
@@ -58,51 +54,70 @@ function UsersRequisitionDetail() {
     const showAlert = (message: string, type: "success" | "error") => {
         setAlertMessage(message);
         setAlertType(type);
-
-        setTimeout(() => {
-            setAlertMessage(null);
-        }, 3000);
+        setTimeout(() => setAlertMessage(null), 3000);
     };
 
-    const handleAddToOrder = async (requisitionId: number, quantity: number, e: React.FormEvent) => {
+    const handleAddToOrder = async (
+        requisitionId: number,
+        qty: number,
+        e: React.FormEvent
+    ) => {
         e.preventDefault();
 
-        if (quantity <= 0) {
+        if (!requisition) return;
+
+        const remaining = Number(requisition.remaining) || 0;
+        const maxAllow = Math.max(1, Math.floor(remaining * 0.05)); // 🔧 CHANGED: 5% ของคงเหลือ (ขั้นต่ำ 1)
+
+        if (qty <= 0) {
             showAlert("จำนวนห้ามน้อยกว่า 0", "error");
+            return;
+        }
+
+        // 🔧 CHANGED: ตรวจไม่ให้เกิน 5% ของคงเหลือ
+        if (qty > maxAllow) {
+            showAlert(
+                `ไม่สำเร็จ สามารถเบิกได้ไม่เกิน ${maxAllow} ชิ้น (5% ของคงเหลือ ${remaining})`,
+                "error"
+            );
             return;
         }
 
         try {
             const response = await fetch("/api/order", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     userId: session?.user?.id,
                     requisitionId,
                     requisition_type: 1,
-                    quantity,
+                    quantity: qty,
                 }),
             });
 
             if (!response.ok) {
-                throw new Error("Failed to add to order");
+                const errorData = await response.json().catch(() => ({}));
+                // 🔧 CHANGED: แสดงข้อความ error จากเซิร์ฟเวอร์ (ถ้ามี)
+                showAlert(
+                    errorData?.message ||
+                    "เกิดข้อผิดพลาดในการเพิ่มรายการ (ไม่เกิน 5% ของคงเหลือ)",
+                    "error"
+                );
+                return;
             }
 
             showAlert("เพิ่มรายการสำเร็จ!", "success");
-
-            setTimeout(() => {
-                router.push("/users/requisition");
-            }, 3000);
-        } catch {
+            setTimeout(() => router.push("/users/requisition"), 3000);
+        } catch (err) {
+            console.error(err);
             showAlert("เกิดข้อผิดพลาดในการเพิ่มรายการ", "error");
         }
     };
 
     if (!requisition) return <p>Loading...</p>;
 
-    const remaining = requisition.remaining;
+    const remaining = Number(requisition.remaining) || 0;
+    const maxAllow = Math.max(1, Math.floor(remaining * 0.05)); // 🔧 CHANGED: ใช้ใน UI ด้วย
 
     return (
         <>
@@ -137,34 +152,46 @@ function UsersRequisitionDetail() {
                                             </p>
                                         </div>
 
-                                        <div className="flex justify-between">
-                                            <p className="text-gray-600">
-                                                คงเหลือ: <span className="text-[#fb8124] font-bold">{remaining}</span>
-                                            </p>
-                                        </div>
-
-                                        <div>
+                                        {/* <div>
                                             <p className="text-gray-600 font-medium mb-2">คำอธิบาย:</p>
                                             <p className="text-gray-700">
                                                 {requisition.description || "ไม่มีคำอธิบาย"}
                                             </p>
-                                        </div>
+                                        </div> */}
+
+                                        {/* 🔧 CHANGED: สื่อสาร limit ให้ผู้ใช้ทราบ */}
+                                        {/* <div className="text-sm text-gray-600">
+                                            จำกัดการเบิกครั้งนี้ไม่เกิน{" "}
+                                            <span className="font-semibold">{maxAllow}</span> ชิ้น
+                                            (5% ของคงเหลือ {remaining})
+                                        </div> */}
                                     </div>
 
                                     <div className="mt-6 flex items-center space-x-4">
                                         <input
                                             type="number"
                                             min={1}
-                                            max={remaining}
+                                            max={maxAllow} // 🔧 CHANGED
                                             value={quantity}
-                                            onChange={(e) => setQuantity(Number(e.target.value))}
+                                            onChange={(e) => {
+                                                const v = Number(e.target.value);
+                                                // 🔧 CHANGED: clamp ค่าใน input
+                                                if (Number.isNaN(v)) {
+                                                    setQuantity(1);
+                                                    return;
+                                                }
+                                                setQuantity(Math.max(1, Math.min(maxAllow, v)));
+                                            }}
                                             className="w-2/4 px-4 py-2 border rounded-md text-center focus:ring-2 focus:ring-[#9063d2] focus:outline-none"
                                             placeholder="จำนวน"
                                         />
                                     </div>
+
                                     <div className="mt-6 flex items-center space-x-4">
                                         <button
-                                            onClick={(e) => handleAddToOrder(requisition.id, quantity, e)}
+                                            onClick={(e) =>
+                                                handleAddToOrder(requisition.id, quantity, e)
+                                            }
                                             className="bg-[#9063d2] hover:bg-[#8753d5] text-white px-4 py-2 rounded-md"
                                         >
                                             เพิ่มรายการ
@@ -186,7 +213,9 @@ function UsersRequisitionDetail() {
                                 isOpen={!!alertMessage}
                                 message={alertMessage}
                                 type={alertType ?? "error"}
-                                iconSrc={alertType === "success" ? "/images/check.png" : "/images/close.png"}
+                                iconSrc={
+                                    alertType === "success" ? "/images/check.png" : "/images/close.png"
+                                }
                             />
                         )}
                     </div>

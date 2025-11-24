@@ -45,6 +45,10 @@ function AdminsMedia_management() {
     const [showModal, setShowModal] = useState(false);
     const [editModal, setEditModal] = useState(false);
 
+    const [selectedDeleteId, setSelectedDeleteId] = useState<number | null>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+
     const [newRequisition, setNewRequisition] = useState<Requisition>({
         id: 0,
         requisition_name: '',
@@ -59,7 +63,9 @@ function AdminsMedia_management() {
     });
 
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
-    const [alertType, setAlertType] = useState<"success" | "error" | null>(null);
+    // const [alertType, setAlertType] = useState<"success" | "error" | null>(null);
+    const [alertType, setAlertType] = useState<"success" | "error" | "warning" | null>(null);
+
 
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false); // Modal ยืนยันการลบ
     const [isEditConfirmOpen, setIsEditConfirmOpen] = useState(false);
@@ -71,6 +77,7 @@ function AdminsMedia_management() {
     const [totalRecords, setTotalRecords] = useState(0); // 🔥 เก็บจำนวนข้อมูลทั้งหมด
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
+
 
 
 
@@ -410,6 +417,7 @@ function AdminsMedia_management() {
         }
     };
 
+
     const handleEnable = async () => {
         if (!selectedId) return; // ตรวจสอบว่า selectedId มีค่า
 
@@ -432,6 +440,36 @@ function AdminsMedia_management() {
     };
 
 
+    const openPermanentDeleteConfirm = (id: number) => {
+        setSelectedDeleteId(id);
+        setIsDeleteModalOpen(true);
+    };
+
+
+    const handlePermanentDelete = async () => {
+        if (!selectedDeleteId) return;
+
+        try {
+            const response = await axios.delete(`/api/requisition/${selectedDeleteId}`);
+
+            if (response.status === 200) {
+                setRequisitions((prev) => prev.filter((req) => req.id !== selectedDeleteId));
+                setAlertMessage("ลบสื่อสำเร็จ!");
+                setAlertType("success");
+            }
+        } catch {
+            setAlertMessage("เกิดข้อผิดพลาดในการลบสื่อ");
+            setAlertType("error");
+        } finally {
+            setIsDeleteModalOpen(false);
+            setTimeout(() => {
+                setAlertMessage(null);
+                setAlertType(null);
+            }, 5000);
+        }
+    };
+
+
 
     return (
         <div className="flex min-h-screen bg-gray-50">
@@ -450,12 +488,12 @@ function AdminsMedia_management() {
                                     <th className="border px-4 py-2" style={{ width: "7%" }}>รูปภาพ</th>
                                     <th className="border px-4 py-2" style={{ width: "13%" }}>ชื่อสื่อ</th>
                                     <th className="border px-4 py-2" style={{ width: "10%" }}>หน่วยนับ</th>
-                                    <th className="border px-4 py-2" style={{ width: "15%" }}>ประเภท</th>
+                                    <th className="border px-4 py-2" style={{ width: "12%" }}>ประเภท</th>
                                     <th className="border px-4 py-2" style={{ width: "10%" }}>จำนวนคงเหลือ</th>
                                     <th className="border px-4 py-2" style={{ width: "10%" }}>จำนวนที่เก็บ</th>
                                     <th className="border px-4 py-2" style={{ width: "13%" }}>คำอธิบาย</th>
                                     <th className="border px-4 py-2" style={{ width: "10%" }}>เบิก</th>
-                                    <th className="border px-4 py-2" style={{ width: "12%" }}>จัดการ</th>
+                                    <th className="border px-4 py-2" style={{ width: "15%" }}>จัดการ</th>
                                 </tr>
                             </thead>
                             <tbody className="text-gray-700 text-sm">
@@ -465,8 +503,8 @@ function AdminsMedia_management() {
                                             <td className="p-2 py-2 border">
                                                 {req.requisition_images ? (
                                                     <Image
-                                                        // src={`/requisitions/${req.requisition_images}`}
-                                                        src={`/uploads/${req.requisition_images}`}
+                                                        src={`/requisitions/${req.requisition_images}`}
+                                                        // src={`/filerequisitions/${req.requisition_images}`}
                                                         alt={req.requisition_name}
                                                         className="w-16 h-16 object-cover cursor-pointer"
                                                         onClick={() => req.requisition_images && handleImageClick(req.requisition_images)}
@@ -534,6 +572,22 @@ function AdminsMedia_management() {
                                                         />
                                                     </button>
                                                 )}
+                                                <button
+                                                    onClick={() => openPermanentDeleteConfirm(req.id)}
+                                                    className="py-2 px-2 mr-2 rounded-md transition"
+                                                    title="ลบถาวร"
+                                                >
+                                                    <Image
+                                                        src="/images/delete.png"
+                                                        alt="Delete Icon"
+                                                        className="h-6 w-6"
+                                                        width={40}
+                                                        height={40}
+                                                        priority
+                                                    />
+                                                </button>
+
+
                                             </td>
                                         </tr>
                                     ))
@@ -543,8 +597,6 @@ function AdminsMedia_management() {
                                     </tr>
                                 )}
                             </tbody>
-
-
                         </table>
 
                         <div className="flex items-center justify-between mt-6">
@@ -951,6 +1003,18 @@ function AdminsMedia_management() {
                                 iconSrc={alertType === 'success' ? '/images/check.png' : '/images/close.png'}
                             />
                         )}
+
+                        {isDeleteModalOpen && (
+                            <AlertModal
+                                isOpen={true}
+                                message="ท่านต้องการลบสื่อหรือไม่? หากลบแล้วจะไม่สามารถกู้คืนได้อีก"
+                                type="warning"
+                                iconSrc="/images/warning.png"
+                                onConfirm={handlePermanentDelete}
+                                onCancel={() => setIsDeleteModalOpen(false)}
+                            />
+                        )}
+
                     </div>
                 </div>
             </div>
