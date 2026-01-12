@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { sendLineGroupMessage } from "@/lib/lineNotify";
 import { protectApiRoute } from '@/lib/protectApi';
 
-
 export async function POST(request: NextRequest) {
     const access = await protectApiRoute(request, ['admin', 'user']);
     if (access !== true) return access;
@@ -18,6 +17,7 @@ export async function POST(request: NextRequest) {
             returnDate,
             usageReasonId,
             customUsageReason,
+            evaluation // ✅ รับข้อมูลประเมิน
         } = await request.json();
 
         const user = await prisma.user.findUnique({
@@ -32,11 +32,6 @@ export async function POST(request: NextRequest) {
         // Validation
         if (!userId || !orders || !returnDate || usageReasonId === null || usageReasonId === undefined) {
             return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
-        }
-
-        const userExists = await prisma.user.findUnique({ where: { id: userId } });
-        if (!userExists) {
-            return NextResponse.json({ message: "User does not exist" }, { status: 400 });
         }
 
         const parsedReturnDate = new Date(returnDate);
@@ -60,7 +55,8 @@ export async function POST(request: NextRequest) {
             customUsageReason: usageReasonId === 0 ? customUsageReason : null,
         }));
 
-        await prisma.$transaction([
+        // ✅ เตรียม Transaction
+        const transactionOperations: any[] = [
             prisma.borrowLog.createMany({ data: borrowLogs }),
             prisma.order.deleteMany({
                 where: {
@@ -68,9 +64,30 @@ export async function POST(request: NextRequest) {
                     borrowId: { in: orders.map((o: { borrowId: number }) => o.borrowId) },
                 },
             }),
-        ]);
+        ];
 
-        // ดึงชื่อเหตุผลการใช้งาน (ถ้ามี)
+        // ถ้ามีข้อมูลประเมินส่งมาด้วย ให้เพิ่มลงใน Transaction
+        if (evaluation) {
+            transactionOperations.push(
+                prisma.evaluation.create({
+                    data: {
+                        userId: userId,
+                        actionType: "borrow", // ระบุว่าเป็นยืม
+                        transactionGroupId: newGroupId,
+                        satisfaction: evaluation.satisfaction,
+                        convenience: evaluation.convenience,
+                        reuseIntention: evaluation.reuseIntention,
+                        recommend: evaluation.recommend,
+                        suggestion: evaluation.suggestion,
+                    }
+                })
+            );
+        }
+
+        // รัน Transaction
+        await prisma.$transaction(transactionOperations);
+
+        // Line Notify
         const reason = await prisma.reason.findUnique({
             where: { id: usageReasonId },
             select: { reason_name: true }
@@ -84,13 +101,12 @@ export async function POST(request: NextRequest) {
             usageReasonId === 0 ? customUsageReason : reason?.reason_name || "ไม่ระบุ"
         );
 
-
-
         return NextResponse.json({
-            message: "Borrow logs created successfully",
+            message: "Borrow logs and evaluation created successfully",
             groupId: newGroupId,
         });
     } catch (error) {
+        console.error("Borrow Error:", error);
         return NextResponse.json(
             { message: "Internal Server Error", error: (error as Error).message },
             { status: 500 }

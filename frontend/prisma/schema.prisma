@@ -204,4 +204,24 @@ model user {
   PasswordResetToken   PasswordResetToken[]
   approvedRequisitions RequisitionLog[]     @relation("AdminRequisitionApproval")
   requisitions         RequisitionLog[]
+  evaluations          Evaluation[]
+}
+
+
+model Evaluation {
+  id                 Int      @id @default(autoincrement())
+  userId             Int
+  actionType         String   // เก็บค่า "requisition" หรือ "borrow"
+  transactionGroupId String   // เก็บ UUID ของกลุ่มรายการ (Ref กับ transaction จริง)
+  satisfaction       Int
+  convenience        Int
+  reuseIntention     String
+  recommend          String
+  suggestion         String?  @db.Text
+  createdAt          DateTime @default(now())
+
+  user               user     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([transactionGroupId])
 }

@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
 
     const access = await protectApiRoute(request, ['admin']);
     if (access !== true) return access;
-    
+
     try {
         const { searchParams } = new URL(request.url);
         const page = parseInt(searchParams.get("page") || "1", 10);

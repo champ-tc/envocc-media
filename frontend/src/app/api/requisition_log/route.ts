@@ -4,13 +4,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { sendLineGroupMessage } from "@/lib/lineNotify";
 import { protectApiRoute } from '@/lib/protectApi';
 
-
-// ใช้สำหรับ requisition_summary
+// POST - สร้างใบเบิก + บันทึกผลประเมิน
 export async function POST(req: NextRequest) {
     const access = await protectApiRoute(req, ['admin', 'user']);
     if (access !== true) return access;
 
     try {
+        // 1. รับ evaluation เพิ่มเข้ามา
         const {
             userId,
             orders,
@@ -18,8 +18,10 @@ export async function POST(req: NextRequest) {
             address,
             usageReasonId,
             customUsageReason,
+            evaluation // ✅ รับข้อมูลประเมิน
         } = await req.json();
 
+        // Check user existence
         const user = await prisma.user.findUnique({
             where: { id: userId },
             select: { title: true, firstName: true, lastName: true }
@@ -29,12 +31,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: "User does not exist" }, { status: 400 });
         }
 
-        const userExists = await prisma.user.findUnique({ where: { id: userId } });
-
-        if (!userExists) {
-            return NextResponse.json({ message: "User does not exist" }, { status: 400 });
-        }
-
+        // Validate Orders
         const requisitionIds = orders.map((order: { requisitionId: number }) => order.requisitionId);
         const existingRequisitions = await prisma.requisition.findMany({
             where: { id: { in: requisitionIds } },
@@ -44,8 +41,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: "Invalid requisition IDs", requisitionIds }, { status: 400 });
         }
 
+        // สร้าง Group ID เดียวกันทั้ง transaction
         const newGroupId = uuidv4();
 
+        // เตรียมข้อมูล Requisition Logs
         const requisitionLogs = orders.map((order: { requisitionId: number; quantity: number }) => ({
             requisition_id: order.requisitionId,
             user_id: userId,
@@ -57,12 +56,12 @@ export async function POST(req: NextRequest) {
             delivery_method: deliveryMethod,
             delivery_address: deliveryMethod === "delivery" ? address : null,
             requested_groupid: newGroupId,
-            usageReason: usageReasonId, // ✅ ใช้ชื่อให้ตรงกับ Prisma model
-            customUsageReason: usageReasonId === 0 ? customUsageReason : null, // ✅ ตรวจสอบเมื่อเป็น "อื่นๆ"
+            usageReason: usageReasonId,
+            customUsageReason: usageReasonId === 0 ? customUsageReason : null,
         }));
 
-
-        await prisma.$transaction([
+        // ✅ เตรียม Transaction (รวม 3 งาน: สร้าง Log, สร้าง Evaluation, ลบตะกร้า)
+        const transactionOperations: any[] = [
             prisma.requisitionLog.createMany({ data: requisitionLogs }),
             prisma.order.deleteMany({
                 where: {
@@ -70,9 +69,30 @@ export async function POST(req: NextRequest) {
                     requisitionId: { in: requisitionIds },
                 },
             }),
-        ]);
+        ];
 
-        // ดึงชื่อเหตุผลการใช้งาน (ถ้ามี)
+        // ถ้ามีข้อมูลประเมินส่งมาด้วย ให้เพิ่มลงใน Transaction
+        if (evaluation) {
+            transactionOperations.push(
+                prisma.evaluation.create({
+                    data: {
+                        userId: userId,
+                        actionType: "requisition", // ระบุว่าเป็นเบิก
+                        transactionGroupId: newGroupId, // ผูกกับ Group ID นี้
+                        satisfaction: evaluation.satisfaction,
+                        convenience: evaluation.convenience,
+                        reuseIntention: evaluation.reuseIntention,
+                        recommend: evaluation.recommend,
+                        suggestion: evaluation.suggestion,
+                    }
+                })
+            );
+        }
+
+        // รัน Transaction
+        await prisma.$transaction(transactionOperations);
+
+        // ส่ง Line Notify
         const reason = await prisma.reason.findUnique({
             where: { id: usageReasonId },
             select: { reason_name: true }
@@ -86,14 +106,13 @@ export async function POST(req: NextRequest) {
             usageReasonId === 0 ? customUsageReason : reason?.reason_name || "ไม่ระบุ"
         );
 
-
-
         return NextResponse.json({
-            message: "Requisition logs created successfully",
+            message: "Requisition logs and evaluation created successfully",
             groupId: newGroupId,
         });
 
     } catch (error) {
+        console.error("Requisition Error:", error);
         return NextResponse.json({ message: "Internal Server Error", error: (error as Error).message }, { status: 500 });
     }
 }
@@ -200,7 +219,6 @@ export async function GET(req: NextRequest) {
         totalItems: totalGroups,
     });
 }
-
 
 
 

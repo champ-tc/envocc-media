@@ -22,6 +22,7 @@ const Sidebar = () => {
         { isDropdown: true, label: 'จัดการสื่อ', src: '/images/type.png' },
         { href: '/admins/reports_requisition', src: '/images/reports.png', label: 'รายงานการขอเบิก' },
         { href: '/admins/reports_borrow', src: '/images/reports.png', label: 'รายงานการยืม' },
+        { href: '/admins/reports_evaluation', src: '/images/reports.png', label: 'รายงานการประเมิน' },
         { href: '/admins/user-management', src: '/images/user.png', label: 'จัดการผู้ใช้งาน' },
     ];
 
