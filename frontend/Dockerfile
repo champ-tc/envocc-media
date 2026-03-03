@@ -1,12 +1,11 @@
 # syntax=docker/dockerfile:1
 
 ############################################
-# 1) deps: install node deps (reproducible)
+# 1) deps
 ############################################
-FROM node:20-bookworm-slim AS deps
+FROM node:22.22.0-trixie-slim AS deps
 WORKDIR /app
 
-# security patches + minimal packages only
 RUN apt-get update \
     && apt-get -y upgrade \
     && apt-get install -y --no-install-recommends \
@@ -18,9 +17,9 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 ############################################
-# 2) build: prisma generate + next build
+# 2) build
 ############################################
-FROM node:20-bookworm-slim AS build
+FROM node:22.22.0-trixie-slim AS build
 WORKDIR /app
 
 RUN apt-get update \
@@ -33,20 +32,16 @@ RUN apt-get update \
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# generate prisma client (needs schema in repo)
 RUN npx prisma generate
-
-# build next
 RUN npm run build
 
 ############################################
-# 3) runner: minimal runtime
+# 3) runner
 ############################################
-FROM node:20-bookworm-slim AS runner
+FROM node:22.22.0-trixie-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-# runtime needs mysql client only if entrypoint/wait-for-it uses it
 RUN apt-get update \
     && apt-get -y upgrade \
     && apt-get install -y --no-install-recommends \
@@ -55,18 +50,16 @@ RUN apt-get update \
     default-mysql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# run as non-root
+# ✅ ไม่ COPY .env เข้า image (ปลอดภัยสุด)
+# ให้ใส่ตอน run ด้วย --env-file หรือ docker compose env_file
+
 USER node
 
-# copy only what is required to run
 COPY --chown=node:node --from=build /app/package.json ./package.json
 COPY --chown=node:node --from=build /app/package-lock.json ./package-lock.json
 COPY --chown=node:node --from=build /app/node_modules ./node_modules
 COPY --chown=node:node --from=build /app/.next ./.next
 COPY --chown=node:node --from=build /app/public ./public
-
-# if you rely on next.config.* at runtime, uncomment:
-# COPY --chown=node:node --from=build /app/next.config.* ./
 
 COPY --chown=node:node entrypoint.sh ./entrypoint.sh
 COPY --chown=node:node wait-for-it.sh ./wait-for-it.sh
