@@ -159,18 +159,26 @@ export async function POST(request: NextRequest) {
 
 /* ---------------- GET: list (with image_url) ---------------- */
 export async function GET(request: NextRequest) {
-    const access = await protectApiRoute(request, ["admin", 'user']);
+    const access = await protectApiRoute(request, ["admin", "user"]);
     if (access !== true) return access;
 
     try {
         const { searchParams } = new URL(request.url);
-        const page = parseInt(searchParams.get("page") || "1", 10);
-        const limit = parseInt(searchParams.get("limit") || "10", 10);
+        const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
+        const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "10", 10), 1), 50);
         const offset = (page - 1) * limit;
 
+        // ✅ แสดงเฉพาะรายการที่ยังเปิดใช้งาน (status = 1)
+        const where = { status: 1 };
+
         const [rows, totalRecords] = await Promise.all([
-            prisma.borrow.findMany({ skip: offset, take: limit, orderBy: { id: "desc" } }),
-            prisma.borrow.count(),
+            prisma.borrow.findMany({
+                where,
+                skip: offset,
+                take: limit,
+                orderBy: { id: "desc" },
+            }),
+            prisma.borrow.count({ where }),
         ]);
 
         const items = rows.map((b) => {
@@ -178,7 +186,7 @@ export async function GET(request: NextRequest) {
             return { ...b, image_url: url ?? null };
         });
 
-        const totalPages = Math.ceil(totalRecords / limit);
+        const totalPages = Math.max(1, Math.ceil(totalRecords / limit));
         return NextResponse.json({ items, totalPages, totalRecords }, { status: 200 });
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
