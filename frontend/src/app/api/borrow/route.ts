@@ -1,4 +1,7 @@
 // src/app/api/borrow/route.ts
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { protectApiRoute } from "@/lib/protectApi";
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -12,22 +15,23 @@ import { promises as fsPromises } from "fs";
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png"]);
 
-// โฟลเดอร์เก็บไฟล์จริง (override ได้ด้วย env)
 const STORAGE_DIR =
-    process.env.BORROW_STORAGE_DIR ||
-    path.join(process.cwd(), "public", "borrows");
+    process.env.BORROW_STORAGE_DIR || path.join(process.cwd(), "public", "borrows");
 
-// โฟลเดอร์ไฟล์เก่าที่เคยใช้
 const LEGACY_DIRS = [
     "/app/fileborrows",
     path.join(process.cwd(), "public", "fileborrows-data"),
 ];
 
-// base path สำหรับไฟล์ใน public/borrows เวลาเสิร์ฟผ่าน Next (static)
 const PUBLIC_PATH = "/borrows";
-
-// ถ้าต้องเสิร์ฟผ่านโดเมนอื่น ใส่ไว้ใน .env (optional)
 const ASSET_BASE = process.env.NEXT_PUBLIC_ASSET_BASE || "";
+
+/* ---------------- Local Types (แก้ TS error b) ---------------- */
+// ✅ ทำให้ rows.map((b)=>...) ไม่ error โดยไม่ต้อง import Prisma types
+type BorrowRow = {
+    borrow_images?: string | null;
+    [key: string]: any;
+};
 
 /* ---------------- Schema ---------------- */
 const borrowSchema = z.object({
@@ -40,45 +44,51 @@ const borrowSchema = z.object({
 });
 
 function sanitize(s: string) {
-    return s.trim().replace(/<[^>]*>?/gm, "");
+    return String(s ?? "").trim().replace(/<[^>]*>?/gm, "");
 }
 
 /* ---------------- Helpers ---------------- */
 function fileExists(p: string) {
-    try { return fs.existsSync(p); } catch { return false; }
+    try {
+        return fs.existsSync(p);
+    } catch {
+        return false;
+    }
 }
 
 function buildPublicUrl(absPath: string) {
-    // อยู่ที่ public/borrows => /borrows/<filename>
     const publicBorrows = path.join(process.cwd(), "public", "borrows");
     if (absPath.startsWith(publicBorrows)) {
         const filename = path.basename(absPath);
         return `${ASSET_BASE}${PUBLIC_PATH}/${filename}`;
     }
-    // legacy: /app/fileborrows -> map ให้เป็น /borrows/<filename> (ต้องมี nginx map ถ้านอก Next)
+
     if (absPath.startsWith("/app/fileborrows")) {
         return `${ASSET_BASE}${PUBLIC_PATH}/${path.basename(absPath)}`;
     }
-    // legacy: public/fileborrows-data -> /fileborrows-data/<filename>
+
     const legacyPublic = path.join(process.cwd(), "public", "fileborrows-data");
     if (absPath.startsWith(legacyPublic)) {
         return `${ASSET_BASE}/fileborrows-data/${path.basename(absPath)}`;
     }
+
     return null;
 }
 
 function resolveExistingFile(filename?: string | null): { path?: string; url?: string } {
-    if (!filename) return {};
-    // ใหม่สุด: STORAGE_DIR
-    let p = path.join(STORAGE_DIR, filename);
+    const safe = (filename ?? "").trim();
+    if (!safe) return {};
+
+    // STORAGE_DIR
+    let p = path.join(STORAGE_DIR, safe);
     if (fileExists(p)) return { path: p, url: buildPublicUrl(p) ?? undefined };
 
     // legacy 1
-    p = path.join(LEGACY_DIRS[0], filename);
+    p = path.join(LEGACY_DIRS[0], safe);
     if (fileExists(p)) return { path: p, url: buildPublicUrl(p) ?? undefined };
 
     // legacy 2
-    p = path.join(LEGACY_DIRS[1], filename);
+    p = path.join(LEGACY_DIRS[1], safe);
     if (fileExists(p)) return { path: p, url: buildPublicUrl(p) ?? undefined };
 
     return {};
@@ -91,6 +101,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const formData = await request.formData();
+
         const borrowName = formData.get("borrow_name")?.toString() || "";
         const unit = formData.get("unit")?.toString() || "";
         const typeId = parseInt(formData.get("type_id")?.toString() || "0", 10);
@@ -138,21 +149,18 @@ export async function POST(request: NextRequest) {
                 quantity: validated.quantity,
                 is_borro_restricted: validated.is_borro_restricted,
                 description: validated.description || null,
-                borrow_images: imageFilename,
-                // status: 1, // ใส่ถ้ามีคอลัมน์นี้
+                borrow_images: imageFilename || "",
+                status: 1, // ✅ default 1 แต่อยากชัดเจน
             },
         });
 
-        // แนบ image_url กลับให้ frontend ใช้ได้ทันที
-        const { url } = resolveExistingFile(created.borrow_images);
+        const { url } = resolveExistingFile((created as any).borrow_images ?? null);
         return NextResponse.json({ ...created, image_url: url ?? null }, { status: 200 });
     } catch (err: unknown) {
         if (err instanceof z.ZodError) {
             return NextResponse.json({ error: "Invalid input data", details: err.errors }, { status: 400 });
         }
         const message = err instanceof Error ? err.message : String(err);
-        const stack = err instanceof Error ? err.stack : undefined;
-        console.error("POST /api/borrow ERROR:", { message, stack });
         return NextResponse.json({ error: "Error adding borrow", message }, { status: 500 });
     }
 }
@@ -168,21 +176,22 @@ export async function GET(request: NextRequest) {
         const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "10", 10), 1), 50);
         const offset = (page - 1) * limit;
 
-        // ✅ แสดงเฉพาะรายการที่ยังเปิดใช้งาน (status = 1)
+        // ✅ เฉพาะรายการที่แสดง
         const where = { status: 1 };
 
-        const [rows, totalRecords] = await Promise.all([
-            prisma.borrow.findMany({
-                where,
-                skip: offset,
-                take: limit,
-                orderBy: { id: "desc" },
-            }),
-            prisma.borrow.count({ where }),
-        ]);
+        // ✅ cast เพื่อให้ b ใน map ไม่ error แน่นอน
+        const rows = (await prisma.borrow.findMany({
+            where,
+            skip: offset,
+            take: limit,
+            orderBy: { id: "desc" },
+            include: { type: true },
+        })) as unknown as BorrowRow[];
+
+        const totalRecords = await prisma.borrow.count({ where });
 
         const items = rows.map((b) => {
-            const { url } = resolveExistingFile(b.borrow_images);
+            const { url } = resolveExistingFile(b.borrow_images ?? null);
             return { ...b, image_url: url ?? null };
         });
 
@@ -190,8 +199,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ items, totalPages, totalRecords }, { status: 200 });
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
-        const stack = err instanceof Error ? err.stack : undefined;
-        console.error("GET /api/borrow ERROR:", { message, stack });
         return NextResponse.json({ error: "Error fetching borrows", message }, { status: 500 });
     }
 }

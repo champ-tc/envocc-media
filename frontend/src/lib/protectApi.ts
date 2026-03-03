@@ -72,7 +72,10 @@
 import { getToken } from 'next-auth/jwt';
 import { NextResponse, type NextRequest } from 'next/server';
 
-// 🧠 Store สำหรับ rate limit: นับ request ต่อ IP
+/* ------------------------------------------------------------------ */
+/*                          Rate Limit Store                           */
+/* ------------------------------------------------------------------ */
+
 const ipRateLimitMap = new Map<string, { count: number; timestamp: number }>();
 
 function isRateLimited(ip: string, limit: number, windowMs: number): boolean {
@@ -85,7 +88,6 @@ function isRateLimited(ip: string, limit: number, windowMs: number): boolean {
     }
 
     if (now - entry.timestamp > windowMs) {
-        // reset window
         ipRateLimitMap.set(ip, { count: 1, timestamp: now });
         return false;
     }
@@ -98,46 +100,99 @@ function isRateLimited(ip: string, limit: number, windowMs: number): boolean {
     return false;
 }
 
+/* ------------------------------------------------------------------ */
+/*                         Security Utilities                          */
+/* ------------------------------------------------------------------ */
+
+// 🔐 ตัด control characters กัน log injection
+function sanitizeForLog(value: string): string {
+    return value.replace(/[\r\n\t]/g, '').slice(0, 100);
+}
+
+// 🔐 validate IP format แบบ basic (IPv4 + fallback)
+function extractSafeIp(request: NextRequest): string {
+    const rawIp =
+        request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+        'unknown-ip';
+
+    const cleaned = sanitizeForLog(rawIp);
+
+    // optional: simple IPv4 validation
+    const ipv4Regex =
+        /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/;
+
+    if (ipv4Regex.test(cleaned)) {
+        return cleaned;
+    }
+
+    return 'unknown-ip';
+}
+
+/* ------------------------------------------------------------------ */
+/*                           Main Function                             */
+/* ------------------------------------------------------------------ */
+
 export async function protectApiRoute(
     request: NextRequest,
     allowedRoles: string[],
     limit = 30,
     windowMs = 60_000
 ): Promise<true | NextResponse> {
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown-ip';
 
-    // ✅ 1. ตรวจ rate limit
+    const ip = extractSafeIp(request);
+
+    /* -------------------- 1. Rate Limit -------------------- */
+
     if (isRateLimited(ip, limit, windowMs)) {
-        console.warn(`🚨 Rate limit exceeded for IP: ${ip}`);
-        return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+        console.warn('Rate limit exceeded', { ip });
+        return NextResponse.json(
+            { error: 'Too many requests' },
+            { status: 429 }
+        );
     }
 
-    // ✅ 2. ตรวจสอบ Environment เพื่อเลือกชื่อ Cookie ให้ถูก
-    const isProd = process.env.NODE_ENV === "production";
-    const cookieName = isProd ? "__Secure-next-auth.session-token" : "next-auth.session-token";
+    /* -------------------- 2. Cookie Name -------------------- */
 
-    // ✅ 3. ดึง Token โดยระบุ cookieName ที่ถูกต้อง
+    const isProd = process.env.NODE_ENV === "production";
+    const cookieName = isProd
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token";
+
+    /* -------------------- 3. Get Token -------------------- */
+
     const token = await getToken({
         req: request,
         secret: process.env.NEXTAUTH_SECRET,
-        cookieName: cookieName,
+        cookieName,
     });
 
     if (!token) {
-        console.warn(`🚨 No token found in request from IP: ${ip} (Env: ${process.env.NODE_ENV})`);
-        return NextResponse.json({ error: 'Missing or invalid token' }, { status: 403 });
+        console.warn('Missing token', { ip });
+        return NextResponse.json(
+            { error: 'Missing or invalid token' },
+            { status: 403 }
+        );
     }
 
     if (!token.role) {
-        console.warn(`🚨 Token missing role for IP: ${ip}`, token);
-        return NextResponse.json({ error: 'Token missing role' }, { status: 403 });
+        console.warn('Token missing role', { ip });
+        return NextResponse.json(
+            { error: 'Token missing role' },
+            { status: 403 }
+        );
     }
 
     if (!allowedRoles.includes(token.role as string)) {
-        console.warn(`🚨 Token role not allowed: ${token.role} for IP: ${ip}`);
-        return NextResponse.json({ error: 'Role not allowed' }, { status: 403 });
+        console.warn('Token role not allowed', {
+            ip,
+            role: token.role,
+        });
+
+        return NextResponse.json(
+            { error: 'Role not allowed' },
+            { status: 403 }
+        );
     }
 
-    // ✅ ผ่านทุกการตรวจสอบ
     return true;
 }
