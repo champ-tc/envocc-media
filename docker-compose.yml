@@ -6,7 +6,8 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     env_file:
       - ./frontend/.env
     networks:
@@ -29,33 +30,40 @@ services:
       - fileuploads-data:/app/fileuploads
       - fileborrows-data:/app/fileborrows
       - filerequisitions-data:/app/filerequisitions
-
     depends_on:
       - frontend
     networks:
       - internal_net
     restart: unless-stopped
 
-
-  db:  # ✅ ย้ายเข้ามาอยู่ใต้ services
+  db:
     image: mysql:8.0
     container_name: mysql-db
     restart: unless-stopped
+    ports:
+      - "3306:3306"
+
+    # ✅ ใช้ .env ระดับ root (มี DB_* ของคุณอยู่แล้ว)
+    env_file:
+      - ./.env
+
+    # ✅ map ชื่อ env ให้ MySQL รู้จัก (สำคัญ!)
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD is required}
+      MYSQL_DATABASE: ${DB_NAME:-media}
+      MYSQL_USER: ${DB_USER:-myuser}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+
     volumes:
       - db-data:/var/lib/mysql
     networks:
       - internal_net
+
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD}"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD}" ]
       interval: 10s
       timeout: 5s
       retries: 5
-
 
   phpmyadmin:
     image: phpmyadmin:latest
@@ -76,7 +84,6 @@ volumes:
     name: fileborrows-data
   filerequisitions-data:
     name: filerequisitions-data
-
 
 networks:
   internal_net:

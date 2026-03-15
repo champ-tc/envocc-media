@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import useAuthCheck from '@/hooks/useAuthCheck';
+import useAuthCheck from "@/hooks/useAuthCheck";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
 interface EvaluationItem {
@@ -32,21 +32,21 @@ function AdminsReports_Evaluation() {
     const itemsPerPage = 10;
     const startIndex = (currentPage - 1) * itemsPerPage;
 
-    // ... (ส่วน departmentOptions และ Helper functions อื่นๆ เหมือนเดิม) ...
     const departmentOptions = [
-        { value: '1', label: 'สำนักงานสาธารณสุขจังหวัด' },
-        { value: '2', label: 'สำนักงานป้องกันควบคุมโรค' },
-        { value: '3', label: 'โรงพยาบาล' },
-        { value: '4', label: 'สถานประกอบการ' },
-        { value: '5', label: 'มหาวิทยาลัย' },
-        { value: '6', label: 'องค์กรอิสระ' },
-        { value: '7', label: 'เจ้าหน้าที่ภาครัฐ/รัฐวิสาหกิจ' },
-        { value: '8', label: 'เจ้าหน้าที่ EnvOcc' },
-        { value: '9', label: 'นักเรียน/นักศึกษา' },
-        { value: '10', label: 'ประชาชนทั่วไป' },
+        { value: "1", label: "สำนักงานสาธารณสุขจังหวัด" },
+        { value: "2", label: "สำนักงานป้องกันควบคุมโรค" },
+        { value: "3", label: "โรงพยาบาล" },
+        { value: "4", label: "สถานประกอบการ" },
+        { value: "5", label: "มหาวิทยาลัย" },
+        { value: "6", label: "องค์กรอิสระ" },
+        { value: "7", label: "เจ้าหน้าที่ภาครัฐ/รัฐวิสาหกิจ" },
+        { value: "8", label: "เจ้าหน้าที่ EnvOcc" },
+        { value: "9", label: "นักเรียน/นักศึกษา" },
+        { value: "10", label: "ประชาชนทั่วไป" },
     ];
 
-    const getDepartmentLabel = (value: string) => departmentOptions.find((opt) => opt.value === value)?.label || "-";
+    const getDepartmentLabel = (value: string) =>
+        departmentOptions.find((opt) => opt.value === value)?.label || "-";
 
     const getActionTypeLabel = (type: string) => {
         if (type === "requisition") return "การเบิก";
@@ -56,27 +56,29 @@ function AdminsReports_Evaluation() {
 
     const getReuseLabel = (val: string) => {
         const map: Record<string, string> = {
-            "definitely": "กลับมาแน่นอน", "likely": "อาจจะกลับมา", "unsure": "ไม่แน่ใจ", "no": "ไม่กลับมา",
-            "sure": "กลับมาแน่นอน", "maybe": "ไม่แน่ใจ"
+            definitely: "กลับมาแน่นอน",
+            likely: "อาจจะกลับมา",
+            unsure: "ไม่แน่ใจ",
+            no: "ไม่กลับมา",
+            sure: "กลับมาแน่นอน",
+            maybe: "ไม่แน่ใจ",
         };
         return map[val] || val;
     };
 
     const getRecommendLabel = (val: string) => {
-        const map: Record<string, string> = { "yes": "แนะนำ", "no": "ไม่แนะนำ" };
+        const map: Record<string, string> = { yes: "แนะนำ", no: "ไม่แนะนำ" };
         return map[val] || val;
     };
 
-    // ✅ ฟังก์ชันช่วยจัดรูปแบบวันที่ (เพิ่มใหม่)
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString("th-TH", {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
+            day: "numeric",
+            month: "long",
+            year: "numeric",
         });
     };
 
-    // Pagination
     const totalPages = Math.ceil(evaluations.length / itemsPerPage);
     const currentItems = evaluations.slice(startIndex, startIndex + itemsPerPage);
 
@@ -87,11 +89,10 @@ function AdminsReports_Evaluation() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await fetch(`/api/report_evaluation`);
+                const res = await fetch(`/api/report_evaluation`, { cache: "no-store" });
                 const json = await res.json();
                 setEvaluations(json.items || []);
-            } catch (err) {
-                console.error("Failed to fetch evaluations:", err);
+            } catch {
                 setEvaluations([]);
             }
         };
@@ -99,30 +100,110 @@ function AdminsReports_Evaluation() {
     }, []);
 
     if (isLoading) {
-        return <div className="flex justify-center items-center min-h-screen"><p>กำลังโหลด...</p></div>;
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <p>กำลังโหลด...</p>
+            </div>
+        );
     }
 
-    // Export Excel
-    const exportToExcel = () => {
-        const dataForExcel = evaluations.map((item, index) => ({
+    // ✅ Export Excel (ไม่เอาชื่อ-นามสกุล) + ใช้ ExcelJS
+    const exportToExcel = async () => {
+        const headers = [
+            "ลำดับ",
+            "วันที่ประเมิน",
+            "หน่วยงาน",
+            "ประเภทรายการ",
+            "ความพึงพอใจ (เต็ม 5)",
+            "ความสะดวก (เต็ม 5)",
+            "กลับมาใช้ซ้ำ",
+            "แนะนำต่อ",
+            "ข้อเสนอแนะ",
+        ] as const;
+
+        const rows = evaluations.map((item, index) => ({
             ลำดับ: index + 1,
-            "วันที่ประเมิน": formatDate(item.createdAt), // ✅ ใช้วันที่แบบเต็ม
-            "ชื่อ - นามสกุล": `${item.user.title}${item.user.firstName} ${item.user.lastName}`,
+            วันที่ประเมิน: formatDate(item.createdAt),
             หน่วยงาน: getDepartmentLabel(item.user.department),
-            "ประเภทรายการ": getActionTypeLabel(item.actionType),
+            ประเภทรายการ: getActionTypeLabel(item.actionType),
             "ความพึงพอใจ (เต็ม 5)": item.satisfaction,
             "ความสะดวก (เต็ม 5)": item.convenience,
-            "กลับมาใช้ซ้ำ": getReuseLabel(item.reuseIntention),
-            "แนะนำต่อ": getRecommendLabel(item.recommend),
-            "ข้อเสนอแนะ": item.suggestion || "-"
+            กลับมาใช้ซ้ำ: getReuseLabel(item.reuseIntention),
+            แนะนำต่อ: getRecommendLabel(item.recommend),
+            ข้อเสนอแนะ: item.suggestion || "-",
         }));
 
-        const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "EvaluationReport");
-        const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-        const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-        saveAs(blob, `รายงานการประเมินผล.xlsx`);
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet("EvaluationReport");
+
+            worksheet.columns = headers.map((h) => ({
+                header: h,
+                key: h,
+                width:
+                    h === "ข้อเสนอแนะ" ? 45 :
+                        h === "หน่วยงาน" ? 28 :
+                            h === "วันที่ประเมิน" ? 18 :
+                                h === "ประเภทรายการ" ? 14 :
+                                    18,
+            }));
+
+            worksheet.addRows(rows);
+
+            // Header style + freeze
+            const headerRow = worksheet.getRow(1);
+            headerRow.font = { bold: true };
+            headerRow.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+            worksheet.views = [{ state: "frozen", ySplit: 1 }];
+
+            // Wrap / align for suggestion column
+            const suggestionCol = headers.indexOf("ข้อเสนอแนะ") + 1;
+            worksheet.getColumn(suggestionCol).alignment = {
+                vertical: "top",
+                horizontal: "left",
+                wrapText: true,
+            };
+
+            // Align numeric columns center
+            const idxCol = headers.indexOf("ลำดับ") + 1;
+            const satCol = headers.indexOf("ความพึงพอใจ (เต็ม 5)") + 1;
+            const convCol = headers.indexOf("ความสะดวก (เต็ม 5)") + 1;
+
+            [idxCol, satCol, convCol].forEach((col) => {
+                worksheet.getColumn(col).alignment = {
+                    vertical: "top",
+                    horizontal: "center",
+                    wrapText: true,
+                };
+            });
+
+            // Default alignment for other rows
+            worksheet.eachRow((row, rowNumber) => {
+                if (rowNumber === 1) return;
+                row.alignment = { vertical: "top", wrapText: true };
+            });
+
+            // Optional: add thin borders for readability
+            worksheet.eachRow((row) => {
+                row.eachCell((cell) => {
+                    cell.border = {
+                        top: { style: "thin" },
+                        left: { style: "thin" },
+                        bottom: { style: "thin" },
+                        right: { style: "thin" },
+                    };
+                });
+            });
+
+            const buffer = (await workbook.xlsx.writeBuffer()) as ArrayBuffer;
+            const blob = new Blob([buffer], {
+                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            });
+            saveAs(blob, `รายงานการประเมินผล.xlsx`);
+        } catch (e) {
+            console.error("Export excel failed:", e);
+            alert("ส่งออกไฟล์ไม่สำเร็จ");
+        }
     };
 
     return (
@@ -132,7 +213,9 @@ function AdminsReports_Evaluation() {
                 <TopBar />
                 <div className="flex-1 p-4 mt-4 lg:ml-52">
                     <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8">
-                        <h2 className="text-2xl font-semibold text-gray-800 mb-4">รายงานการประเมินผลความพึงพอใจ</h2>
+                        <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                            รายงานการประเมินผลความพึงพอใจ
+                        </h2>
 
                         <div className="flex justify-end mb-4">
                             <button
@@ -149,8 +232,6 @@ function AdminsReports_Evaluation() {
                                     <tr className="bg-[#9063d2] text-white text-center">
                                         <th className="border px-2 py-2 w-12">ลำดับ</th>
                                         <th className="border px-4 py-2">วันที่</th>
-                                        <th className="border px-4 py-2">ชื่อ - นามสกุล</th>
-                                        {/* ... หัวตารางอื่นๆ ... */}
                                         <th className="border px-4 py-2">หน่วยงาน</th>
                                         <th className="border px-2 py-2">ประเภท</th>
                                         <th className="border px-2 py-2">พอใจ</th>
@@ -160,21 +241,28 @@ function AdminsReports_Evaluation() {
                                         <th className="border px-4 py-2 w-1/5">ข้อเสนอแนะ</th>
                                     </tr>
                                 </thead>
+
                                 <tbody>
                                     {currentItems.length > 0 ? (
                                         currentItems.map((item, index) => (
-                                            <tr key={item.id} className="text-xs font-normal hover:bg-gray-50 text-center">
+                                            <tr
+                                                key={item.id}
+                                                className="text-xs font-normal hover:bg-gray-50 text-center"
+                                            >
                                                 <td className="border px-2 py-2">{startIndex + index + 1}</td>
                                                 <td className="border px-2 py-2 text-left whitespace-nowrap">
-                                                    {formatDate(item.createdAt)} {/* ✅ ใช้วันที่แบบเต็ม */}
+                                                    {formatDate(item.createdAt)}
                                                 </td>
                                                 <td className="border px-2 py-2 text-left">
-                                                    {`${item.user.title}${item.user.firstName} ${item.user.lastName}`}
+                                                    {getDepartmentLabel(item.user.department)}
                                                 </td>
-                                                {/* ... ข้อมูลอื่นๆ เหมือนเดิม ... */}
-                                                <td className="border px-2 py-2 text-left">{getDepartmentLabel(item.user.department)}</td>
                                                 <td className="border px-2 py-2">
-                                                    <span className={`px-2 py-1 rounded-full text-[10px] ${item.actionType === 'requisition' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+                                                    <span
+                                                        className={`px-2 py-1 rounded-full text-[10px] ${item.actionType === "requisition"
+                                                                ? "bg-purple-100 text-purple-800"
+                                                                : "bg-blue-100 text-blue-800"
+                                                            }`}
+                                                    >
                                                         {getActionTypeLabel(item.actionType)}
                                                     </span>
                                                 </td>
@@ -182,30 +270,59 @@ function AdminsReports_Evaluation() {
                                                 <td className="border px-2 py-2">{item.convenience}</td>
                                                 <td className="border px-2 py-2">{getReuseLabel(item.reuseIntention)}</td>
                                                 <td className="border px-2 py-2">{getRecommendLabel(item.recommend)}</td>
-                                                <td className="border px-2 py-2 text-left text-gray-600 break-words">{item.suggestion || "-"}</td>
+                                                <td className="border px-2 py-2 text-left text-gray-600 break-words">
+                                                    {item.suggestion || "-"}
+                                                </td>
                                             </tr>
                                         ))
                                     ) : (
-                                        <tr><td colSpan={10} className="text-center py-4 text-gray-500">ไม่มีข้อมูลการประเมิน</td></tr>
+                                        <tr>
+                                            <td colSpan={9} className="text-center py-4 text-gray-500">
+                                                ไม่มีข้อมูลการประเมิน
+                                            </td>
+                                        </tr>
                                     )}
                                 </tbody>
                             </table>
                         </div>
 
-                        {/* Pagination Section (เหมือนเดิม) */}
+                        {/* Pagination */}
                         <div className="flex items-center justify-between mt-6">
                             <span className="text-sm text-gray-600">
-                                รายการที่ {evaluations.length === 0 ? 0 : startIndex + 1} ถึง {Math.min(startIndex + itemsPerPage, evaluations.length)} จาก {evaluations.length} รายการ
+                                รายการที่ {evaluations.length === 0 ? 0 : startIndex + 1} ถึง{" "}
+                                {Math.min(startIndex + itemsPerPage, evaluations.length)} จาก{" "}
+                                {evaluations.length} รายการ
                             </span>
                             <div className="flex space-x-2">
-                                <button onClick={goToPreviousPage} disabled={currentPage === 1} className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50">ก่อนหน้า</button>
+                                <button
+                                    onClick={goToPreviousPage}
+                                    disabled={currentPage === 1}
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
+                                >
+                                    ก่อนหน้า
+                                </button>
+
                                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                    <button key={page} onClick={() => handlePageChange(page)} className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#9063d2] hover:text-white transition`}>{page}</button>
+                                    <button
+                                        key={page}
+                                        onClick={() => handlePageChange(page)}
+                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-600"
+                                            } hover:bg-[#9063d2] hover:text-white transition`}
+                                    >
+                                        {page}
+                                    </button>
                                 ))}
-                                <button onClick={goToNextPage} disabled={currentPage === totalPages} className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50">ถัดไป</button>
+
+                                <button
+                                    onClick={goToNextPage}
+                                    disabled={currentPage === totalPages || totalPages === 0}
+                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
+                                >
+                                    ถัดไป
+                                </button>
                             </div>
                         </div>
-
+                        {/* End Pagination */}
                     </div>
                 </div>
             </div>

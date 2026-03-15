@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
 /* ===================== Types ===================== */
@@ -20,8 +20,8 @@ interface LogItem {
         title: string;
         firstName: string;
         lastName: string;
-        department: string;           // รหัสหน่วยงานหลัก (ตรงกับ departmentOptions.value)
-        subDepartment?: string;       // ถ้ามี (รหัสหน่วยงานย่อย/เขต)
+        department: string; // รหัสหน่วยงานหลัก (ตรงกับ departmentOptions.value)
+        subDepartment?: string; // ถ้ามี (รหัสหน่วยงานย่อย/เขต)
         // บางระบบอาจใช้ชื่ออื่น เช่น position / officeCode / office_code
     };
 }
@@ -182,19 +182,14 @@ function AdminsReports_requisition() {
     ] as const;
 
     /* ---------- Helpers: type-safe (no any) ---------- */
-    const readStr = (
-        o: Partial<Record<string, unknown>>,
-        k: string
-    ): string | undefined => {
+    const readStr = (o: Partial<Record<string, unknown>>, k: string): string | undefined => {
         const v = o[k];
         return typeof v === "string" && v.trim() !== "" ? v : undefined;
     };
 
     type UserPossibleSubs =
         LogItem["user"] &
-        Partial<
-            Record<"subDepartment" | "position" | "officeCode" | "office_code", string>
-        >;
+        Partial<Record<"subDepartment" | "position" | "officeCode" | "office_code", string>>;
 
     const getUserSubCode = (u: UserPossibleSubs): string | undefined => {
         return (
@@ -253,8 +248,8 @@ function AdminsReports_requisition() {
         );
     }
 
-    /* ---------- Export Excel (มีคอลัมน์หน่วยงานย่อย/เขต) ---------- */
-    const exportToExcel = () => {
+    /* ---------- Export Excel (exceljs) ---------- */
+    const exportToExcel = async () => {
         const dataForExcel = groupArray.map(([, groupLogs], index) => {
             const firstLog = groupLogs[0];
 
@@ -272,10 +267,7 @@ function AdminsReports_requisition() {
             });
 
             const requisitionText = Array.from(itemMap.entries())
-                .map(
-                    ([name, { requested, approved }]) =>
-                        `${name} - ขอ ${requested} / อนุมัติ ${approved}`
-                )
+                .map(([name, { requested, approved }]) => `${name} - ขอ ${requested} / อนุมัติ ${approved}`)
                 .join("\n");
 
             const deptCode = firstLog.user.department;
@@ -285,27 +277,71 @@ function AdminsReports_requisition() {
                 ลำดับ: index + 1,
                 "ชื่อ - นามสกุล": [
                     ...new Set(
-                        groupLogs.map(
-                            (log) => `${log.user.title}${log.user.firstName} ${log.user.lastName}`
-                        )
+                        groupLogs.map((log) => `${log.user.title}${log.user.firstName} ${log.user.lastName}`)
                     ),
                 ].join(", "),
                 หน่วยงาน: getDepartmentLabel(deptCode),
                 "หน่วยงานย่อย/เขต": getSubDepartmentLabel(deptCode, subCode),
                 "รายการที่เบิก": requisitionText,
                 "วันที่เบิก": new Date(firstLog.requisition_date).toLocaleDateString("th-TH"),
-                สถานะ:
-                    statusOptions.find((s) => s.key === firstLog.status)?.label || "-",
+                สถานะ: statusOptions.find((s) => s.key === firstLog.status)?.label || "-",
             };
         });
 
-        const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Report");
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet("Report");
 
-        const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-        const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-        saveAs(blob, `รายงานการขอเบิก.xlsx`);
+            // สร้างคอลัมน์จาก keys ของแถวแรก (ถ้าไม่มีข้อมูลก็ยังสร้างหัวไว้)
+            const keys = dataForExcel.length ? Object.keys(dataForExcel[0]) : [
+                "ลำดับ",
+                "ชื่อ - นามสกุล",
+                "หน่วยงาน",
+                "หน่วยงานย่อย/เขต",
+                "รายการที่เบิก",
+                "วันที่เบิก",
+                "สถานะ",
+            ];
+
+            worksheet.columns = keys.map((k) => ({
+                header: k,
+                key: k,
+                width: k === "รายการที่เบิก" ? 50 : 22,
+            }));
+
+            worksheet.addRows(dataForExcel);
+
+            // แต่ง header
+            const headerRow = worksheet.getRow(1);
+            headerRow.font = { bold: true };
+            headerRow.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+            worksheet.views = [{ state: "frozen", ySplit: 1 }];
+
+            // wrapText สำหรับคอลัมน์รายการที่เบิก (มี \n)
+            const requisitionColIndex = keys.indexOf("รายการที่เบิก") + 1;
+            if (requisitionColIndex > 0) {
+                worksheet.getColumn(requisitionColIndex).alignment = {
+                    vertical: "top",
+                    horizontal: "left",
+                    wrapText: true,
+                };
+            }
+
+            // ทำ alignment ทั่วไปให้ดูอ่านง่าย
+            worksheet.eachRow((row, rowNumber) => {
+                if (rowNumber === 1) return;
+                row.alignment = { vertical: "top", wrapText: true };
+            });
+
+            const buffer = (await workbook.xlsx.writeBuffer()) as ArrayBuffer;
+            const blob = new Blob([buffer], {
+                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            });
+            saveAs(blob, `รายงานการขอเบิก.xlsx`);
+        } catch (e) {
+            console.error("Export excel failed:", e);
+            alert("ส่งออกไฟล์ไม่สำเร็จ");
+        }
     };
 
     /* ---------- UI ---------- */
@@ -316,9 +352,7 @@ function AdminsReports_requisition() {
                 <TopBar />
                 <div className="flex-1 p-4 mt-4 lg:ml-52">
                     <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8">
-                        <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                            รายงานการขอเบิก
-                        </h2>
+                        <h2 className="text-2xl font-semibold text-gray-800 mb-4">รายงานการขอเบิก</h2>
 
                         <div className="flex justify-end mb-4">
                             <button
@@ -348,10 +382,7 @@ function AdminsReports_requisition() {
                                         const deptCode = firstLog.user.department;
                                         const subCode = getUserSubCode(firstLog.user);
 
-                                        const itemMap = new Map<
-                                            string,
-                                            { requested: number; approved: number }
-                                        >();
+                                        const itemMap = new Map<string, { requested: number; approved: number }>();
                                         groupLogs.forEach((log) => {
                                             const name = log.requisition.requisition_name;
                                             const requested = log.requested_quantity;
@@ -371,26 +402,21 @@ function AdminsReports_requisition() {
                                                     {[
                                                         ...new Set(
                                                             groupLogs.map(
-                                                                (log) =>
-                                                                    `${log.user.title}${log.user.firstName} ${log.user.lastName}`
+                                                                (log) => `${log.user.title}${log.user.firstName} ${log.user.lastName}`
                                                             )
                                                         ),
                                                     ].join(", ")}
                                                 </td>
-                                                <td className="border px-4 py-2">
-                                                    {getDepartmentLabel(deptCode)}
-                                                </td>
+                                                <td className="border px-4 py-2">{getDepartmentLabel(deptCode)}</td>
                                                 <td className="border px-4 py-2">
                                                     {getSubDepartmentLabel(deptCode, subCode)}
                                                 </td>
                                                 <td className="border px-4 py-2 text-left">
-                                                    {Array.from(itemMap.entries()).map(
-                                                        ([name, { requested, approved }], idx) => (
-                                                            <div key={idx}>
-                                                                {name} - ขอ {requested} / อนุมัติ {approved}
-                                                            </div>
-                                                        )
-                                                    )}
+                                                    {Array.from(itemMap.entries()).map(([name, { requested, approved }], idx) => (
+                                                        <div key={idx}>
+                                                            {name} - ขอ {requested} / อนุมัติ {approved}
+                                                        </div>
+                                                    ))}
                                                 </td>
                                                 <td className="border px-4 py-2">
                                                     {new Date(firstLog.requisition_date).toLocaleDateString("th-TH")}
@@ -409,8 +435,7 @@ function AdminsReports_requisition() {
                         <div className="flex items-center justify-between mt-6">
                             <span className="text-sm text-gray-600">
                                 รายการที่ {groupArray.length === 0 ? 0 : startIndex + 1} ถึง{" "}
-                                {Math.min(startIndex + itemsPerPage, groupArray.length)} จาก{" "}
-                                {groupArray.length} รายการ
+                                {Math.min(startIndex + itemsPerPage, groupArray.length)} จาก {groupArray.length} รายการ
                             </span>
 
                             <div className="flex space-x-2">
@@ -425,9 +450,7 @@ function AdminsReports_requisition() {
                                     <button
                                         key={page}
                                         onClick={() => handlePageChange(page)}
-                                        className={`px-4 py-2 rounded-md ${currentPage === page
-                                                ? "bg-[#9063d2] text-white"
-                                                : "bg-gray-200 text-gray-600"
+                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-600"
                                             } hover:bg-[#9063d2] hover:text-white transition`}
                                     >
                                         {page}

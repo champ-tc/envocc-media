@@ -50,20 +50,22 @@ RUN apt-get update \
     default-mysql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# ✅ ไม่ COPY .env เข้า image (ปลอดภัยสุด)
-# ให้ใส่ตอน run ด้วย --env-file หรือ docker compose env_file
-
-USER node
+# ไม่ COPY .env เข้า image
+# ใช้ env_file หรือ environment จาก docker compose
 
 COPY --chown=node:node --from=build /app/package.json ./package.json
 COPY --chown=node:node --from=build /app/package-lock.json ./package-lock.json
 COPY --chown=node:node --from=build /app/node_modules ./node_modules
 COPY --chown=node:node --from=build /app/.next ./.next
 COPY --chown=node:node --from=build /app/public ./public
+COPY --chown=node:node --from=build /app/prisma ./prisma
 
 COPY --chown=node:node entrypoint.sh ./entrypoint.sh
 COPY --chown=node:node wait-for-it.sh ./wait-for-it.sh
+
 RUN chmod +x ./entrypoint.sh ./wait-for-it.sh
+
+USER node
 
 EXPOSE 3000
 CMD ["./entrypoint.sh"]

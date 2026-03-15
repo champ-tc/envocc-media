@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import useAuthCheck from '@/hooks/useAuthCheck';
+import useAuthCheck from "@/hooks/useAuthCheck";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
 interface BorrowLogItem {
@@ -36,16 +36,16 @@ function AdminsReports_borrows() {
     const startIndex = (currentPage - 1) * itemsPerPage;
 
     const departmentOptions = [
-        { value: '1', label: 'สำนักงานสาธารณสุขจังหวัด' },
-        { value: '2', label: 'สำนักงานป้องกันควบคุมโรค' },
-        { value: '3', label: 'โรงพยาบาล' },
-        { value: '4', label: 'สถานประกอบการ' },
-        { value: '5', label: 'มหาวิทยาลัย' },
-        { value: '6', label: 'องค์กรอิสระ' },
-        { value: '7', label: 'เจ้าหน้าที่ภาครัฐ/รัฐวิสาหกิจ' },
-        { value: '8', label: 'เจ้าหน้าที่ EnvOcc' },
-        { value: '9', label: 'นักเรียน/นักศึกษา' },
-        { value: '10', label: 'ประชาชนทั่วไป' },
+        { value: "1", label: "สำนักงานสาธารณสุขจังหวัด" },
+        { value: "2", label: "สำนักงานป้องกันควบคุมโรค" },
+        { value: "3", label: "โรงพยาบาล" },
+        { value: "4", label: "สถานประกอบการ" },
+        { value: "5", label: "มหาวิทยาลัย" },
+        { value: "6", label: "องค์กรอิสระ" },
+        { value: "7", label: "เจ้าหน้าที่ภาครัฐ/รัฐวิสาหกิจ" },
+        { value: "8", label: "เจ้าหน้าที่ EnvOcc" },
+        { value: "9", label: "นักเรียน/นักศึกษา" },
+        { value: "10", label: "ประชาชนทั่วไป" },
     ];
 
     const statusOptions = [
@@ -55,19 +55,15 @@ function AdminsReports_borrows() {
         { key: "approvedreturned", label: "คืนสำเร็จ" },
     ];
 
-
     const getDepartmentLabel = (value: string) => {
         return departmentOptions.find((opt) => opt.value === value)?.label || "-";
     };
 
     const getStatusLabel = (key: string) => {
         const normalizedKey = key.trim().toLowerCase();
-        const match = statusOptions.find(
-            (opt) => opt.key.toLowerCase() === normalizedKey
-        );
+        const match = statusOptions.find((opt) => opt.key.toLowerCase() === normalizedKey);
         return match?.label || "-";
     };
-
 
     // Group
     const groupedLogs = logs.reduce((acc, log) => {
@@ -86,7 +82,6 @@ function AdminsReports_borrows() {
     // กำหนดกลุ่มในหน้าปัจจุบัน
     const currentGroups = groupArray.slice(startIndex, startIndex + itemsPerPage);
 
-
     const handlePageChange = (page: number) => setCurrentPage(page);
     const goToPreviousPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
     const goToNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
@@ -94,7 +89,7 @@ function AdminsReports_borrows() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await fetch(`/api/report_borrow`);
+                const res = await fetch(`/api/report_borrow`, { cache: "no-store" });
                 const json = await res.json();
                 setLogs(json.items || []);
             } catch (err) {
@@ -105,8 +100,6 @@ function AdminsReports_borrows() {
         fetchData();
     }, []);
 
-
-
     if (isLoading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
@@ -115,7 +108,8 @@ function AdminsReports_borrows() {
         );
     }
 
-    const exportToExcel = () => {
+    /* ---------- Export Excel (exceljs) ---------- */
+    const exportToExcel = async () => {
         const dataForExcel = groupArray.map(([, groupLogs], index) => {
             const firstLog = groupLogs[0];
 
@@ -137,10 +131,12 @@ function AdminsReports_borrows() {
                 .join("\n");
 
             return {
-                ลำดับ: startIndex + index + 1,
-                "ชื่อ - นามสกุล": [...new Set(groupLogs.map(
-                    (log) => `${log.user.title}${log.user.firstName} ${log.user.lastName}`
-                ))].join(", "),
+                ลำดับ: index + 1, // รายงานรวมทุกกลุ่ม ไม่ผูกกับหน้า pagination
+                "ชื่อ - นามสกุล": [
+                    ...new Set(
+                        groupLogs.map((log) => `${log.user.title}${log.user.firstName} ${log.user.lastName}`)
+                    ),
+                ].join(", "),
                 หน่วยงาน: getDepartmentLabel(firstLog.user.department),
                 "รายการที่ยืม": borrowText,
                 "วันที่ยืม": new Date(firstLog.borrow_date).toLocaleDateString("th-TH"),
@@ -151,12 +147,53 @@ function AdminsReports_borrows() {
             };
         });
 
-        const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "BorrowReport");
-        const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-        const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-        saveAs(blob, `รายงานการยืม.xlsx`);
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet("BorrowReport");
+
+            const keys =
+                dataForExcel.length > 0
+                    ? Object.keys(dataForExcel[0])
+                    : ["ลำดับ", "ชื่อ - นามสกุล", "หน่วยงาน", "รายการที่ยืม", "วันที่ยืม", "วันที่คืน", "สถานะ"];
+
+            worksheet.columns = keys.map((k) => ({
+                header: k,
+                key: k,
+                width: k === "รายการที่ยืม" ? 50 : 22,
+            }));
+
+            worksheet.addRows(dataForExcel);
+
+            // header
+            const headerRow = worksheet.getRow(1);
+            headerRow.font = { bold: true };
+            headerRow.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+            worksheet.views = [{ state: "frozen", ySplit: 1 }];
+
+            // wrap + alignment
+            const borrowColIndex = keys.indexOf("รายการที่ยืม") + 1;
+            if (borrowColIndex > 0) {
+                worksheet.getColumn(borrowColIndex).alignment = {
+                    vertical: "top",
+                    horizontal: "left",
+                    wrapText: true,
+                };
+            }
+
+            worksheet.eachRow((row, rowNumber) => {
+                if (rowNumber === 1) return;
+                row.alignment = { vertical: "top", wrapText: true };
+            });
+
+            const buffer = (await workbook.xlsx.writeBuffer()) as ArrayBuffer;
+            const blob = new Blob([buffer], {
+                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            });
+            saveAs(blob, `รายงานการยืม.xlsx`);
+        } catch (e) {
+            console.error("Export excel failed:", e);
+            alert("ส่งออกไฟล์ไม่สำเร็จ");
+        }
     };
 
     return (
@@ -197,13 +234,15 @@ function AdminsReports_borrows() {
                                             <tr key={groupId} className="text-xs font-normal">
                                                 <td className="border px-4 py-2">{startIndex + index + 1}</td>
                                                 <td className="border px-4 py-2">
-                                                    {[...new Set(groupLogs.map(
-                                                        (log) => `${log.user.title}${log.user.firstName} ${log.user.lastName}`
-                                                    ))].join(", ")}
+                                                    {[
+                                                        ...new Set(
+                                                            groupLogs.map(
+                                                                (log) => `${log.user.title}${log.user.firstName} ${log.user.lastName}`
+                                                            )
+                                                        ),
+                                                    ].join(", ")}
                                                 </td>
-                                                <td className="border px-4 py-2">
-                                                    {getDepartmentLabel(firstLog.user.department)}
-                                                </td>
+                                                <td className="border px-4 py-2">{getDepartmentLabel(firstLog.user.department)}</td>
                                                 <td className="border px-4 py-2 text-left">
                                                     {(() => {
                                                         const itemMap = new Map<string, { quantity: number; approved: number }>();
@@ -233,10 +272,7 @@ function AdminsReports_borrows() {
                                                         ? new Date(firstLog.actual_return_date).toLocaleDateString("th-TH")
                                                         : "-"}
                                                 </td>
-                                                <td className="border px-4 py-2">
-                                                    {getStatusLabel(firstLog.status)}
-                                                </td>
-
+                                                <td className="border px-4 py-2">{getStatusLabel(firstLog.status)}</td>
                                             </tr>
                                         );
                                     })}
@@ -248,8 +284,7 @@ function AdminsReports_borrows() {
                         <div className="flex items-center justify-between mt-6">
                             <span className="text-sm text-gray-600">
                                 รายการที่ {groupArray.length === 0 ? 0 : startIndex + 1} ถึง{" "}
-                                {Math.min(startIndex + itemsPerPage, groupArray.length)} จาก{" "}
-                                {groupArray.length} รายการ
+                                {Math.min(startIndex + itemsPerPage, groupArray.length)} จาก {groupArray.length} รายการ
                             </span>
 
                             <div className="flex space-x-2">
@@ -264,9 +299,7 @@ function AdminsReports_borrows() {
                                     <button
                                         key={page}
                                         onClick={() => handlePageChange(page)}
-                                        className={`px-4 py-2 rounded-md ${currentPage === page
-                                            ? "bg-[#9063d2] text-white"
-                                            : "bg-gray-200 text-gray-600"
+                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-600"
                                             } hover:bg-[#9063d2] hover:text-white transition`}
                                     >
                                         {page}
@@ -281,7 +314,6 @@ function AdminsReports_borrows() {
                                 </button>
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>
