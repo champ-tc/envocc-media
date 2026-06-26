@@ -2,7 +2,6 @@ services:
   frontend:
     build:
       context: ./frontend
-    container_name: nextjs-app
     ports:
       - "3000:3000"
     depends_on:
@@ -20,7 +19,6 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: nginx
     ports:
       - "80:80"
       - "443:443"
@@ -38,7 +36,6 @@ services:
 
   db:
     image: mysql:8.0
-    container_name: mysql-db
     restart: unless-stopped
     ports:
       - "3306:3306"
@@ -67,7 +64,6 @@ services:
 
   phpmyadmin:
     image: phpmyadmin:latest
-    container_name: phpmyadmin-service
     environment:
       PMA_HOST: db
     ports:
@@ -87,4 +83,5 @@ volumes:
 
 networks:
   internal_net:
+    name: media_app_net
     driver: bridge
