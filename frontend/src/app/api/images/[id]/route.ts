@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/prisma";
-import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
 import path from "path";
 import cookie from "cookie";
 import { NextRequest } from "next/server";
 import { protectApiRoute } from '@/lib/protectApi';
 import { isRateLimited } from '@/lib/rateLimit';
+import { UploadValidationError, validateUploadedImage } from '@/lib/uploadSecurity';
 
 
 
@@ -71,15 +71,15 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
         let filename = existingImage.filename;
 
         if (newFile) {
+            const upload = await validateUploadedImage(newFile);
             const oldFilePath = path.join("/app/fileuploads", filename);
             if (fs.existsSync(oldFilePath)) {
                 fs.unlinkSync(oldFilePath);
             }
 
-            filename = `${uuidv4()}.${newFile.type.split("/")[1]}`;
+            filename = upload.filename;
             const newFilePath = path.join("/app/fileuploads", filename);
-            const fileBuffer = Buffer.from(await newFile.arrayBuffer());
-            fs.writeFileSync(newFilePath, fileBuffer);
+            fs.writeFileSync(newFilePath, upload.buffer);
         }
 
         const updatedImage = await prisma.image.update({
@@ -96,6 +96,9 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
             { status: 200 }
         );
     } catch (error) {
+        if (error instanceof UploadValidationError) {
+            return new Response(JSON.stringify({ error: error.message }), { status: 400 });
+        }
         console.error("Error updating image:", error);
         return new Response(JSON.stringify({ error: "Error updating image" }), { status: 500 });
     }

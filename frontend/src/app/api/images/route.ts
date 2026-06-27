@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from '@/lib/prisma';
-import { v4 as uuidv4 } from 'uuid'; // Import uuidv4
 import fs from 'fs';
 import path from 'path';
 import { protectApiRoute } from '@/lib/protectApi';
+import { UploadValidationError, validateUploadedImage } from '@/lib/uploadSecurity';
 
 
 
@@ -25,7 +25,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Invalid file input' }, { status: 400 });
         }
 
-        const filename = `${uuidv4()}.${file.type.split('/')[1]}`;
+        const upload = await validateUploadedImage(file);
+        const filename = upload.filename;
 
         // ไฟล์เข้า Docker
         const filePath = path.join('/app/fileuploads', filename); 
@@ -35,8 +36,7 @@ export async function POST(request: NextRequest) {
 
         console.log('Saving file to:', filePath);
 
-        const fileBuffer = Buffer.from(await file.arrayBuffer());
-        fs.writeFileSync(filePath, fileBuffer);
+        fs.writeFileSync(filePath, upload.buffer);
 
         const newImage = await prisma.image.create({
             data: {
@@ -47,6 +47,9 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ message: 'Image added successfully', image: newImage });
     } catch (error) {
+        if (error instanceof UploadValidationError) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
         console.error("Error uploading image:", error);
         return NextResponse.json({ error: 'Error uploading image' }, { status: 500 });
     }

@@ -2,13 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
-import { v4 as uuidv4 } from "uuid";
 import { protectApiRoute } from "@/lib/protectApi";
+import { MAX_IMAGE_UPLOAD_SIZE, UploadValidationError, validateUploadedImage } from "@/lib/uploadSecurity";
 
 const PUBLIC_BORROW_DIR = path.join(process.cwd(), "public", "borrows"); // <- ใช้กับ <Image src="/borrows/...">
 const LEGACY_DIR = "/app/fileborrows"; // <- เผื่อมีไฟล์เก่าที่เคยเก็บไว้ที่นี่
 const ALLOWED_TYPES = new Set(["image/png", "image/jpeg"]);
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 function ensureDir(p: string) {
     if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
@@ -127,19 +126,14 @@ export async function PUT(
         let imageFilename = existingBorrow.borrow_images ?? null;
 
         if (file) {
-            if (!ALLOWED_TYPES.has(file.type)) {
-                return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
-            }
-            if (file.size > MAX_SIZE) {
-                return NextResponse.json({ error: "File size exceeds 10MB" }, { status: 400 });
-            }
-
             ensureDir(PUBLIC_BORROW_DIR);
-            const ext = file.type.split("/")[1] || "png";
-            const filename = `${uuidv4()}.${ext}`;
+            const upload = await validateUploadedImage(file, {
+                allowedTypes: ALLOWED_TYPES,
+                maxSize: MAX_IMAGE_UPLOAD_SIZE,
+            });
+            const filename = upload.filename;
             const newPath = path.join(PUBLIC_BORROW_DIR, filename);
-            const buf = Buffer.from(await file.arrayBuffer());
-            fs.writeFileSync(newPath, buf);
+            fs.writeFileSync(newPath, upload.buffer);
 
             // ลบไฟล์เดิมถ้ามี
             const oldPath = findExistingFilePath(imageFilename);
@@ -178,6 +172,9 @@ export async function PUT(
 
         return NextResponse.json(updatedBorrow, { status: 200 });
     } catch (error) {
+        if (error instanceof UploadValidationError) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
         console.error("Error updating borrow:", error);
         return NextResponse.json({ error: "Error updating borrow data" }, { status: 500 });
     }

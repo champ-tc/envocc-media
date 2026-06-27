@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
 import path from "path";
 import { protectApiRoute } from '@/lib/protectApi';
+import { UploadValidationError, validateUploadedImage } from '@/lib/uploadSecurity';
 
 
 
@@ -75,6 +75,7 @@ async function updateRequisitionDetails(id: number, request: NextRequest) {
 
   // ✅ ถ้ามีไฟล์ใหม่ → ลบไฟล์เก่า + บันทึกไฟล์ใหม่
   if (file) {
+    const upload = await validateUploadedImage(file);
     const oldPath = path.join("/app/filerequisitions", filename);
     if (filename && fs.existsSync(oldPath)) {
       try {
@@ -84,11 +85,9 @@ async function updateRequisitionDetails(id: number, request: NextRequest) {
       }
     }
 
-    const extension = file.type?.split("/")[1] || "jpg";
-    filename = `${uuidv4()}.${extension}`;
+    filename = upload.filename;
     const newPath = path.join("/app/filerequisitions", filename);
-    const buffer = Buffer.from(await file.arrayBuffer());
-    fs.writeFileSync(newPath, buffer);
+    fs.writeFileSync(newPath, upload.buffer);
   }
 
   const updated = await prisma.requisition.update({
@@ -166,6 +165,9 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
       return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
   } catch (err) {
+    if (err instanceof UploadValidationError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
     console.error(`🔥 Error handling ${action}:`, err);
     return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
   }

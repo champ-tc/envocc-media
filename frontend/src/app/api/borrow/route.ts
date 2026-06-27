@@ -7,12 +7,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import path from "path";
-import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
 import { promises as fsPromises } from "fs";
+import { MAX_IMAGE_UPLOAD_SIZE, UploadValidationError, validateUploadedImage } from "@/lib/uploadSecurity";
 
 /* ---------------- Config ---------------- */
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png"]);
 
 const STORAGE_DIR =
@@ -122,22 +121,17 @@ export async function POST(request: NextRequest) {
         let imageFilename = "";
 
         if (file) {
-            if (!ALLOWED_TYPES.has(file.type)) {
-                return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
-            }
-            if (file.size > MAX_SIZE) {
-                return NextResponse.json({ error: "File size exceeds 10MB" }, { status: 400 });
-            }
-
             if (!fs.existsSync(STORAGE_DIR)) {
                 await fsPromises.mkdir(STORAGE_DIR, { recursive: true });
             }
 
-            const ext = file.type.split("/")[1] || "png";
-            const filename = `${uuidv4()}.${ext}`;
+            const upload = await validateUploadedImage(file, {
+                allowedTypes: ALLOWED_TYPES,
+                maxSize: MAX_IMAGE_UPLOAD_SIZE,
+            });
+            const filename = upload.filename;
             const filePath = path.join(STORAGE_DIR, filename);
-            const buf = Buffer.from(await file.arrayBuffer());
-            await fsPromises.writeFile(filePath, buf);
+            await fsPromises.writeFile(filePath, upload.buffer);
             imageFilename = filename;
         }
 
@@ -159,6 +153,9 @@ export async function POST(request: NextRequest) {
     } catch (err: unknown) {
         if (err instanceof z.ZodError) {
             return NextResponse.json({ error: "Invalid input data", details: err.errors }, { status: 400 });
+        }
+        if (err instanceof UploadValidationError) {
+            return NextResponse.json({ error: err.message }, { status: 400 });
         }
         const message = err instanceof Error ? err.message : String(err);
         return NextResponse.json({ error: "Error adding borrow", message }, { status: 500 });

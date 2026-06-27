@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
 import { protectApiRoute } from '@/lib/protectApi';
+import { UploadValidationError, validateUploadedImage } from '@/lib/uploadSecurity';
 
 
 
@@ -26,12 +26,8 @@ export async function POST(request: NextRequest) {
 
         let filename = "";
         if (file) {
-            const extension = file.type?.split('/')[1] || 'jpg';
-            if (!['jpeg', 'png', 'jpg', 'gif', 'webp'].includes(extension)) {
-                return NextResponse.json({ error: 'Unsupported file type' }, { status: 400 });
-            }
-
-            filename = `${uuidv4()}.${extension}`;
+            const upload = await validateUploadedImage(file);
+            filename = upload.filename;
 
             // ✅ เก็บไฟล์ใน path ที่ volume mount
             const fileDir = "/app/filerequisitions";
@@ -46,8 +42,7 @@ export async function POST(request: NextRequest) {
             }
 
             const filePath = path.join(fileDir, filename);
-            const fileBuffer = Buffer.from(await file.arrayBuffer());
-            fs.writeFileSync(filePath, fileBuffer);
+            fs.writeFileSync(filePath, upload.buffer);
         }
 
         const newRequisition = await prisma.requisition.create({
@@ -76,6 +71,9 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         if (error instanceof z.ZodError) {
             return NextResponse.json({ error: 'Invalid input data', details: error.errors }, { status: 400 });
+        }
+        if (error instanceof UploadValidationError) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
         }
 
         console.error('Error in POST /api/requisition:', error);
