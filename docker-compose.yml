@@ -16,6 +16,12 @@ services:
       - fileuploads-data:/app/fileuploads
       - fileborrows-data:/app/fileborrows
       - filerequisitions-data:/app/filerequisitions
+    healthcheck:
+      test: [ "CMD-SHELL", "node -e \"const net = require('net'); const socket = net.createConnection(3000, '127.0.0.1'); socket.setTimeout(3000); socket.on('connect', () => { socket.destroy(); process.exit(0); }); socket.on('timeout', () => { socket.destroy(); process.exit(1); }); socket.on('error', () => process.exit(1));\"" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
 
   nginx:
     image: nginx:alpine
@@ -29,7 +35,8 @@ services:
       - fileborrows-data:/app/fileborrows
       - filerequisitions-data:/app/filerequisitions
     depends_on:
-      - frontend
+      frontend:
+        condition: service_healthy
     networks:
       - internal_net
     restart: unless-stopped

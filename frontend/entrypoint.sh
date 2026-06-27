@@ -17,14 +17,14 @@ for i in $(seq 1 30); do
     break
   fi
 
-  echo "⏳ Waiting ($i)..."
+  echo "⏳ Waiting ($i)... MySQL is not reachable with DB_USER=${DB_USER}"
   sleep 2
 done
 
 if ! mysql --protocol=TCP --disable-ssl \
   -h"$DB_HOST" -P"$DB_PORT" \
   -u"$DB_USER" -p"$DB_PASSWORD" \
-  -e "SELECT 1" >/dev/null 2>&1; then
+  -e "SELECT 1"; then
   echo "❌ Database not ready after timeout. Exiting..."
   exit 1
 fi
