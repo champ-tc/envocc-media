@@ -1,9 +1,15 @@
 # syntax=docker/dockerfile:1
 
+ARG NODE_IMAGE=node:22.23.0-trixie-slim
+ARG FIXED_OPENSSL_VERSION=3.5.5-1~deb13u2
+ARG FIXED_LIBCAP2_VERSION=1:2.75-10+deb13u1
+
 ############################################
 # 1) deps
 ############################################
-FROM node:22.22.0-trixie-slim AS deps
+FROM ${NODE_IMAGE} AS deps
+ARG FIXED_OPENSSL_VERSION
+ARG FIXED_LIBCAP2_VERSION
 WORKDIR /app
 
 RUN apt-get update \
@@ -11,6 +17,9 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
     ca-certificates \
     openssl \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libssl3t64)" ge "$FIXED_OPENSSL_VERSION" \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' openssl)" ge "$FIXED_OPENSSL_VERSION" \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libcap2)" ge "$FIXED_LIBCAP2_VERSION" \
     && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
@@ -19,7 +28,9 @@ RUN npm ci
 ############################################
 # 2) build
 ############################################
-FROM node:22.22.0-trixie-slim AS build
+FROM ${NODE_IMAGE} AS build
+ARG FIXED_OPENSSL_VERSION
+ARG FIXED_LIBCAP2_VERSION
 WORKDIR /app
 
 RUN apt-get update \
@@ -27,6 +38,9 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
     ca-certificates \
     openssl \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libssl3t64)" ge "$FIXED_OPENSSL_VERSION" \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' openssl)" ge "$FIXED_OPENSSL_VERSION" \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libcap2)" ge "$FIXED_LIBCAP2_VERSION" \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -38,7 +52,9 @@ RUN npm run build
 ############################################
 # 3) runner
 ############################################
-FROM node:22.22.0-trixie-slim AS runner
+FROM ${NODE_IMAGE} AS runner
+ARG FIXED_OPENSSL_VERSION
+ARG FIXED_LIBCAP2_VERSION
 WORKDIR /app
 ENV NODE_ENV=production
 
@@ -48,6 +64,10 @@ RUN apt-get update \
     ca-certificates \
     openssl \
     default-mysql-client \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libssl3t64)" ge "$FIXED_OPENSSL_VERSION" \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' openssl)" ge "$FIXED_OPENSSL_VERSION" \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libcap2)" ge "$FIXED_LIBCAP2_VERSION" \
+    && node --version | grep -Eq '^v22\.(2[3-9]|[3-9][0-9])\.' \
     && rm -rf /var/lib/apt/lists/*
 
 # ไม่ COPY .env เข้า image
