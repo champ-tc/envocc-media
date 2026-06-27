@@ -63,7 +63,7 @@ COPY --chown=node:node --from=build /app/prisma ./prisma
 COPY --chown=node:node entrypoint.sh ./entrypoint.sh
 COPY --chown=node:node wait-for-it.sh ./wait-for-it.sh
 
-RUN chmod +x ./entrypoint.sh ./wait-for-it.sh
+RUN sed -i 's/\r$//' ./entrypoint.sh ./wait-for-it.sh && chmod +x ./entrypoint.sh ./wait-for-it.sh
 
 USER node
 
