@@ -139,6 +139,10 @@ function RegisterPage() {
     setPosition(''); // Reset position when department changes
   };
 
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUsername(e.target.value.replace(/\s/g, ""));
+  };
+
   // การส่งข้อมูลไปยัง Backend
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,6 +154,11 @@ function RegisterPage() {
     // การตรวจสอบข้อมูล
     if (!username || !password || !title || !firstName || !lastName || !phoneNumber || !email || !department) {
       setError("กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน");
+      return;
+    }
+
+    if (/\s/.test(username)) {
+      setError("Username ห้ามมีช่องว่าง");
       return;
     }
 
@@ -255,7 +264,22 @@ function RegisterPage() {
             <div className="grid grid-cols-1 gap-4 mt-2 sm:grid-cols-2">
               <div className="w-full">
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                <input type="text" maxLength={20} id="username" name="username" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]" required />
+                <input
+                  type="text"
+                  maxLength={20}
+                  id="username"
+                  name="username"
+                  value={username}
+                  onChange={handleUsernameChange}
+                  onBeforeInput={(e) => {
+                    if (/\s/.test(e.data ?? "")) {
+                      e.preventDefault();
+                    }
+                  }}
+                  autoComplete="username"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9063d2]"
+                  required
+                />
               </div>
               <div className="w-full">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>

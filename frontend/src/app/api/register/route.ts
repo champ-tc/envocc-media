@@ -4,10 +4,14 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
 const prisma = new PrismaClient();
+const noWhitespaceUsername = z
+  .string()
+  .min(3, "Username ต้องมีอย่างน้อย 3 ตัวอักษร")
+  .refine((value) => !/\s/.test(value), "Username ห้ามมีช่องว่าง");
 
 // Schema สำหรับตรวจสอบข้อมูลที่ส่งเข้ามา
 const registerSchema = z.object({
-  username: z.string().min(3, "Username ต้องมีอย่างน้อย 3 ตัวอักษร"),
+  username: noWhitespaceUsername,
   email: z.string().email("รูปแบบ Email ไม่ถูกต้อง"),
   password: z.string().min(6, "Password ต้องมีอย่างน้อย 6 ตัวอักษร"),
   title: z.string().min(1),
@@ -26,7 +30,7 @@ export async function POST(req: NextRequest) {
     // ถ้า checkOnly = true ให้ validate เฉพาะ username กับ email
     if (body.checkOnly === true) {
       const checkSchema = z.object({
-        username: z.string().min(3),
+        username: noWhitespaceUsername,
         email: z.string().email(),
         checkOnly: z.boolean().optional(),
       });
@@ -114,4 +118,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-

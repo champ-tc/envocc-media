@@ -38,7 +38,13 @@ export async function POST(req: Request) {
         },
     });
 
-    const resetUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/reset-password?token=${token}`;
+    const requestOrigin = new URL(req.url).origin;
+    const configuredBaseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+    const baseUrl =
+        configuredBaseUrl && !configuredBaseUrl.includes("localhost")
+            ? configuredBaseUrl
+            : requestOrigin;
+    const resetUrl = `${baseUrl}/reset-password?token=${token}`;
 
     // ✅ ส่งอีเมล HTML แบบสวยงาม
     const htmlContent = `
@@ -61,13 +67,22 @@ export async function POST(req: Request) {
     </div>
     `;
 
-
-    await sendEmail({
-        to: email,
-        subject: 'รีเซ็ตรหัสผ่าน เว็บไซต์ Media Envocc',
-        text: `คลิกลิงก์เพื่อรีเซ็ตรหัสผ่าน: ${resetUrl}`,
-        html: htmlContent,
-    });
+    try {
+        await sendEmail({
+            to: email,
+            subject: 'รีเซ็ตรหัสผ่าน เว็บไซต์ Media Envocc',
+            text: `คลิกลิงก์เพื่อรีเซ็ตรหัสผ่าน: ${resetUrl}`,
+            html: htmlContent,
+        });
+    } catch {
+        return NextResponse.json(
+            {
+                success: false,
+                message: 'ไม่สามารถส่งอีเมลได้ กรุณาตรวจสอบ SMTP_EMAIL/SMTP_PASSWORD บน server',
+            },
+            { status: 502 }
+        );
+    }
 
     return NextResponse.json({ success: true, message: 'ส่งอีเมลเรียบร้อยแล้ว' });
 }
