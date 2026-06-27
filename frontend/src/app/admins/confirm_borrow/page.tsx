@@ -5,6 +5,7 @@ import React, { useState, useEffect, useCallback, forwardRef } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
+import Pagination from "@/components/Pagination";
 import axios from "axios";
 import AlertModal from "@/components/AlertModal";
 import ConfirmEditModal from "@/components/ConfirmEditModal";
@@ -148,7 +149,7 @@ function AdminsConfirmBorrow() {
                 // NOTE: รายการกลุ่มจาก API ให้คงแบบเดิม (เชื่อว่า backend ส่งเป็น BorrowGroup[])
                 // ถ้า backend ส่ง logs มาด้วยก็ยัง OK แต่เราจะ normalize ตอนเปิด modal อีกครั้งอยู่แล้ว
                 setBorrowGroups(data.items);
-                setTotalPages(safeNum(data.totalPages, 1));
+                setTotalPages(Math.max(1, safeNum(data.totalPages, 1)));
                 setTotalItems(safeNum(data.totalItems, 0));
             } else {
                 setBorrowGroups([]);
@@ -164,7 +165,17 @@ function AdminsConfirmBorrow() {
         fetchBorrowLogs();
     }, [fetchBorrowLogs]);
 
-    const handlePageChange = (page: number) => setCurrentPage(page);
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [statusFilter]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
+
+    const handlePageChange = (page: number) => setCurrentPage(Math.min(Math.max(page, 1), totalPages));
 
     const goToPreviousPage = () => {
         if (currentPage > 1) setCurrentPage((p) => p - 1);
@@ -621,34 +632,7 @@ function AdminsConfirmBorrow() {
                                 รายการที่ {startIndex + 1} ถึง {Math.min(startIndex + itemsPerPage, totalItems)} จาก{" "}
                                 {totalItems} รายการ
                             </span>
-                            <div className="flex space-x-2">
-                                <button
-                                    onClick={goToPreviousPage}
-                                    disabled={currentPage === 1}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
-                                >
-                                    ก่อนหน้า
-                                </button>
-
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                    <button
-                                        key={page}
-                                        onClick={() => handlePageChange(page)}
-                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-600"
-                                            } hover:bg-[#9063d2] hover:text-white transition`}
-                                    >
-                                        {page}
-                                    </button>
-                                ))}
-
-                                <button
-                                    onClick={goToNextPage}
-                                    disabled={currentPage === totalPages}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
-                                >
-                                    ถัดไป
-                                </button>
-                            </div>
+                            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
                         </div>
                     )}
                 </div>

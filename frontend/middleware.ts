@@ -19,6 +19,9 @@ export async function middleware(req: NextRequest) {
         pathname === "/favicon.ico" ||
         pathname.startsWith("/api/auth") ||   // สำคัญ
         pathname === "/api/health" ||
+        pathname === "/api/forgot-password" ||
+        pathname === "/api/reset-password" ||
+        pathname === "/api/register" ||
         pathname.startsWith("/api/images")    // สำคัญ
     ) {
         return NextResponse.next();

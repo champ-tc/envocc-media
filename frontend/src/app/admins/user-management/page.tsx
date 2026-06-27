@@ -8,6 +8,7 @@ import TopBar from "@/components/TopBar";
 import ConfirmModal from "@/components/ConfirmModal";
 import AlertModal from "@/components/AlertModal";
 import ConfirmEditModal from "@/components/ConfirmEditModal";
+import Pagination from "@/components/Pagination";
 import axios from "axios";
 import Image from "next/image";
 import type { Session } from "next-auth";
@@ -160,10 +161,28 @@ function AdminsUserManagement() {
     const [users, setUsers] = useState<User[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedRole, setSelectedRole] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState("");
     const itemsPerPage = 10;
 
-    const filteredUsers = selectedRole ? users.filter((user) => user.role === selectedRole) : users; // แสดงทั้งหมดถ้าไม่เลือก role
-    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+    const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+    const filteredUsers = users.filter((user) => {
+        const matchesRole = selectedRole ? user.role === selectedRole : true;
+        const fullName = `${user.title}${user.firstName} ${user.lastName}`.toLowerCase();
+        const matchesSearch = normalizedSearchQuery
+            ? [
+                user.username,
+                user.firstName,
+                user.lastName,
+                fullName,
+                user.email,
+            ]
+                .filter(Boolean)
+                .some((value) => value.toLowerCase().includes(normalizedSearchQuery))
+            : true;
+
+        return matchesRole && matchesSearch;
+    });
+    const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
     const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage + 1;
     const endIndex = Math.min(startIndex + itemsPerPage - 1, filteredUsers.length);
@@ -203,6 +222,16 @@ function AdminsUserManagement() {
             void fetchUsers();
         }
     }, [isLoading, fetchUsers]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedRole, searchQuery]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
 
     const openEditConfirm = (user: User) => {
         setSelectedType(user);
@@ -255,7 +284,7 @@ function AdminsUserManagement() {
         "10": "ประชาชนทั่วไป",
     };
 
-    const handlePageChange = (page: number) => setCurrentPage(page);
+    const handlePageChange = (page: number) => setCurrentPage(Math.min(Math.max(page, 1), totalPages));
     const goToNextPage = () => currentPage < totalPages && setCurrentPage(currentPage + 1);
     const goToPreviousPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
 
@@ -276,28 +305,41 @@ function AdminsUserManagement() {
                     <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full p-8 mt-4 lg:ml-52">
                         <h1 className="text-2xl font-bold mb-4">จัดการผู้ใช้งาน</h1>
 
-                        <div className="flex mb-4 space-x-4">
-                            <button
-                                onClick={() => setSelectedRole("user")}
-                                className={`py-2 px-4 rounded-md ${selectedRole === "user" ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-700"
-                                    } hover:bg-[#9063d2] hover:text-white transition`}
-                            >
-                                แสดงข้อมูลผู้ใช้งาน
-                            </button>
-                            <button
-                                onClick={() => setSelectedRole("admin")}
-                                className={`py-2 px-4 rounded-md ${selectedRole === "admin" ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-700"
-                                    } hover:bg-[#9063d2] hover:text-white transition`}
-                            >
-                                แสดงข้อมูลผู้ดูแลระบบ
-                            </button>
-                            <button
-                                onClick={() => setSelectedRole(null)}
-                                className={`py-2 px-4 rounded-md ${selectedRole === null ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-700"
-                                    } hover:bg-[#9063d2] hover:text-white transition`}
-                            >
-                                แสดงทั้งหมด
-                            </button>
+                        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="flex flex-wrap gap-3">
+                                <button
+                                    onClick={() => setSelectedRole("user")}
+                                    className={`py-2 px-4 rounded-md ${selectedRole === "user" ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-700"
+                                        } hover:bg-[#9063d2] hover:text-white transition`}
+                                >
+                                    แสดงข้อมูลผู้ใช้งาน
+                                </button>
+                                <button
+                                    onClick={() => setSelectedRole("admin")}
+                                    className={`py-2 px-4 rounded-md ${selectedRole === "admin" ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-700"
+                                        } hover:bg-[#9063d2] hover:text-white transition`}
+                                >
+                                    แสดงข้อมูลผู้ดูแลระบบ
+                                </button>
+                                <button
+                                    onClick={() => setSelectedRole(null)}
+                                    className={`py-2 px-4 rounded-md ${selectedRole === null ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-700"
+                                        } hover:bg-[#9063d2] hover:text-white transition`}
+                                >
+                                    แสดงทั้งหมด
+                                </button>
+                            </div>
+
+                            <label className="w-full lg:max-w-xs">
+                                <span className="sr-only">ค้นหาชื่อผู้ใช้งาน</span>
+                                <input
+                                    type="search"
+                                    value={searchQuery}
+                                    onChange={(event) => setSearchQuery(event.target.value)}
+                                    placeholder="ค้นหาชื่อ / username / email"
+                                    className="w-full rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 outline-none focus:border-[#9063d2] focus:ring-2 focus:ring-[#9063d2]/20"
+                                />
+                            </label>
                         </div>
 
                         <div className="overflow-x-auto w-full">
@@ -331,7 +373,7 @@ function AdminsUserManagement() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {paginatedUsers.map((user) => (
+                                    {paginatedUsers.length > 0 ? paginatedUsers.map((user) => (
                                         <tr key={user.id} className="border-t border-gray-200 text-xs font-normal">
                                             <td className="py-2 px-4">{user.id}</td>
                                             <td className="py-2 px-4">{user.username}</td>
@@ -360,7 +402,13 @@ function AdminsUserManagement() {
                                                 </button>
                                             </td>
                                         </tr>
-                                    ))}
+                                    )) : (
+                                        <tr>
+                                            <td colSpan={8} className="py-6 px-4 text-center text-sm text-gray-500">
+                                                ไม่พบข้อมูลผู้ใช้งาน
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
@@ -370,32 +418,7 @@ function AdminsUserManagement() {
                                 รายการที่ {filteredUsers.length ? startIndex : 0} ถึง {filteredUsers.length ? endIndex : 0} จาก{" "}
                                 {filteredUsers.length} รายการ
                             </span>
-                            <div className="flex space-x-2">
-                                <button
-                                    onClick={goToPreviousPage}
-                                    disabled={currentPage === 1}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
-                                >
-                                    ก่อนหน้า
-                                </button>
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                    <button
-                                        key={page}
-                                        onClick={() => handlePageChange(page)}
-                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-600"
-                                            } hover:bg-[#9063d2] hover:text-white transition`}
-                                    >
-                                        {page}
-                                    </button>
-                                ))}
-                                <button
-                                    onClick={goToNextPage}
-                                    disabled={currentPage === totalPages}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
-                                >
-                                    ถัดไป
-                                </button>
-                            </div>
+                            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
                         </div>
 
                         {isDeleteConfirmOpen && (

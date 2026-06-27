@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
+import Pagination from "@/components/Pagination";
 import axios from "axios";
 import ConfirmModal from "@/components/ConfirmModal";
 import AlertModal from "@/components/AlertModal";
@@ -38,7 +39,7 @@ function Adminsimage() {
 
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
-    const totalPages = Math.ceil(images.length / itemsPerPage);
+    const totalPages = Math.max(1, Math.ceil(images.length / itemsPerPage));
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const currentImages = images.slice(startIndex, endIndex);
@@ -57,6 +58,12 @@ function Adminsimage() {
     useEffect(() => {
         fetchImages();
     }, [fetchImages]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
 
 
 
@@ -228,7 +235,7 @@ function Adminsimage() {
 
 
     const handlePageChange = (page: number) => {
-        setCurrentPage(page);
+        setCurrentPage(Math.min(Math.max(page, 1), totalPages));
     };
     const goToPreviousPage = () => {
         if (currentPage > 1) setCurrentPage(currentPage - 1);
@@ -319,31 +326,7 @@ function Adminsimage() {
 
                                 <div className="flex items-center justify-between mt-6">
                                     <span className="text-sm text-gray-600">รายการที่ {startIndex + 1} ถึง {Math.min(endIndex, images.length)} จาก {images.length} รายการ</span>
-                                    <div className="flex space-x-2">
-                                        <button
-                                            onClick={goToPreviousPage}
-                                            disabled={currentPage === 1}
-                                            className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
-                                        >
-                                            ก่อนหน้า
-                                        </button>
-                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                            <button
-                                                key={page}
-                                                onClick={() => handlePageChange(page)}
-                                                className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#9063d2] hover:text-white transition`}
-                                            >
-                                                {page}
-                                            </button>
-                                        ))}
-                                        <button
-                                            onClick={goToNextPage}
-                                            disabled={currentPage === totalPages}
-                                            className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
-                                        >
-                                            ถัดไป
-                                        </button>
-                                    </div>
+                                    <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
                                 </div>
 
                                 {showModal && (

@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import Pagination from '@/components/Pagination';
 
 type ImageData = {
   id: string;
@@ -40,18 +41,28 @@ function MediaPage() {
   };
 
 
-  const indexOfLastImage = currentPage * itemsPerPage;
-  const indexOfFirstImage = indexOfLastImage - itemsPerPage;
-
   const filteredImages = images.filter((image) =>
     image.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const totalPages = Math.max(1, Math.ceil(filteredImages.length / itemsPerPage));
+  const indexOfLastImage = currentPage * itemsPerPage;
+  const indexOfFirstImage = indexOfLastImage - itemsPerPage;
   const currentImages = filteredImages.slice(indexOfFirstImage, indexOfLastImage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   // Change page
   const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
+    setCurrentPage(Math.min(Math.max(newPage, 1), totalPages));
   };
 
   return (
@@ -103,23 +114,8 @@ function MediaPage() {
           ))}
         </div>
 
-        {/* Pagination */}
-        <div className="flex items-center justify-center mt-8 space-x-4">
-          <button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className={`px-4 py-2 rounded-md bg-[#9063d2] text-white hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50" ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            ก่อนหน้า
-          </button>
-          <span className="text-gray-700 font-medium">หน้า {currentPage}</span>
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={indexOfLastImage >= images.length}
-            className={`px-4 py-2 rounded-md bg-[#9063d2] text-white hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50" ${indexOfLastImage >= images.length ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            ถัดไป
-          </button>
+        <div className="mt-8 flex justify-center">
+          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
         </div>
       </div>
       <Footer />

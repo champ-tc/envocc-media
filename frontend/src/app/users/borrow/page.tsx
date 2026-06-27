@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
 import Navbar from "@/components/NavbarUser";
+import Pagination from "@/components/Pagination";
 import Image from "next/image";
 
 interface Borrow {
@@ -37,7 +38,7 @@ function UsersBorrow() {
                 const data = await res.json();
                 if (Array.isArray(data.items)) {
                     setBorrows(data.items);
-                    setTotalPages(data.totalPages ?? 1);
+                    setTotalPages(Math.max(1, data.totalPages ?? 1));
                     setTotalRecords(data.totalRecords ?? 0);
                 } else {
                     setBorrows([]);
@@ -54,6 +55,12 @@ function UsersBorrow() {
         };
         if (session) fetchBorrows();
     }, [session, currentPage]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
 
     if (isLoading) {
         return (
@@ -75,7 +82,7 @@ function UsersBorrow() {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = Math.min(startIndex + itemsPerPage, totalRecords);
 
-    const handlePageChange = (page: number) => setCurrentPage(page);
+    const handlePageChange = (page: number) => setCurrentPage(Math.min(Math.max(page, 1), totalPages));
     const goToPreviousPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
     const goToNextPage = () => currentPage < totalPages && setCurrentPage(currentPage + 1);
 
@@ -167,32 +174,7 @@ function UsersBorrow() {
                                 รายการที่ {totalRecords === 0 ? 0 : startIndex + 1} ถึง{" "}
                                 {totalRecords === 0 ? 0 : endIndex} จาก {totalRecords} รายการ
                             </span>
-                            <div className="flex space-x-2">
-                                <button
-                                    onClick={goToPreviousPage}
-                                    disabled={currentPage === 1}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
-                                >
-                                    ก่อนหน้า
-                                </button>
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                    <button
-                                        key={page}
-                                        onClick={() => handlePageChange(page)}
-                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-600"
-                                            } hover:bg-[#9063d2] hover:text-white transition`}
-                                    >
-                                        {page}
-                                    </button>
-                                ))}
-                                <button
-                                    onClick={goToNextPage}
-                                    disabled={currentPage === totalPages}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
-                                >
-                                    ถัดไป
-                                </button>
-                            </div>
+                            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
                         </div>
                     </div>
                 </div>

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
+import Pagination from "@/components/Pagination";
 import axios from "axios";
 import AlertModal from "@/components/AlertModal";
 import ConfirmEditModal from "@/components/ConfirmEditModal";
@@ -223,11 +224,12 @@ function ConfirmRequisition() {
 
                 if (response.status === 200 && response.data.items) {
                     setRequisitionGroups(response.data.items);
-                    setTotalPages(response.data.totalPages);
+                    const nextTotalPages = Math.max(1, response.data.totalPages ?? 1);
+                    setTotalPages(nextTotalPages);
                     setTotalItems(response.data.totalItems);
 
-                    if (currentPage > response.data.totalPages && response.data.totalPages > 0) {
-                        setCurrentPage(response.data.totalPages);
+                    if (currentPage > nextTotalPages) {
+                        setCurrentPage(nextTotalPages);
                     }
                 }
             } catch (e) {
@@ -240,7 +242,7 @@ function ConfirmRequisition() {
 
     const startIndex = (currentPage - 1) * itemsPerPage;
 
-    const handlePageChange = (page: number) => setCurrentPage(page);
+    const handlePageChange = (page: number) => setCurrentPage(Math.min(Math.max(page, 1), totalPages));
     const goToPreviousPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
     const goToNextPage = () => currentPage < totalPages && setCurrentPage(currentPage + 1);
 
@@ -521,40 +523,7 @@ function ConfirmRequisition() {
                                 : "ไม่มีรายการ"}
                         </span>
 
-                        <div className="flex items-center space-x-2">
-                            <button
-                                onClick={goToPreviousPage}
-                                disabled={currentPage === 1}
-                                className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
-                            >
-                                ก่อนหน้า
-                            </button>
-
-                            {getPageItems(currentPage, totalPages, 10).map((item, idx) =>
-                                typeof item === "number" ? (
-                                    <button
-                                        key={idx}
-                                        onClick={() => handlePageChange(item)}
-                                        className={`px-3 py-2 rounded-md ${currentPage === item
-                                                ? "bg-[#9063d2] text-white"
-                                                : "bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white"
-                                            } transition`}
-                                    >
-                                        {item}
-                                    </button>
-                                ) : (
-                                    <span key={idx} className="px-3 py-2 text-gray-400 select-none">…</span>
-                                )
-                            )}
-
-                            <button
-                                onClick={goToNextPage}
-                                disabled={currentPage === totalPages || totalPages === 0}
-                                className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
-                            >
-                                ถัดไป
-                            </button>
-                        </div>
+                        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
                     </div>
                 </div>
 

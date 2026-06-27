@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
+import Pagination from "@/components/Pagination";
 import axios from "axios";
 import AlertModal from "@/components/AlertModal";
 import ConfirmEditModal from "@/components/ConfirmEditModal";
@@ -87,7 +88,7 @@ function AdminsMedia_management() {
             const response = await axios.get(`/api/requisition?page=${currentPage}&limit=${itemsPerPage}`);
             if (response.status === 200) {
                 setRequisitions(response.data.items || []);
-                setTotalPages(response.data.totalPages);
+                setTotalPages(Math.max(1, response.data.totalPages ?? 1));
                 setTotalRecords(response.data.totalRecords);
             }
         } catch {
@@ -101,9 +102,15 @@ function AdminsMedia_management() {
         fetchTypes();
     }, [fetchRequisitions]);
 
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
+
 
     const handlePageChange = (page: number) => {
-        setCurrentPage(page);
+        setCurrentPage(Math.min(Math.max(page, 1), totalPages));
     };
 
     const goToPreviousPage = () => {
@@ -609,31 +616,7 @@ function AdminsMedia_management() {
                                     })()
                                 }
                             </span>
-                            <div className="flex space-x-2">
-                                <button
-                                    onClick={goToPreviousPage}
-                                    disabled={currentPage === 1}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
-                                >
-                                    ก่อนหน้า
-                                </button>
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                    <button
-                                        key={page}
-                                        onClick={() => handlePageChange(page)}
-                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#9063d2] hover:text-white transition`}
-                                    >
-                                        {page}
-                                    </button>
-                                ))}
-                                <button
-                                    onClick={goToNextPage}
-                                    disabled={currentPage === totalPages}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
-                                >
-                                    ถัดไป
-                                </button>
-                            </div>
+                            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
                         </div>
 
                         {selectedImage && (

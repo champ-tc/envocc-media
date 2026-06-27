@@ -3,6 +3,7 @@
 import useAuthCheck from "@/hooks/useAuthCheck";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/NavbarUser";
+import Pagination from "@/components/Pagination";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 
@@ -66,14 +67,6 @@ function UsersRequisition() {
         fetchRequisitions();
     }, [session, router]);
 
-    if (isLoading) {
-        return (
-            <div className="flex justify-center items-center min-h-screen">
-                <p>กำลังโหลด...</p>
-            </div>
-        );
-    }
-
     const filteredRequisitions = Array.isArray(requisitions)
         ? requisitions.filter((item) => {
             const matchesSearch = item.requisition_name
@@ -86,13 +79,23 @@ function UsersRequisition() {
 
 
 
-    const totalPages = Math.ceil(filteredRequisitions.length / itemsPerPage);
+    const totalPages = Math.max(1, Math.ceil(filteredRequisitions.length / itemsPerPage));
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const currentRequisitions = filteredRequisitions.slice(startIndex, endIndex);
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, filterType]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
+
     const handlePageChange = (page: number) => {
-        setCurrentPage(page);
+        setCurrentPage(Math.min(Math.max(page, 1), totalPages));
     };
 
     const goToPreviousPage = () => {
@@ -102,6 +105,14 @@ function UsersRequisition() {
     const goToNextPage = () => {
         if (currentPage < totalPages) setCurrentPage(currentPage + 1);
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <p>กำลังโหลด...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#f3e5f5]">
@@ -184,31 +195,7 @@ function UsersRequisition() {
                             <span className="text-sm text-gray-600">
                                 รายการที่ {startIndex + 1} ถึง {Math.min(endIndex, filteredRequisitions.length)} จาก {filteredRequisitions.length} รายการ
                             </span>
-                            <div className="flex space-x-2">
-                                <button
-                                    onClick={goToPreviousPage}
-                                    disabled={currentPage === 1}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
-                                >
-                                    ก่อนหน้า
-                                </button>
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                    <button
-                                        key={page}
-                                        onClick={() => handlePageChange(page)}
-                                        className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-[#9063d2] text-white" : "bg-gray-200 text-gray-600"} hover:bg-[#9063d2] hover:text-white transition`}
-                                    >
-                                        {page}
-                                    </button>
-                                ))}
-                                <button
-                                    onClick={goToNextPage}
-                                    disabled={currentPage === totalPages}
-                                    className="px-4 py-2 rounded-md bg-gray-200 text-gray-600 hover:bg-[#9063d2] hover:text-white transition disabled:opacity-50"
-                                >
-                                    ถัดไป
-                                </button>
-                            </div>
+                            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
                         </div>
 
                     </div>
