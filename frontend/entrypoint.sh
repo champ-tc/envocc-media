@@ -17,7 +17,7 @@ for i in $(seq 1 30); do
     break
   fi
 
-  echo "⏳ Waiting ($i)... MySQL is not reachable with DB_USER=${DB_USER}"
+  echo "⏳ Waiting ($i)... MySQL is not reachable with DB_USER=${DB_USER}. If DB_HOST is an internal agency host, verify that the server is connected to VPN."
   sleep 2
 done
 
@@ -26,6 +26,7 @@ if ! mysql --protocol=TCP --disable-ssl \
   -u"$DB_USER" -p"$DB_PASSWORD" \
   -e "SELECT 1"; then
   echo "❌ Database not ready after timeout. Exiting..."
+  echo "   Check DB_HOST=${DB_HOST}, DB_PORT=${DB_PORT}, DB_USER=${DB_USER}, and VPN connectivity to the agency network."
   exit 1
 fi
 

@@ -140,7 +140,7 @@ function RegisterPage() {
   };
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUsername(e.target.value.replace(/\s/g, ""));
+    setUsername(e.target.value.replace(/[^A-Za-z0-9]/g, ""));
   };
 
   // การส่งข้อมูลไปยัง Backend
@@ -159,6 +159,11 @@ function RegisterPage() {
 
     if (/\s/.test(username)) {
       setError("Username ห้ามมีช่องว่าง");
+      return;
+    }
+
+    if (!/^[A-Za-z0-9]+$/.test(username)) {
+      setError("Username ต้องใช้ตัวอักษรภาษาอังกฤษหรือตัวเลขเท่านั้น");
       return;
     }
 
@@ -272,7 +277,7 @@ function RegisterPage() {
                   value={username}
                   onChange={handleUsernameChange}
                   onBeforeInput={(e) => {
-                    if (/\s/.test(e.data ?? "")) {
+                    if (/[^A-Za-z0-9]/.test(e.data ?? "")) {
                       e.preventDefault();
                     }
                   }}

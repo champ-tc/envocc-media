@@ -78,7 +78,7 @@ export async function POST(req: Request) {
         return NextResponse.json(
             {
                 success: false,
-                message: 'ไม่สามารถส่งอีเมลได้ กรุณาตรวจสอบ SMTP_EMAIL/SMTP_PASSWORD บน server',
+                message: 'ไม่สามารถส่งอีเมลได้ กรุณาตรวจสอบการตั้งค่า SMTP บน server',
             },
             { status: 502 }
         );

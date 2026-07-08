@@ -7,7 +7,11 @@ const prisma = new PrismaClient();
 const noWhitespaceUsername = z
   .string()
   .min(3, "Username ต้องมีอย่างน้อย 3 ตัวอักษร")
-  .refine((value) => !/\s/.test(value), "Username ห้ามมีช่องว่าง");
+  .refine((value) => !/\s/.test(value), "Username ห้ามมีช่องว่าง")
+  .refine(
+    (value) => /^[A-Za-z0-9]+$/.test(value),
+    "Username ต้องใช้ตัวอักษรภาษาอังกฤษหรือตัวเลขเท่านั้น"
+  );
 
 // Schema สำหรับตรวจสอบข้อมูลที่ส่งเข้ามา
 const registerSchema = z.object({
