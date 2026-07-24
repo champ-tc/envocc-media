@@ -30,6 +30,9 @@ export async function GET(request: NextRequest) {
             },
             skip: offset,
             take: limit,
+            orderBy: {
+                createdAt: "desc",
+            },
         });
 
         const totalPages = Math.ceil(totalRecords / limit);

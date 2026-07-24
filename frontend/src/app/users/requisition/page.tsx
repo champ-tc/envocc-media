@@ -29,7 +29,7 @@ function UsersRequisition() {
     const [searchQuery, setSearchQuery] = useState("");
     const [filterType, setFilterType] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
+    const itemsPerPage = 8;
 
     const fetchRequisitions = async () => {
         try {

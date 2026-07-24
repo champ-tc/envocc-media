@@ -1,10 +1,26 @@
 name: envocc-media
 
 services:
+  upload-permissions:
+    build:
+      context: ./frontend
+    user: "0:0"
+    command:
+      - /bin/sh
+      - -c
+      - chown -R node:node /app/fileuploads /app/fileborrows /app/filerequisitions
+    volumes:
+      - fileuploads-data:/app/fileuploads
+      - fileborrows-data:/app/fileborrows
+      - filerequisitions-data:/app/filerequisitions
+    restart: "no"
+
   frontend:
     build:
       context: ./frontend
     depends_on:
+      upload-permissions:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
     env_file:

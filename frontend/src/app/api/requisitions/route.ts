@@ -19,6 +19,9 @@ export async function GET(req: NextRequest) {
             include: {
                 type: true, // แก้ไขจาก types เป็น type
             },
+            orderBy: {
+                createdAt: "desc",
+            },
         });
 
         return NextResponse.json(requisitions, { status: 200 });

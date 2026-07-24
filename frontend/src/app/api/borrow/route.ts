@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
             where,
             skip: offset,
             take: limit,
-            orderBy: { id: "desc" },
+            orderBy: { createdAt: "desc" },
             include: { type: true },
         })) as unknown as BorrowRow[];
 
