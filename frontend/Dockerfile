@@ -39,7 +39,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 RUN apk upgrade --no-cache \
-    && apk add --no-cache ca-certificates openssl mariadb-client \
+    && apk add --no-cache ca-certificates openssl \
     && test "$(node --version)" = "v22.23.2"
 
 # ไม่ COPY .env เข้า image
