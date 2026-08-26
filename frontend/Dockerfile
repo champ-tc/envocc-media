@@ -12,7 +12,9 @@ RUN apk upgrade --no-cache \
     && apk add --no-cache ca-certificates openssl
 
 COPY package.json package-lock.json ./
-RUN npm ci
+# NextAuth 4 declares Nodemailer 7 as an optional peer for its Email provider.
+# This app uses CredentialsProvider and imports the patched Nodemailer 9 directly.
+RUN npm ci --legacy-peer-deps
 
 ############################################
 # 2) build
