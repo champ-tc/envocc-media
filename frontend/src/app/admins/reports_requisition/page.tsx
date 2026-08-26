@@ -5,8 +5,7 @@ import useAuthCheck from "@/hooks/useAuthCheck";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 import Pagination from "@/components/Pagination";
-import ExcelJS from "exceljs";
-import { saveAs } from "file-saver";
+import { exportCsv } from "@/lib/exportCsv";
 
 /* ===================== Types ===================== */
 interface LogItem {
@@ -255,8 +254,8 @@ function AdminsReports_requisition() {
         );
     }
 
-    /* ---------- Export Excel (exceljs) ---------- */
-    const exportToExcel = async () => {
+    /* ---------- Export CSV ---------- */
+    const exportToExcel = () => {
         const dataForExcel = groupArray.map(([, groupLogs], index) => {
             const firstLog = groupLogs[0];
 
@@ -295,60 +294,16 @@ function AdminsReports_requisition() {
             };
         });
 
-        try {
-            const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet("Report");
-
-            // สร้างคอลัมน์จาก keys ของแถวแรก (ถ้าไม่มีข้อมูลก็ยังสร้างหัวไว้)
-            const keys = dataForExcel.length ? Object.keys(dataForExcel[0]) : [
-                "ลำดับ",
-                "ชื่อ - นามสกุล",
-                "หน่วยงาน",
-                "หน่วยงานย่อย/เขต",
-                "รายการที่เบิก",
-                "วันที่เบิก",
-                "สถานะ",
-            ];
-
-            worksheet.columns = keys.map((k) => ({
-                header: k,
-                key: k,
-                width: k === "รายการที่เบิก" ? 50 : 22,
-            }));
-
-            worksheet.addRows(dataForExcel);
-
-            // แต่ง header
-            const headerRow = worksheet.getRow(1);
-            headerRow.font = { bold: true };
-            headerRow.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-            worksheet.views = [{ state: "frozen", ySplit: 1 }];
-
-            // wrapText สำหรับคอลัมน์รายการที่เบิก (มี \n)
-            const requisitionColIndex = keys.indexOf("รายการที่เบิก") + 1;
-            if (requisitionColIndex > 0) {
-                worksheet.getColumn(requisitionColIndex).alignment = {
-                    vertical: "top",
-                    horizontal: "left",
-                    wrapText: true,
-                };
-            }
-
-            // ทำ alignment ทั่วไปให้ดูอ่านง่าย
-            worksheet.eachRow((row, rowNumber) => {
-                if (rowNumber === 1) return;
-                row.alignment = { vertical: "top", wrapText: true };
-            });
-
-            const buffer = (await workbook.xlsx.writeBuffer()) as ArrayBuffer;
-            const blob = new Blob([buffer], {
-                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            });
-            saveAs(blob, `รายงานการขอเบิก.xlsx`);
-        } catch (e) {
-            console.error("Export excel failed:", e);
-            alert("ส่งออกไฟล์ไม่สำเร็จ");
-        }
+        const keys = dataForExcel.length ? Object.keys(dataForExcel[0]) : [
+            "ลำดับ",
+            "ชื่อ - นามสกุล",
+            "หน่วยงาน",
+            "หน่วยงานย่อย/เขต",
+            "รายการที่เบิก",
+            "วันที่เบิก",
+            "สถานะ",
+        ];
+        exportCsv("รายงานการขอเบิก.csv", keys, dataForExcel);
     };
 
     /* ---------- UI ---------- */

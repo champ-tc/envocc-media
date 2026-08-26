@@ -5,8 +5,7 @@ import useAuthCheck from "@/hooks/useAuthCheck";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 import Pagination from "@/components/Pagination";
-import ExcelJS from "exceljs";
-import { saveAs } from "file-saver";
+import { exportCsv } from "@/lib/exportCsv";
 
 interface EvaluationItem {
     id: number;
@@ -114,8 +113,8 @@ function AdminsReports_Evaluation() {
         );
     }
 
-    // ✅ Export Excel (ไม่เอาชื่อ-นามสกุล) + ใช้ ExcelJS
-    const exportToExcel = async () => {
+    // Export CSV (ไม่เอาชื่อ-นามสกุล)
+    const exportToExcel = () => {
         const headers = [
             "ลำดับ",
             "วันที่ประเมิน",
@@ -140,77 +139,7 @@ function AdminsReports_Evaluation() {
             ข้อเสนอแนะ: item.suggestion || "-",
         }));
 
-        try {
-            const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet("EvaluationReport");
-
-            worksheet.columns = headers.map((h) => ({
-                header: h,
-                key: h,
-                width:
-                    h === "ข้อเสนอแนะ" ? 45 :
-                        h === "หน่วยงาน" ? 28 :
-                            h === "วันที่ประเมิน" ? 18 :
-                                h === "ประเภทรายการ" ? 14 :
-                                    18,
-            }));
-
-            worksheet.addRows(rows);
-
-            // Header style + freeze
-            const headerRow = worksheet.getRow(1);
-            headerRow.font = { bold: true };
-            headerRow.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-            worksheet.views = [{ state: "frozen", ySplit: 1 }];
-
-            // Wrap / align for suggestion column
-            const suggestionCol = headers.indexOf("ข้อเสนอแนะ") + 1;
-            worksheet.getColumn(suggestionCol).alignment = {
-                vertical: "top",
-                horizontal: "left",
-                wrapText: true,
-            };
-
-            // Align numeric columns center
-            const idxCol = headers.indexOf("ลำดับ") + 1;
-            const satCol = headers.indexOf("ความพึงพอใจ (เต็ม 5)") + 1;
-            const convCol = headers.indexOf("ความสะดวก (เต็ม 5)") + 1;
-
-            [idxCol, satCol, convCol].forEach((col) => {
-                worksheet.getColumn(col).alignment = {
-                    vertical: "top",
-                    horizontal: "center",
-                    wrapText: true,
-                };
-            });
-
-            // Default alignment for other rows
-            worksheet.eachRow((row, rowNumber) => {
-                if (rowNumber === 1) return;
-                row.alignment = { vertical: "top", wrapText: true };
-            });
-
-            // Optional: add thin borders for readability
-            worksheet.eachRow((row) => {
-                row.eachCell((cell) => {
-                    cell.border = {
-                        top: { style: "thin" },
-                        left: { style: "thin" },
-                        bottom: { style: "thin" },
-                        right: { style: "thin" },
-                    };
-                });
-            });
-
-            const buffer = (await workbook.xlsx.writeBuffer()) as ArrayBuffer;
-            const blob = new Blob([buffer], {
-                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            });
-            saveAs(blob, `รายงานการประเมินผล.xlsx`);
-        } catch (e) {
-            console.error("Export excel failed:", e);
-            alert("ส่งออกไฟล์ไม่สำเร็จ");
-        }
+        exportCsv("รายงานการประเมินผล.csv", headers, rows);
     };
 
     return (

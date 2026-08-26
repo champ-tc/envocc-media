@@ -5,8 +5,7 @@ import useAuthCheck from "@/hooks/useAuthCheck";
 import Sidebar from "@/components/Sidebar_Admin";
 import TopBar from "@/components/TopBar";
 import Pagination from "@/components/Pagination";
-import ExcelJS from "exceljs";
-import { saveAs } from "file-saver";
+import { exportCsv } from "@/lib/exportCsv";
 
 interface BorrowLogItem {
     id: number;
@@ -115,8 +114,8 @@ function AdminsReports_borrows() {
         );
     }
 
-    /* ---------- Export Excel (exceljs) ---------- */
-    const exportToExcel = async () => {
+    /* ---------- Export CSV ---------- */
+    const exportToExcel = () => {
         const dataForExcel = groupArray.map(([, groupLogs], index) => {
             const firstLog = groupLogs[0];
 
@@ -154,53 +153,10 @@ function AdminsReports_borrows() {
             };
         });
 
-        try {
-            const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet("BorrowReport");
-
-            const keys =
-                dataForExcel.length > 0
-                    ? Object.keys(dataForExcel[0])
-                    : ["ลำดับ", "ชื่อ - นามสกุล", "หน่วยงาน", "รายการที่ยืม", "วันที่ยืม", "วันที่คืน", "สถานะ"];
-
-            worksheet.columns = keys.map((k) => ({
-                header: k,
-                key: k,
-                width: k === "รายการที่ยืม" ? 50 : 22,
-            }));
-
-            worksheet.addRows(dataForExcel);
-
-            // header
-            const headerRow = worksheet.getRow(1);
-            headerRow.font = { bold: true };
-            headerRow.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-            worksheet.views = [{ state: "frozen", ySplit: 1 }];
-
-            // wrap + alignment
-            const borrowColIndex = keys.indexOf("รายการที่ยืม") + 1;
-            if (borrowColIndex > 0) {
-                worksheet.getColumn(borrowColIndex).alignment = {
-                    vertical: "top",
-                    horizontal: "left",
-                    wrapText: true,
-                };
-            }
-
-            worksheet.eachRow((row, rowNumber) => {
-                if (rowNumber === 1) return;
-                row.alignment = { vertical: "top", wrapText: true };
-            });
-
-            const buffer = (await workbook.xlsx.writeBuffer()) as ArrayBuffer;
-            const blob = new Blob([buffer], {
-                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            });
-            saveAs(blob, `รายงานการยืม.xlsx`);
-        } catch (e) {
-            console.error("Export excel failed:", e);
-            alert("ส่งออกไฟล์ไม่สำเร็จ");
-        }
+        const keys = dataForExcel.length > 0
+            ? Object.keys(dataForExcel[0])
+            : ["ลำดับ", "ชื่อ - นามสกุล", "หน่วยงาน", "รายการที่ยืม", "วันที่ยืม", "วันที่คืน", "สถานะ"];
+        exportCsv("รายงานการยืม.csv", keys, dataForExcel);
     };
 
     return (

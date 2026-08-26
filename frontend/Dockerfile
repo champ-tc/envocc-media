@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 ARG NODE_IMAGE=node:22.23.2-trixie-slim
-ARG FIXED_OPENSSL_VERSION=3.5.5-1~deb13u2
+ARG FIXED_OPENSSL_VERSION=3.5.7-1~deb13u2
 ARG FIXED_LIBCAP2_VERSION=1:2.75-10+deb13u1
 ARG FIXED_UTIL_LINUX_VERSION=2.41.5-0+deb13u1
 ARG FIXED_XZ_VERSION=5.8.1-1+deb13u1
@@ -23,8 +23,10 @@ RUN apt-get update \
     openssl \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libssl3t64)" ge "$FIXED_OPENSSL_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' openssl)" ge "$FIXED_OPENSSL_VERSION" \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' openssl-provider-legacy)" ge "$FIXED_OPENSSL_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libcap2)" ge "$FIXED_LIBCAP2_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libblkid1)" ge "$FIXED_UTIL_LINUX_VERSION" \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' liblastlog2-2)" ge "$FIXED_UTIL_LINUX_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' liblzma5)" ge "$FIXED_XZ_VERSION" \
     && rm -rf /var/lib/apt/lists/*
 
@@ -48,8 +50,10 @@ RUN apt-get update \
     openssl \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libssl3t64)" ge "$FIXED_OPENSSL_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' openssl)" ge "$FIXED_OPENSSL_VERSION" \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' openssl-provider-legacy)" ge "$FIXED_OPENSSL_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libcap2)" ge "$FIXED_LIBCAP2_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libblkid1)" ge "$FIXED_UTIL_LINUX_VERSION" \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' liblastlog2-2)" ge "$FIXED_UTIL_LINUX_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' liblzma5)" ge "$FIXED_XZ_VERSION" \
     && rm -rf /var/lib/apt/lists/*
 
@@ -78,8 +82,10 @@ RUN apt-get update \
     default-mysql-client \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libssl3t64)" ge "$FIXED_OPENSSL_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' openssl)" ge "$FIXED_OPENSSL_VERSION" \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' openssl-provider-legacy)" ge "$FIXED_OPENSSL_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libcap2)" ge "$FIXED_LIBCAP2_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libblkid1)" ge "$FIXED_UTIL_LINUX_VERSION" \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' liblastlog2-2)" ge "$FIXED_UTIL_LINUX_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' liblzma5)" ge "$FIXED_XZ_VERSION" \
     && test "$(node --version)" = "v22.23.2" \
     && rm -rf /var/lib/apt/lists/*
