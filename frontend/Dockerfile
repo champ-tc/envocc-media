@@ -1,8 +1,10 @@
 # syntax=docker/dockerfile:1
 
-ARG NODE_IMAGE=node:22.23.0-trixie-slim
+ARG NODE_IMAGE=node:22.23.2-trixie-slim
 ARG FIXED_OPENSSL_VERSION=3.5.5-1~deb13u2
 ARG FIXED_LIBCAP2_VERSION=1:2.75-10+deb13u1
+ARG FIXED_UTIL_LINUX_VERSION=2.41.5-0+deb13u1
+ARG FIXED_XZ_VERSION=5.8.1-1+deb13u1
 
 ############################################
 # 1) deps
@@ -10,6 +12,8 @@ ARG FIXED_LIBCAP2_VERSION=1:2.75-10+deb13u1
 FROM ${NODE_IMAGE} AS deps
 ARG FIXED_OPENSSL_VERSION
 ARG FIXED_LIBCAP2_VERSION
+ARG FIXED_UTIL_LINUX_VERSION
+ARG FIXED_XZ_VERSION
 WORKDIR /app
 
 RUN apt-get update \
@@ -20,6 +24,8 @@ RUN apt-get update \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libssl3t64)" ge "$FIXED_OPENSSL_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' openssl)" ge "$FIXED_OPENSSL_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libcap2)" ge "$FIXED_LIBCAP2_VERSION" \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libblkid1)" ge "$FIXED_UTIL_LINUX_VERSION" \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' liblzma5)" ge "$FIXED_XZ_VERSION" \
     && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
@@ -31,6 +37,8 @@ RUN npm ci
 FROM ${NODE_IMAGE} AS build
 ARG FIXED_OPENSSL_VERSION
 ARG FIXED_LIBCAP2_VERSION
+ARG FIXED_UTIL_LINUX_VERSION
+ARG FIXED_XZ_VERSION
 WORKDIR /app
 
 RUN apt-get update \
@@ -41,6 +49,8 @@ RUN apt-get update \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libssl3t64)" ge "$FIXED_OPENSSL_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' openssl)" ge "$FIXED_OPENSSL_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libcap2)" ge "$FIXED_LIBCAP2_VERSION" \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libblkid1)" ge "$FIXED_UTIL_LINUX_VERSION" \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' liblzma5)" ge "$FIXED_XZ_VERSION" \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -55,6 +65,8 @@ RUN npm run build
 FROM ${NODE_IMAGE} AS runner
 ARG FIXED_OPENSSL_VERSION
 ARG FIXED_LIBCAP2_VERSION
+ARG FIXED_UTIL_LINUX_VERSION
+ARG FIXED_XZ_VERSION
 WORKDIR /app
 ENV NODE_ENV=production
 
@@ -67,7 +79,9 @@ RUN apt-get update \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libssl3t64)" ge "$FIXED_OPENSSL_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' openssl)" ge "$FIXED_OPENSSL_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libcap2)" ge "$FIXED_LIBCAP2_VERSION" \
-    && node --version | grep -Eq '^v22\.(2[3-9]|[3-9][0-9])\.' \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libblkid1)" ge "$FIXED_UTIL_LINUX_VERSION" \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' liblzma5)" ge "$FIXED_XZ_VERSION" \
+    && test "$(node --version)" = "v22.23.2" \
     && rm -rf /var/lib/apt/lists/*
 
 # ไม่ COPY .env เข้า image

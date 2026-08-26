@@ -108,7 +108,7 @@ function RequisitionDetail() {
     if (!requisition) return <p>Loading...</p>;
 
 
-    const remaining = requisition.quantity - (requisition.reserved_quantity || 0);
+    const remaining = requisition.quantity;
 
     return (
         <div className="min-h-screen flex bg-gray-50">

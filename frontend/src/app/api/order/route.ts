@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 import { prisma } from '@/lib/prisma';
 import { protectApiRoute } from '@/lib/protectApi';
 
@@ -12,24 +13,25 @@ export async function POST(req: NextRequest) {
     try {
         const { userId, requisitionId, borrowId, requisition_type, quantity } = await req.json();
         const date = new Date();
+        const isProd = process.env.NODE_ENV === "production";
+        const token = await getToken({
+            req,
+            secret: process.env.NEXTAUTH_SECRET,
+            cookieName: isProd
+                ? "__Secure-next-auth.session-token"
+                : "next-auth.session-token",
+        });
+        const isAdmin = token?.role === "admin";
 
         // ตรวจสอบ input ที่จำเป็น
-        if (!userId || !quantity || !requisition_type || (!requisitionId && !borrowId)) {
+        if (
+            !userId ||
+            !Number.isInteger(quantity) ||
+            quantity <= 0 ||
+            !requisition_type ||
+            (!requisitionId && !borrowId)
+        ) {
             return NextResponse.json({ message: "Invalid input" }, { status: 400 });
-        }
-
-        // ตรวจสอบ Borrow (เฉพาะกรณี requisition_type เป็นการยืม)
-        if (requisition_type === 2 && borrowId) {
-            const borrow = await prisma.borrow.findUnique({ where: { id: borrowId } });
-
-            if (!borrow) {
-                return NextResponse.json({ message: "Borrow not found" }, { status: 404 });
-            }
-
-            // ตรวจสอบ stock
-            if (quantity > borrow.quantity) {
-                return NextResponse.json({ message: "Not enough stock available" }, { status: 400 });
-            }
         }
 
         // ตรวจสอบว่ามี order เดิมอยู่หรือไม่
@@ -46,10 +48,13 @@ export async function POST(req: NextRequest) {
             // รวมจำนวนใหม่
             const newQuantity = existingOrder.quantity + quantity;
 
-            // จำกัดสูงสุดไม่เกิน 100
-            if (newQuantity > 100) {
+            // Admin ไม่มีเพดานจำนวน แต่ผู้ใช้ทั่วไปยังจำกัดสูงสุด 100 ชิ้น
+            if (!isAdmin && newQuantity > 100) {
                 return NextResponse.json({ message: "Total quantity cannot exceed 100" }, { status: 400 });
             }
+
+            const stockError = await validateStock(requisition_type, requisitionId, borrowId, newQuantity);
+            if (stockError) return stockError;
 
             const updatedOrder = await prisma.order.update({
                 where: { id: existingOrder.id },
@@ -62,9 +67,12 @@ export async function POST(req: NextRequest) {
             return NextResponse.json(updatedOrder);
         } else {
             // ถ้าไม่มี order เดิม → สร้างใหม่
-            if (quantity > 100) {
+            if (!isAdmin && quantity > 100) {
                 return NextResponse.json({ message: "Quantity cannot exceed 100" }, { status: 400 });
             }
+
+            const stockError = await validateStock(requisition_type, requisitionId, borrowId, quantity);
+            if (stockError) return stockError;
 
             const order = await prisma.order.create({
                 data: {
@@ -83,6 +91,32 @@ export async function POST(req: NextRequest) {
         console.error("Error adding order:", error);
         return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
     }
+}
+
+async function validateStock(
+    requisitionType: number,
+    requisitionId: number | null | undefined,
+    borrowId: number | null | undefined,
+    totalQuantity: number,
+): Promise<NextResponse | null> {
+    const item = requisitionType === 1 && requisitionId
+        ? await prisma.requisition.findUnique({ where: { id: requisitionId } })
+        : requisitionType === 2 && borrowId
+            ? await prisma.borrow.findUnique({ where: { id: borrowId } })
+            : null;
+
+    if (!item) {
+        return NextResponse.json({ message: "Item not found" }, { status: 404 });
+    }
+
+    if (totalQuantity > item.quantity) {
+        return NextResponse.json(
+            { message: `Quantity cannot exceed remaining stock (${item.quantity})` },
+            { status: 400 },
+        );
+    }
+
+    return null;
 }
 
 

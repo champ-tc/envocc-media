@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
-import cookie from "cookie";
+import * as cookie from "cookie";
 import { NextRequest } from "next/server";
 import { protectApiRoute } from '@/lib/protectApi';
 import { isRateLimited } from '@/lib/rateLimit';
