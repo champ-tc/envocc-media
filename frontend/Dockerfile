@@ -20,7 +20,13 @@ RUN apt-get update \
     && apt-get -y upgrade \
     && apt-get install -y --no-install-recommends \
     ca-certificates \
-    openssl \
+    "openssl=${FIXED_OPENSSL_VERSION}" \
+    "libssl3t64=${FIXED_OPENSSL_VERSION}" \
+    "openssl-provider-legacy=${FIXED_OPENSSL_VERSION}" \
+    "util-linux=${FIXED_UTIL_LINUX_VERSION}" \
+    "libblkid1=${FIXED_UTIL_LINUX_VERSION}" \
+    "liblastlog2-2=${FIXED_UTIL_LINUX_VERSION}" \
+    "liblzma5=${FIXED_XZ_VERSION}" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libssl3t64)" ge "$FIXED_OPENSSL_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' openssl)" ge "$FIXED_OPENSSL_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' openssl-provider-legacy)" ge "$FIXED_OPENSSL_VERSION" \
@@ -47,7 +53,13 @@ RUN apt-get update \
     && apt-get -y upgrade \
     && apt-get install -y --no-install-recommends \
     ca-certificates \
-    openssl \
+    "openssl=${FIXED_OPENSSL_VERSION}" \
+    "libssl3t64=${FIXED_OPENSSL_VERSION}" \
+    "openssl-provider-legacy=${FIXED_OPENSSL_VERSION}" \
+    "util-linux=${FIXED_UTIL_LINUX_VERSION}" \
+    "libblkid1=${FIXED_UTIL_LINUX_VERSION}" \
+    "liblastlog2-2=${FIXED_UTIL_LINUX_VERSION}" \
+    "liblzma5=${FIXED_XZ_VERSION}" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libssl3t64)" ge "$FIXED_OPENSSL_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' openssl)" ge "$FIXED_OPENSSL_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' openssl-provider-legacy)" ge "$FIXED_OPENSSL_VERSION" \
@@ -78,7 +90,13 @@ RUN apt-get update \
     && apt-get -y upgrade \
     && apt-get install -y --no-install-recommends \
     ca-certificates \
-    openssl \
+    "openssl=${FIXED_OPENSSL_VERSION}" \
+    "libssl3t64=${FIXED_OPENSSL_VERSION}" \
+    "openssl-provider-legacy=${FIXED_OPENSSL_VERSION}" \
+    "util-linux=${FIXED_UTIL_LINUX_VERSION}" \
+    "libblkid1=${FIXED_UTIL_LINUX_VERSION}" \
+    "liblastlog2-2=${FIXED_UTIL_LINUX_VERSION}" \
+    "liblzma5=${FIXED_XZ_VERSION}" \
     default-mysql-client \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libssl3t64)" ge "$FIXED_OPENSSL_VERSION" \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' openssl)" ge "$FIXED_OPENSSL_VERSION" \
