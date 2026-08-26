@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-ARG NODE_IMAGE=node:22.23.2-bookworm-slim
+ARG NODE_IMAGE=node:22.23.2-alpine3.24
 
 ############################################
 # 1) deps
@@ -8,12 +8,8 @@ ARG NODE_IMAGE=node:22.23.2-bookworm-slim
 FROM ${NODE_IMAGE} AS deps
 WORKDIR /app
 
-RUN apt-get update \
-    && apt-get -y upgrade \
-    && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    openssl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk upgrade --no-cache \
+    && apk add --no-cache ca-certificates openssl
 
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -24,12 +20,8 @@ RUN npm ci
 FROM ${NODE_IMAGE} AS build
 WORKDIR /app
 
-RUN apt-get update \
-    && apt-get -y upgrade \
-    && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    openssl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk upgrade --no-cache \
+    && apk add --no-cache ca-certificates openssl
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -44,14 +36,9 @@ FROM ${NODE_IMAGE} AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN apt-get update \
-    && apt-get -y upgrade \
-    && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    openssl \
-    default-mysql-client \
-    && test "$(node --version)" = "v22.23.2" \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk upgrade --no-cache \
+    && apk add --no-cache ca-certificates openssl mariadb-client \
+    && test "$(node --version)" = "v22.23.2"
 
 # ไม่ COPY .env เข้า image
 # ใช้ env_file หรือ environment จาก docker compose
