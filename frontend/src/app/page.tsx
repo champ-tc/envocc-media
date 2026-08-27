@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
@@ -15,6 +15,22 @@ type ImageData = {
 
 export default function Home() {
   const [images, setImages] = useState<ImageData[]>([]);
+  const [isSecurityOpen, setIsSecurityOpen] = useState(true);
+  const securityDialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const dialog = securityDialogRef.current;
+    if (!isSecurityOpen || !dialog) return;
+
+    const previousOverflow = document.body.style.overflow;
+    dialog.showModal();
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      dialog.close();
+    };
+  }, [isSecurityOpen]);
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -49,6 +65,43 @@ export default function Home() {
 
   return (
     <>
+      <dialog
+        ref={securityDialogRef}
+        aria-label="ประกาศด้านความปลอดภัย"
+        onCancel={(event) => {
+          event.preventDefault();
+          setIsSecurityOpen(false);
+        }}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            setIsSecurityOpen(false);
+          }
+        }}
+        className="m-auto w-[calc(100%-2rem)] max-w-6xl max-h-[90dvh] overflow-y-auto rounded-xl bg-white p-0 shadow-2xl backdrop:bg-black/70"
+      >
+        <div className="relative">
+          <div className="flex justify-end p-2">
+            <button
+              type="button"
+              autoFocus
+              onClick={() => setIsSecurityOpen(false)}
+              className="rounded-md bg-[#9063d2] px-4 py-2 text-white hover:bg-[#8753d5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9063d2]"
+            >
+              ปิด ×
+            </button>
+          </div>
+          <Image
+            src="/images/Security.jpg"
+            alt="ประกาศด้านความปลอดภัย"
+            width={1920}
+            height={1080}
+            sizes="(max-width: 1184px) calc(100vw - 2rem), 1152px"
+            className="h-auto max-h-[calc(90dvh-4rem)] w-full object-contain"
+            priority
+          />
+        </div>
+      </dialog>
+
       <Navbar />
 
       {/* ✅ priority image */}
