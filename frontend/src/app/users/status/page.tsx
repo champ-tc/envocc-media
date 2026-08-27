@@ -56,12 +56,10 @@ function UsersStatus() {
                 const data = await response.json();
 
                 if (!response.ok) {
-                    console.error("Error fetching logs:", data);
+                    console.error("Error fetching logs:");
                     return;
                 }
 
-                console.log("Borrow Groups:", data.borrowLogs);
-                console.log("Requisition Groups:", data.requisitionLogs);
 
                 setBorrowGroups(data.borrowLogs); // อัปเดต borrowLogs
                 setRequisitionGroups(data.requisitionLogs); // อัปเดต requisitionLogs

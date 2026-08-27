@@ -34,7 +34,6 @@ export async function POST(request: NextRequest) {
         // ใช้ใน local
         // const filePath = path.join(process.cwd(), 'public', 'uploads', filename);
 
-        console.log('Saving file to:', filePath);
 
         fs.writeFileSync(filePath, upload.buffer);
 

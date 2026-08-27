@@ -22,20 +22,16 @@ export async function PUT(req: NextRequest) {
             secret: process.env.NEXTAUTH_SECRET,
         });
 
-        console.log("🪪 FULL TOKEN:", token);
 
         // ✅ ตรวจสอบ token.id และแปลงเป็น number
         const adminId = Number(token?.id);
         if (!adminId || isNaN(adminId)) {
-            console.log("❌ ไม่มี token หรือ token.id ไม่ถูกต้อง:", token);
             return NextResponse.json({ message: "Invalid admin ID" }, { status: 400 });
         }
 
         // ✅ อ่านข้อมูลจาก body
         const { groupId, logs } = await req.json();
 
-        console.log("✅ groupId:", groupId);
-        console.log("✅ logs:", logs);
 
         if (!groupId || !Array.isArray(logs)) {
             return NextResponse.json({
@@ -47,14 +43,12 @@ export async function PUT(req: NextRequest) {
         // ✅ อัปเดตแต่ละ log
         await Promise.all(
             logs.map(async (log: ApproveLogInput) => {
-                console.log("🔍 ตรวจ log:", log);
 
                 if (
                     typeof log.id !== "number" ||
                     typeof log.requisition_id !== "number" ||
                     typeof log.approved_quantity !== "number"
                 ) {
-                    console.log("❌ log ผิดโครงสร้าง:", log);
                     throw new Error("Invalid log structure or missing required fields");
                 }
 
@@ -89,7 +83,6 @@ export async function PUT(req: NextRequest) {
                     data: { quantity: updatedStock },
                 });
 
-                console.log(`✅ อัปเดตเสร็จ log ID ${log.id}, เหลือ stock: ${updatedStock}`);
             })
         );
 

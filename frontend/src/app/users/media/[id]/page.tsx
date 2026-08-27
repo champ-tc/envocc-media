@@ -30,7 +30,6 @@ function MediaDetailPage() {
             if (!response.ok) {
                 throw new Error(`Failed to increment view count: ${response.statusText}`);
             }
-            console.log('View count incremented successfully');
         } catch (error) {
             console.error('Error incrementing view count:', error);
         }

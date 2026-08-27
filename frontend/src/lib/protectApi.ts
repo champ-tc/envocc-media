@@ -37,7 +37,6 @@
 
 //     // ✅ ตรวจ rate limit
 //     if (isRateLimited(ip, limit, windowMs)) {
-//         console.warn(`🚨 Rate limit exceeded for IP: ${ip}`);
 //         return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 //     }
 
@@ -51,17 +50,14 @@
 
 
 //     if (!token) {
-//         console.warn(`🚨 No token found in request from IP: ${ip}`);
 //         return NextResponse.json({ error: 'Missing or invalid token' }, { status: 403 });
 //     }
 
 //     if (!token.role) {
-//         console.warn(`🚨 Token missing role for IP: ${ip}`, token);
 //         return NextResponse.json({ error: 'Token missing role' }, { status: 403 });
 //     }
 
 //     if (!allowedRoles.includes(token.role as string)) {
-//         console.warn(`🚨 Token role not allowed: ${token.role} for IP: ${ip}`);
 //         return NextResponse.json({ error: 'Role not allowed' }, { status: 403 });
 //     }
 
@@ -144,7 +140,6 @@ export async function protectApiRoute(
     /* -------------------- 1. Rate Limit -------------------- */
 
     if (isRateLimited(ip, limit, windowMs)) {
-        console.warn('Rate limit exceeded', { ip });
         return NextResponse.json(
             { error: 'Too many requests' },
             { status: 429 }
@@ -167,7 +162,6 @@ export async function protectApiRoute(
     });
 
     if (!token) {
-        console.warn('Missing token', { ip });
         return NextResponse.json(
             { error: 'Missing or invalid token' },
             { status: 403 }
@@ -175,7 +169,6 @@ export async function protectApiRoute(
     }
 
     if (!token.role) {
-        console.warn('Token missing role', { ip });
         return NextResponse.json(
             { error: 'Token missing role' },
             { status: 403 }
@@ -183,10 +176,6 @@ export async function protectApiRoute(
     }
 
     if (!allowedRoles.includes(token.role as string)) {
-        console.warn('Token role not allowed', {
-            ip,
-            role: token.role,
-        });
 
         return NextResponse.json(
             { error: 'Role not allowed' },

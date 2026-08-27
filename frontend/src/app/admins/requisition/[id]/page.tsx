@@ -42,7 +42,7 @@ function RequisitionDetail() {
                 const data = await response.json();
                 setRequisition(data);
             } catch {
-                console.log("Error fetching requisition:");
+                console.error("Error fetching requisition:");
             }
         };
         fetchRequisition();

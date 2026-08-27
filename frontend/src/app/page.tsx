@@ -22,15 +22,14 @@ export default function Home() {
         const response = await fetch("/api/images");
 
         if (!response.ok) {
-          const errorText = await response.text(); // ดูข้อความที่ backend ส่งกลับมา
-          console.error("API responded with error:", errorText);
+          console.error("API responded with error:", response.status);
           return;
         }
 
         const raw = await response.json();
 
         if (!Array.isArray(raw)) {
-          console.error("Expected array but got:", raw);
+          console.error("Expected array but got:");
           return;
         }
 

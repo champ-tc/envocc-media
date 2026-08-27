@@ -73,7 +73,6 @@ export async function PUT(req: NextRequest) {
                     data: { quantity: stockAfterBorrow },
                 });
 
-                console.log(`✅ Updated stock for Borrow ID: ${borrowLog.borrow_id}, remaining: ${stockAfterBorrow}`);
             })
         );
 

@@ -64,7 +64,7 @@ function AdminsType_management() {
                 setTotalRecords(response.data.totalRecords);
             }
         } catch {
-            console.log("Failed to fetch types:");
+            console.error("Failed to fetch types:");
         }
     }, [currentPage, itemsPerPage]);
     

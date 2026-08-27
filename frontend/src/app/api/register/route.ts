@@ -108,7 +108,6 @@ export async function POST(req: NextRequest) {
     );
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
-      console.error("❌ Zod Validation Errors:", error.errors);
       return NextResponse.json(
         { error: "ข้อมูลที่ส่งมาไม่ถูกต้อง", details: error.errors },
         { status: 400 }

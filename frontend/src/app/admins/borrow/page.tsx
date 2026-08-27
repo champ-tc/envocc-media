@@ -43,7 +43,7 @@ function AdminsBorrow() {
                     setTotalPages(Math.max(1, data.totalPages ?? 1));
                     setTotalRecords(data.totalRecords ?? 0);
                 } else {
-                    console.error("API did not return expected data:", data);
+                    console.error("API did not return expected data:");
                     setBorrows([]);
                     setTotalRecords(0);
                 }

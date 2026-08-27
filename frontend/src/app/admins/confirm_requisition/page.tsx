@@ -233,7 +233,7 @@ function ConfirmRequisition() {
                     }
                 }
             } catch (e) {
-                console.log("Error fetching requisition logs:", e);
+                console.error("Error fetching requisition logs:", e);
             }
         };
 
@@ -277,7 +277,7 @@ function ConfirmRequisition() {
             const data = await response.json().catch(() => null);
 
             if (!Array.isArray(data.items)) {
-                console.error("Unexpected response format:", data);
+                console.error("Unexpected response format:");
                 return;
             }
 
@@ -294,7 +294,7 @@ function ConfirmRequisition() {
                 setApprovedModalOpen(true);
             }
         } catch (e) {
-            console.log("Error fetching group details:", e);
+            console.error("Error fetching group details:", e);
         }
     };
 

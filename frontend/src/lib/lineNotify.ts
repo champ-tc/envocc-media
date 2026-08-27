@@ -102,9 +102,10 @@ export const sendLineGroupMessage = async (
             }
         );
 
-        console.log("✅ LINE Flex message sent");
         return response.data;
     } catch (error) {
-        console.error('LINE Notify Error:', error);
+        console.error('LINE Notify Error:', axios.isAxiosError(error)
+            ? { code: error.code, status: error.response?.status }
+            : { name: error instanceof Error ? error.name : 'UnknownError' });
     }
 };

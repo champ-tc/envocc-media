@@ -44,7 +44,7 @@ function UsersBorrow() {
                     setBorrows([]);
                     setTotalPages(1);
                     setTotalRecords(0);
-                    console.error("Unexpected API shape:", data);
+                    console.error("Unexpected API shape:");
                 }
             } catch (e) {
                 console.error("Error fetching borrows:", e);

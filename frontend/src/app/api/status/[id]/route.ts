@@ -16,7 +16,6 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
         const { searchParams } = new URL(req.url);
         const status = searchParams.get("status");
 
-        console.log("API Request Parameters:", { userId, status });
 
         // ดึงข้อมูล borrow_logs
         const borrowLogsRaw = await prisma.borrowLog.findMany({

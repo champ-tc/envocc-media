@@ -100,9 +100,9 @@ const authOptions: NextAuthOptions = {
   },
 
   logger: {
-    error(code, metadata) { console.error(`[NextAuth ERROR] ${code}`, metadata); },
+    error(code) { console.error(`[NextAuth ERROR] ${code}`); },
     warn(code) { console.warn(`[NextAuth WARN] ${code}`); },
-    debug(code, metadata) { if (!isProd) console.debug(`[NextAuth DEBUG] ${code}`, metadata); },
+    debug() {},
   },
 };
 

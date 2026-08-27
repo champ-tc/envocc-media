@@ -61,15 +61,12 @@ export const sendEmail = async ({
             html,
         });
 
-        console.log('[MAIL SENT]', info.messageId);
         return info;
     } catch (error) {
         const smtpError = error as SmtpError;
         console.error('[EMAIL ERROR]', {
             code: smtpError.code,
             responseCode: smtpError.responseCode,
-            response: smtpError.response,
-            message: smtpError.message,
         });
         throw error;
     }

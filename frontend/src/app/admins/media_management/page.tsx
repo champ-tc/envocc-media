@@ -92,7 +92,7 @@ function AdminsMedia_management() {
                 setTotalRecords(response.data.totalRecords);
             }
         } catch {
-            console.log("Error fetching requisitions");
+            console.error("Error fetching requisitions");
         }
     }, [currentPage]);
 

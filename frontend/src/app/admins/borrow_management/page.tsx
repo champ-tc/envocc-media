@@ -78,7 +78,7 @@ function AdminsBorrow_management() {
                 setTotalRecords(response.data.totalRecords);
             }
         } catch {
-            console.log("Error fetching borrows:");
+            console.error("Error fetching borrows:");
         }
     }, [currentPage]);
 
@@ -120,7 +120,7 @@ function AdminsBorrow_management() {
                 setTypes([]);
             }
         } catch {
-            console.log("Error fetching types:");
+            console.error("Error fetching types:");
             setTypes([]);
         }
     };
@@ -142,8 +142,6 @@ function AdminsBorrow_management() {
     const handleImageClick = (imageUrl: string | undefined) => {
         if (imageUrl) {
             setSelectedImage(imageUrl);
-        } else {
-            console.log('No image to display');
         }
     };
 

@@ -37,10 +37,9 @@ function AdminsRequisition() {
             const data = await response.json();
 
             if (Array.isArray(data)) {
-                console.log(data);
                 setRequisitions(data);
             } else {
-                console.error("ข้อมูลที่ดึงมาไม่ใช่อาเรย์:", data);
+                console.error("ข้อมูลที่ดึงมาไม่ใช่อาเรย์:");
             }
         } catch (error) {
             console.error("เกิดข้อผิดพลาดในการดึงข้อมูล requisitions:", error);

@@ -230,7 +230,6 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
 //     return NextResponse.json({ message: 'ลบเรียบร้อยแล้ว' }, { status: 200 });
 //   } catch (error: unknown) {
 //     const errorMessage = error instanceof Error ? error.message : String(error);
-//     console.error('[DELETE requisition]', errorMessage);
 //     return NextResponse.json(
 //       { error: 'ไม่สามารถลบสื่อได้ อาจมีข้อมูลเชื่อมโยงอยู่' },
 //       { status: 500 }
